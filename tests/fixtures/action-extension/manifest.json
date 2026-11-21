@@ -1,0 +1,8 @@
+{
+  "manifest_version": 3,
+  "name": "Action Test",
+  "description": "Test extension with a toolbar action.",
+  "version": "1.0.0",
+  "icons": { "48": "icon.png" },
+  "action": { "default_title": "Action Test", "default_icon": "icon.png" }
+}

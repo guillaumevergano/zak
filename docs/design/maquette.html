@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>ZAK — Céramique violet nuit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap">
+<style>
+/* Reprise du design de Varp (« Céramique violet nuit », varp/docs/design/DESIGN.md). */
+:root{
+  --window:#E9E2FA; --grid:rgba(91,52,184,0.09);
+  --panel:rgba(255,255,255,0.55); --panel-edge:rgba(255,255,255,0.9);
+  --ink:#2A1F45; --title:#3B2370; --sub:#5E5478; --violet:#5B34B8; --hover:rgba(91,52,184,0.08);
+  --night:#2A1850; --night-edge:#3C2670; --night-2:#321D5E; --night-3:#3B2670; --night-4:#45307A;
+  --night-field-edge:#5A4390; --night-sub:#C9BCE8; --night-mono:#EDE6FF; --night-line:rgba(255,255,255,0.10);
+  --pink:#FF0082; --pink-btn:#E00072; --pink-soft:#FF8CC4;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#cfc6e6;font-family:'DM Sans',system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;gap:28px;padding:32px}
+h1{font-size:15px;font-weight:600;color:var(--title);margin:0}
+.window{width:1280px;height:800px;border-radius:12px;overflow:hidden;box-shadow:0 30px 80px rgba(42,24,80,.35);
+  background-color:var(--window);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:48px 48px;
+  display:flex;gap:12px;padding:12px;color:var(--ink)}
+/* ── Barre latérale (carte claire) ── */
+.side{width:248px;flex:none;background:var(--panel);border:1px solid var(--panel-edge);border-radius:18px;padding:14px 10px;display:flex;flex-direction:column;gap:16px;
+  box-shadow:0 1px 0 rgba(255,255,255,.8) inset,0 8px 24px rgba(59,35,112,.10)}
+.lights{display:flex;gap:8px;padding:2px 6px 0}.lights span{width:12px;height:12px;border-radius:50%}
+.brand{display:flex;align-items:center;gap:10px;padding:0 6px}
+.logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#5B34B8,#FF0082);display:grid;place-items:center;color:#fff;font-weight:700;font-size:16px}
+.brand b{display:block;font-size:17px;letter-spacing:-.2px;color:var(--title)}.brand small{font-size:12px;color:var(--sub)}
+.section{display:flex;flex-direction:column;gap:2px}
+.label{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--sub);padding:0 8px 4px;display:flex;align-items:center;gap:6px}
+.fav{display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:12px;font-size:14px;font-weight:500;color:var(--ink);border:1px solid transparent}
+.fav:hover{background:var(--hover)}
+.fav .e{font-size:16px;width:18px;text-align:center;font-family:'Apple Color Emoji','Segoe UI Emoji',sans-serif}
+.fav.active{background:#fff;box-shadow:0 4px 14px rgba(59,35,112,.14);font-weight:600}
+.fav .k{margin-left:auto;font-size:12px;color:var(--sub);font-weight:500}
+.chev{width:10px;height:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 4px}
+.tile{aspect-ratio:1.25;border-radius:14px;background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.95);display:grid;place-items:center;font-size:24px;font-family:'Apple Color Emoji','Segoe UI Emoji',sans-serif;position:relative}
+.tile:hover{background:#fff}
+.tile.active{background:#fff;box-shadow:0 4px 14px rgba(59,35,112,.18);border-color:#fff}
+.tile.active::after{content:'';position:absolute;bottom:5px;width:14px;height:3px;border-radius:2px;background:#FF0082}
+.tile.add{background:transparent;border:1.5px dashed rgba(91,52,184,.25);color:var(--sub);font-family:inherit;font-size:18px}
+.tip{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);white-space:nowrap;background:#2A1F45;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;padding:4px 8px;border-radius:8px;z-index:2}
+.add-folder{margin-top:auto;display:flex;align-items:center;gap:8px;height:40px;padding:0 10px;border-radius:12px;font-size:13px;font-weight:600;color:var(--sub)}
+.add-folder:hover{background:var(--hover)}
+/* ── Carte principale (violet nuit) ── */
+.main{flex:1;min-width:0;background:var(--night);border:1px solid var(--night-edge);border-radius:18px;box-shadow:0 18px 50px rgba(42,24,80,.35);display:flex;flex-direction:column;overflow:hidden;color:#fff}
+.strip{height:46px;display:flex;align-items:flex-end;gap:4px;padding:0 10px}
+.tab{width:210px;min-width:0;height:36px;display:flex;align-items:center;gap:8px;padding:0 8px 0 12px;border-radius:12px 12px 0 0;font-size:13px;font-weight:500;color:var(--night-sub)}
+.tab:hover{background:rgba(255,255,255,.05)}
+.tab.active{background:var(--night-3);color:#fff;font-weight:600}
+.tab .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tab .x{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;color:var(--night-sub)}.tab .x:hover{background:rgba(255,255,255,.12);color:#fff}
+.tab.pinned{width:42px;justify-content:center;padding:0}
+.fi{width:16px;height:16px;border-radius:4px;flex:none;display:grid;place-items:center;font-size:10px;font-weight:700}
+.audio{color:var(--pink-soft)}
+.new{width:30px;height:30px;margin:0 0 4px 4px;border-radius:10px;background:var(--pink-btn);display:grid;place-items:center;box-shadow:0 4px 12px rgba(255,0,130,.35);flex:none}
+.spacer{flex:1}
+.ghost{width:30px;height:30px;margin-bottom:4px;border-radius:10px;display:grid;place-items:center;color:var(--night-sub)}.ghost:hover{background:rgba(255,255,255,.08);color:#fff}
+.toolbar{height:52px;background:var(--night-3);display:flex;align-items:center;gap:4px;padding:0 10px}
+.nav{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:#fff}.nav.off{color:#6E5A9E}.nav:hover:not(.off){background:rgba(255,255,255,.08)}
+.omni{flex:1;height:36px;display:flex;align-items:center;gap:10px;padding:0 14px;margin:0 6px;background:var(--night-2);border:1.5px solid var(--night-field-edge);border-radius:12px}
+.omni.focus{border-color:var(--pink);box-shadow:0 0 0 3px rgba(255,0,130,.18)}
+.url{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--night-sub)}.url b{color:#fff;font-weight:500}
+.star{color:var(--night-sub)}
+.ext{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:13px}
+.progress{height:2px;background:rgba(255,0,130,.2)}.progress div{width:46%;height:2px;background:var(--pink)}
+.page{flex:1;background:#fff;color:#1d1d1f;padding:48px 64px;font-family:Georgia,serif;overflow:hidden}
+.page h2{font-size:34px;margin:0 0 12px}.page p{font-size:17px;line-height:1.6;color:#444;max-width:720px}
+.ph{height:14px;border-radius:7px;background:#eee;margin:14px 0;max-width:680px}
+.spin{width:14px;height:14px;flex:none}
+.legend{width:1280px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-size:12px;color:var(--title)}
+.sw{display:flex;align-items:center;gap:8px}.sw i{width:22px;height:22px;border-radius:7px;border:1px solid rgba(0,0,0,.08)}
+</style>
+</head>
+<body>
+<h1>ZAK — maquette « Céramique violet nuit » (design de Varp)</h1>
+
+<div class="window">
+  <aside class="side">
+    <div class="lights"><span style="background:#FF5F57"></span><span style="background:#FEBC2E"></span><span style="background:#28C840"></span></div>
+    <div class="brand"><div class="logo">N</div><div><b>ZAK</b><small>16 favoris · 3 dossiers</small></div></div>
+
+    <div class="grid3">
+      <div class="tile active" title="Gmail">📬</div>
+      <div class="tile" title="Agenda">📅</div>
+      <div class="tile" title="Netflix">🎬</div>
+      <div class="tile" title="Spotify">🎧</div>
+      <div class="tile" title="Maps">🗺️</div>
+      <div class="tile" title="Le Monde">📰</div>
+    </div>
+
+    <div class="section">
+      <div class="label"><svg class="chev" viewBox="0 0 10 10"><path d="M2 3.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>🎮 Jeux</div>
+      <div class="grid3">
+      <div class="tile" title="Back-office">🏆</div>
+      <div class="tile" title="PostHog">📊<span class="tip">PostHog</span></div>
+      <div class="tile" title="Twitch">🟣</div>
+      <div class="tile" title="Figma">🎨</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="label"><svg class="chev" viewBox="0 0 10 10"><path d="M2 3.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>💼 Travail</div>
+      <div class="grid3">
+      <div class="tile" title="Pennylane">💶</div>
+      <div class="tile" title="Sonar">🧭</div>
+      <div class="tile" title="Brevo">✉️</div>
+      <div class="tile add" title="Ajouter un favori">+</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="label"><svg class="chev" viewBox="0 0 10 10" style="transform:rotate(-90deg)"><path d="M2 3.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>📚 À lire</div>
+    </div>
+
+    <div class="add-folder"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Nouveau dossier</div>
+  </aside>
+
+  <main class="main">
+    <div class="strip">
+      <div class="tab pinned"><span class="fi" style="background:#EA4335;color:#fff">M</span></div>
+      <div class="tab active"><span class="fi" style="background:#fff;color:#000">W</span><span class="t">Wikipédia, l'encyclopédie libre</span><span class="x"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7"/></svg></span></div>
+      <div class="tab"><span class="fi" style="background:#FF0000;color:#fff">▶</span><span class="t">Lo-fi beats to study — YouTube</span><svg class="audio" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5h2L8 4v8L5 9.5H3zM10.5 6a3 3 0 0 1 0 4M12 4.5a5 5 0 0 1 0 7"/></svg></div>
+      <div class="tab"><svg class="spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="rgba(255,0,130,.3)" stroke-width="3"/><path d="M12 3a9 9 0 0 1 9 9" stroke="#FF0082" stroke-width="3" stroke-linecap="round"/></svg><span class="t">jeuxvideo.com</span></div>
+      <div class="tab"><span class="fi" style="background:#5B34B8;color:#fff">D</span><span class="t">Dashlane</span></div>
+      <div class="new"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+      <div class="spacer"></div>
+      <div class="ghost" title="Tout fermer"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 2.5 8.5 6.5M5 7.5l3.5 3.5M4.6 7.9C3.3 9.2 2.6 11 2.5 13.5c2.5-.1 4.3-.8 5.6-2.1M6.7 6.3l3 3"/></svg></div>
+    </div>
+
+    <div class="toolbar">
+      <div class="nav"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8H3M7 4 3 8l4 4"/></svg></div>
+      <div class="nav off"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      <div class="nav"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 3v3h-3"/></svg></div>
+      <div class="omni">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#C9BCE8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="7" width="9" height="6.5" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>
+        <span class="url"><b>fr.wikipedia.org</b>/wiki/Navigateur_web</span>
+        <span class="spacer"></span>
+        <svg class="star" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>
+      </div>
+      <div class="ext" style="background:#fff;color:#5B34B8">D</div>
+      <div class="ext" style="background:#45307A;color:#FF8CC4">🛡</div>
+    </div>
+    <div class="progress"><div></div></div>
+
+    <div class="page">
+      <h2>Navigateur web</h2>
+      <p>Un navigateur web est un logiciel conçu pour consulter et afficher le World Wide Web. Techniquement, c'est au minimum un client HTTP.</p>
+      <div class="ph" style="width:92%"></div><div class="ph" style="width:86%"></div><div class="ph" style="width:74%"></div>
+      <div class="ph" style="width:90%;margin-top:28px"></div><div class="ph" style="width:64%"></div>
+    </div>
+  </main>
+</div>
+
+<div class="legend">
+  <div class="sw"><i style="background:#E9E2FA"></i>Fond fenêtre #E9E2FA + grille 48 px</div>
+  <div class="sw"><i style="background:#2A1850"></i>Violet nuit #2A1850</div>
+  <div class="sw"><i style="background:#3B2670"></i>Barre d'outils / onglet actif #3B2670</div>
+  <div class="sw"><i style="background:#FF0082"></i>Rose #FF0082 (chargement, focus)</div>
+  <div class="sw"><i style="background:#E00072"></i>Bouton « + » #E00072</div>
+  <div class="sw"><i style="background:#5B34B8"></i>Violet #5B34B8</div>
+  <div class="sw"><i style="background:#2A1F45"></i>Texte clair-mode #2A1F45</div>
+  <div class="sw"><i style="background:#C9BCE8"></i>Texte secondaire nuit #C9BCE8</div>
+</div>
+</body>
+</html>

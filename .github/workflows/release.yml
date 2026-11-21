@@ -1,0 +1,50 @@
+# Official builds: signed for Widevine VMP (castLabs EVS), Apple (Developer ID + notarization) and
+# Authenticode, then published to GitHub Releases, where the website and the in-app updater find
+# them. Runs on a version tag (git tag v0.1.0 && git push --tags); pull requests never see the secrets.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            command: npm run build:mac -- --publish always
+          - os: windows-latest
+            command: npm run build:win -- --publish always
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --upgrade castlabs-evs
+      - run: npm ci
+      - name: Check that the tag matches package.json
+        shell: bash
+        run: test "v$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME}"
+      - name: Build, sign and publish
+        run: ${{ matrix.command }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # castLabs EVS account (VMP signing, scripts/vmp-sign.js).
+          EVS_ACCOUNT: ${{ secrets.EVS_ACCOUNT }}
+          EVS_PASSWD: ${{ secrets.EVS_PASSWD }}
+          # macOS: Developer ID certificate (.p12, base64) and notarization.
+          CSC_LINK: ${{ runner.os == 'macOS' && secrets.MAC_CSC_LINK || secrets.WIN_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ runner.os == 'macOS' && secrets.MAC_CSC_KEY_PASSWORD || secrets.WIN_CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}

@@ -1,0 +1,312 @@
+@import 'tailwindcss';
+
+/*
+ * Design (CLAUDE.md §7, docs/design/maquette-v2.png): a plum frame (tab strip, sidebar on the
+ * right), a cream panel (toolbar, page). Every color of the chrome UI comes from these tokens
+ * (Tailwind classes bg-frame, text-cream-ink…). Popovers and internal pages keep the violet ones.
+ */
+@theme {
+  --font-sans: 'DM Sans', system-ui, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
+  --font-serif: 'Fraunces', Georgia, serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-emoji: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+
+  /* Plum frame: tab strip, sidebar */
+  --color-frame: #2e1f2d;
+  --color-frame-2: #3e2f3e;
+  --color-frame-3: #4a3949;
+  --color-frame-line: #4e3a4b;
+  --color-frame-text: #f3ebf1;
+  --color-frame-sub: #a8929f;
+  --color-frame-dim: #866b80;
+  --color-iris: #c67afb;
+  --color-iris-ring: #9d7be6;
+
+  /* Cream panel: active tab, toolbar, page placeholder, new tab page */
+  --color-cream: #f3edea;
+  --color-cream-2: #ebe2e2;
+  --color-cream-edge: #decfd6;
+  --color-cream-ink: #2a1a26;
+  --color-cream-sub: #6f5b68;
+  --color-cream-dim: #a3919b;
+  --color-blush: #c8a8a8;
+
+  /* Window + light card (sidebar) */
+  --color-lavender: #e9e2fa;
+  --color-ink: #2a1f45;
+  --color-title: #3b2370;
+  --color-sub: #5e5478;
+  --color-violet: #5b34b8;
+  --color-track: #e4daf7;
+
+  /* Night card (tabs, toolbar) */
+  --color-night: #2a1850;
+  --color-night-edge: #3c2670;
+  --color-night-2: #321d5e;
+  --color-night-3: #3b2670;
+  --color-night-4: #45307a;
+  --color-night-field: #5a4390;
+  --color-night-sub: #c9bce8;
+  --color-night-mono: #ede6ff;
+  --color-night-off: #6e5a9e;
+
+  /* Accent */
+  --color-pink: #ff0082;
+  --color-pink-button: #e00072;
+  --color-pink-soft: #ff8cc4;
+}
+
+@font-face {
+  font-family: 'DM Sans';
+  font-weight: 400;
+  src: url('./assets/fonts/DMSans-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-weight: 500;
+  src: url('./assets/fonts/DMSans-Medium.ttf') format('truetype');
+}
+@font-face {
+  /* No SemiBold cut is bundled (same as Varp): 600 uses the Bold file. */
+  font-family: 'DM Sans';
+  font-weight: 600 700;
+  src: url('./assets/fonts/DMSans-Bold.ttf') format('truetype');
+}
+@font-face {
+  /* Variable font (opsz, wght): titles of the new tab page. */
+  font-family: 'Fraunces';
+  font-weight: 100 900;
+  src: url('./assets/fonts/Fraunces.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-weight: 400;
+  src: url('./assets/fonts/JetBrainsMono-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-weight: 500 700;
+  src: url('./assets/fonts/JetBrainsMono-Medium.ttf') format('truetype');
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  user-select: none;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-ink);
+}
+
+/* The plum frame is the window's background (opaque, no vibrancy). */
+body {
+  background-color: var(--color-frame);
+}
+
+.drag {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+.glass-card {
+  background: rgb(255 255 255 / 0.55);
+  border: 1px solid rgb(255 255 255 / 0.9);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.8) inset,
+    0 8px 24px rgb(59 35 112 / 0.1);
+}
+/* Active tab: same cream as the toolbar, with Chrome-like "feet" curving into it. */
+.tab-active {
+  background: var(--color-cream);
+}
+.tab-active::before,
+.tab-active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+}
+.tab-active::before {
+  left: -10px;
+  background: radial-gradient(circle at 0 0, transparent 9.5px, var(--color-cream) 10px);
+}
+.tab-active::after {
+  right: -10px;
+  background: radial-gradient(circle at 100% 0, transparent 9.5px, var(--color-cream) 10px);
+}
+
+/* Behind the page view (rounded by main): cream, like the toolbar it meets. */
+.page-slot {
+  background: var(--color-cream);
+}
+
+/* Fills the corner outside a 14 px quarter circle with cream (toolbar → page, over the sidebar). */
+.concave-corner {
+  background: radial-gradient(circle at 100% 100%, transparent 13.5px, var(--color-cream) 14px);
+}
+
+.emoji {
+  font-family: var(--font-emoji);
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Indeterminate page-load bar under the toolbar. */
+@keyframes loading-bar {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+.loading-bar {
+  animation: loading-bar 1.1s ease-in-out infinite;
+}
+
+/* Extension icons on the plum sidebar (ExtensionActions), on the same tile background as the
+   favorites. The library sets the icon as the background image and adds a .badge child. */
+.ext-action {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background-color: transparent;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 58%;
+  cursor: pointer;
+  outline: none;
+}
+.ext-action:hover {
+  background-color: rgb(0 0 0 / 0.06);
+}
+.ext-action:focus-visible {
+  box-shadow: 0 0 0 1.5px var(--color-iris-ring);
+}
+.ext-action.no-icon::after {
+  content: attr(data-letter);
+  position: absolute;
+  inset: 7px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: var(--color-frame-3);
+  color: var(--color-frame-text);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.ext-action .badge {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  max-width: 100%;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: 4px;
+  overflow: hidden;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 14px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* The overlay view is transparent: only its popover is visible. */
+body.overlay {
+  background: transparent;
+}
+
+/* Emoji picker in the design's colors (its own CSS variables). */
+.EmojiPickerReact.epr-zak {
+  --epr-highlight-color: var(--color-pink);
+  --epr-text-color: var(--color-sub);
+  --epr-hover-bg-color: rgb(91 52 184 / 0.1);
+  --epr-focus-bg-color: rgb(255 0 130 / 0.12);
+  --epr-search-input-bg-color: #f6f2fd;
+  --epr-search-input-bg-color-active: #fff;
+  --epr-search-border-color: var(--color-track);
+  --epr-search-border-color-active: var(--color-pink);
+  --epr-search-input-border-radius: 12px;
+  --epr-search-input-text-color: var(--color-ink);
+  --epr-search-input-placeholder-color: var(--color-sub);
+  --epr-category-label-bg-color: rgb(255 255 255 / 0.96);
+  --epr-bg-color: #fff;
+  border-color: var(--color-track);
+  border-radius: 14px;
+  font-family: var(--font-sans);
+}
+
+/* Internal pages (zak://newtab, extensions, settings): a regular scrolling page on cream. */
+body.internal {
+  background-color: var(--color-cream);
+}
+body.internal,
+body.internal #root {
+  overflow: auto;
+  user-select: text;
+}
+
+/*
+ * Dark theme (zak://settings → Thème, applied by main through nativeTheme): same layout, the
+ * cream panel and the light tokens of internal pages turn dark. Popovers (overlay) stay light.
+ */
+@media (prefers-color-scheme: dark) {
+  body:not(.private):not(.overlay) {
+    --color-frame: #1c131c;
+    --color-frame-2: #2c202c;
+    --color-frame-3: #382938;
+    --color-frame-line: #3d2c3b;
+    --color-cream: #2a1f29;
+    --color-cream-2: #352834;
+    --color-cream-edge: #4a3848;
+    --color-cream-ink: #f3ebf1;
+    --color-cream-sub: #b9a5b2;
+    --color-cream-dim: #806b7b;
+    --color-ink: #f3ebf1;
+    --color-title: #f3ebf1;
+    --color-sub: #b9a5b2;
+    --color-violet: #c4a6ff;
+    --color-track: #4a3848;
+  }
+  body.internal .glass-card {
+    background: rgb(255 255 255 / 0.05);
+    border-color: rgb(255 255 255 / 0.08);
+    box-shadow: none;
+  }
+}
+
+/*
+ * Private window (CLAUDE.md §6.3, §7): same layout, forced dark. The cream panel turns night
+ * violet and the frame darker, by remapping the tokens.
+ */
+body.private {
+  --color-frame: #150c2b;
+  --color-frame-2: #24163f;
+  --color-frame-3: #2e1d52;
+  --color-frame-line: #3c2670;
+  --color-frame-sub: #a99bd0;
+  --color-frame-dim: #7d6aa8;
+  --color-cream: #2a1850;
+  --color-cream-2: #321d5e;
+  --color-cream-edge: #5a4390;
+  --color-cream-ink: #ffffff;
+  --color-cream-sub: #c9bce8;
+  --color-cream-dim: #8f7cc0;
+}

@@ -1,0 +1,81 @@
+appId: app.zak.browser
+productName: ZAK
+directories:
+  buildResources: build
+  output: dist
+files:
+  - out/**
+  - package.json
+  # node_modules (prod deps) are included automatically: electron-chrome-extensions and
+  # electron-chrome-web-store resolve their preload scripts from node_modules at runtime.
+asar: true
+asarUnpack:
+  # Preloads are loaded by Chromium from a real path, keep them out of the asar archive.
+  - node_modules/electron-chrome-extensions/dist/*.preload.js
+  - node_modules/electron-chrome-web-store/dist/*.preload.js
+
+# castLabs "Electron for Content Security" (Widevine) instead of upstream Electron.
+electronVersion: 45.2.1+wvcus
+electronDownload:
+  mirror: https://github.com/castlabs/electron-releases/releases/download/
+
+# VMP signing hooks (CLAUDE.md §6.6): macOS before Apple codesign, Windows after Authenticode.
+afterPack: scripts/hooks/after-pack.js
+afterSign: scripts/hooks/after-sign.js
+
+mac:
+  category: public.app-category.productivity
+  # No version in the names: the website links to releases/latest/download/<name>, which never changes.
+  artifactName: ${productName}-mac-${arch}.${ext}
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+    # The zip is what electron-updater downloads on macOS.
+    - target: zip
+      arch: [arm64, x64]
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  # Developer ID cert via CSC_LINK / CSC_KEY_PASSWORD (or keychain).
+  # Notarization reads APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID from env.
+  notarize: true
+  extendInfo:
+    NSCameraUsageDescription: Un site web demande l'accès à la caméra.
+    NSMicrophoneUsageDescription: Un site web demande l'accès au micro.
+    # Default browser (Réglages → Navigateur par défaut, System Settings → Desktop & Dock):
+    # macOS only offers apps that declare http/https links and HTML documents.
+    CFBundleURLTypes:
+      - CFBundleURLName: Lien web
+        CFBundleTypeRole: Viewer
+        CFBundleURLSchemes: [http, https]
+    CFBundleDocumentTypes:
+      - CFBundleTypeName: Page HTML
+        CFBundleTypeRole: Viewer
+        LSHandlerRank: Default
+        LSItemContentTypes: [public.html, public.xhtml]
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  # Authenticode cert via CSC_LINK / CSC_KEY_PASSWORD (recommended for VMP, §6.6).
+
+nsis:
+  artifactName: ${productName}-Setup-${arch}.${ext}
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  # Registers ZAK as a browser, so Windows lists it in Settings → Default apps.
+  include: build/installer.nsh
+
+# Updates (electron-updater, src/main/updates/Updater.ts) and the website's download buttons both
+# read GitHub Releases. Official releases are built by .github/workflows/release.yml on a version tag.
+publish:
+  provider: github
+  owner: guillaumevergano
+  repo: zak
+  releaseType: release
+
+linux:
+  target: [AppImage]
+  category: Network

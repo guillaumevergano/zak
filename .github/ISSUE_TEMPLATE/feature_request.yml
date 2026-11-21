@@ -1,0 +1,19 @@
+name: Feature idea
+description: Suggest something ZAK should do.
+labels: [idea]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The need first; the solution can come later.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you have in mind
+  - type: textarea
+    id: elsewhere
+    attributes:
+      label: How other browsers do it (Chrome, Arc, Vivaldi…)

@@ -1,0 +1,556 @@
+import { EventEmitter } from 'node:events'
+import { WebContentsView, type BaseWindow, type Session, type WebContents } from 'electron'
+import type { LayoutInsets, TabId, TabInfo, TabsState } from '@shared/types'
+import { manageIdentity, trackIdentitySetup } from '../userAgent'
+import { NEW_TAB_URL, errorPageUrl, failedUrlOf, isNewTabUrl, toUrl, type SearchEngine } from '@shared/url'
+import { isInternalUrl } from '../internal/InternalProtocol'
+import { INTERNAL_FAVICON } from '../internal/favicon'
+
+const HIDE_DELAY_MS = 600
+/** The page sits in the cream panel with rounded corners (CLAUDE.md §7). */
+const PAGE_RADIUS = 12
+/** Cmd/Ctrl+Shift+T stack depth (CLAUDE.md §6.1). */
+const CLOSED_STACK_SIZE = 20
+
+/**
+ * Thin scrollbar in the app's colors for every page (CLAUDE.md §7). A transparent track also lets
+ * the page's rounded corners show (Chromium's default track fills the top-right corner). User
+ * origin: sites that style their own scrollbars keep theirs.
+ */
+const SCROLLBAR_CSS = `
+::-webkit-scrollbar { width: 10px; height: 10px; background: transparent; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgb(120 90 115 / 0.38); border: 2.5px solid transparent;
+  border-radius: 10px; background-clip: padding-box; min-height: 40px;
+}
+::-webkit-scrollbar-thumb:hover { background-color: rgb(120 90 115 / 0.62); }
+::-webkit-scrollbar-thumb:active { background-color: rgb(198 122 251 / 0.75); }
+`
+
+const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
+
+interface Tab {
+  id: TabId
+  view: WebContentsView
+  /** Kept separately: `view.webContents` is undefined once the page has been destroyed. */
+  wc: WebContents
+  favicon: string | null
+  pinned: boolean
+  /** Last committed URL, still readable once `wc` is destroyed. */
+  url: string
+  /** Chrome identity being installed over CDP (userAgent.ts); see dispose(). */
+  setup: Promise<void>
+}
+
+interface ClosedTab {
+  url: string
+  index: number
+  pinned: boolean
+}
+
+export interface CreateTabOptions {
+  active?: boolean
+  /** Position in the strip; defaults to the end. Clamped to the unpinned group. */
+  index?: number
+  pinned?: boolean
+  /**
+   * Give the page the keyboard focus when it becomes active (default). Off for a new tab: the
+   * omnibox takes it, and a focused page would grab it back as it loads.
+   */
+  focusPage?: boolean
+}
+
+export interface TabManagerEvents {
+  /** A tab was created; `webContents` is ready to be registered with the extensions system. */
+  created: [webContents: WebContents]
+  /** Active tab changed. `previous` is null on first activation. */
+  activated: [previous: WebContents | null, next: WebContents]
+  removed: [webContents: WebContents]
+  /** Tab list or a tab's metadata changed; the renderer should re-render. */
+  changed: []
+  /** A page reported its favicon (favorites remember it for their tiles). */
+  favicon: [pageUrl: string, favicon: string]
+  /** The last tab was closed: the window should close, like Chrome. */
+  empty: []
+  /** Context menu requested inside a tab. */
+  'context-menu': [webContents: WebContents, params: Electron.ContextMenuParams]
+}
+
+/**
+ * One WebContentsView per tab, all in the window's session. Only the active view is visible.
+ * Bounds come from the layout insets sent by the chrome renderer (`layout:update`).
+ * Pinned tabs always come first in `order`.
+ */
+export class TabManager extends EventEmitter<TabManagerEvents> {
+  /** Engine for omnibox searches (zak://settings); set once by index.ts. */
+  static searchEngine: () => SearchEngine = () => 'google'
+
+  private tabs = new Map<TabId, Tab>()
+  private order: TabId[] = []
+  private activeId: TabId | null = null
+  private insets: LayoutInsets = { left: 0, top: 0, right: 0, bottom: 0 }
+  private closed: ClosedTab[] = []
+
+  /** A page in HTML full screen (a video…): it covers the whole window, chrome UI hidden. */
+  private fullScreenTab: TabId | null = null
+  /** Whether we put the window in full screen for it (to leave it the same way). */
+  private madeWindowFullScreen = false
+
+  /** What "+", Cmd/Ctrl+T and "Tout fermer" open: zak://newtab (dark in private windows). */
+  newTabUrl: string = NEW_TAB_URL
+
+  /**
+   * Awaited (at most HIDE_DELAY_MS) before the previous tab is hidden, so work that needs a visible
+   * page can run first — automatic PiP: Chromium pauses muted videos in hidden pages.
+   */
+  beforeHide: ((previous: WebContents) => Promise<unknown>) | null = null
+
+  /** Gives the keyboard focus back to the chrome UI (the omnibox of a new tab keeps it). */
+  focusChrome: (() => void) | null = null
+
+  constructor(
+    private readonly window: BaseWindow,
+    private readonly session: Session
+  ) {
+    super()
+    window.on('resize', () => this.layout())
+  }
+
+  create(url: string = this.newTabUrl, opts: CreateTabOptions = {}): WebContents {
+    const view = new WebContentsView({
+      webPreferences: {
+        session: this.session,
+        sandbox: true,
+        contextIsolation: true,
+        nodeIntegration: false
+        // No custom preload: pages only get the electron-chrome-extensions preload,
+        // which that lib registers on the session itself (CLAUDE.md §3).
+      }
+    })
+    const wc = view.webContents
+    const pinned = opts.pinned ?? false
+    const tab: Tab = { id: wc.id, view, wc, favicon: null, pinned, url, setup: Promise.resolve() }
+    this.tabs.set(tab.id, tab)
+    const [start, end] = this.groupRange(pinned)
+    this.order.splice(clamp(opts.index ?? end, start, end), 0, tab.id)
+
+    view.setBorderRadius(PAGE_RADIUS)
+    view.setVisible(false)
+    this.window.contentView.addChildView(view)
+    this.wireEvents(tab)
+    this.emit('created', wc)
+
+    // Client Hints must be in place before the first request goes out.
+    // The CDP target only exists once something is loaded, hence about:blank first.
+    // If something else navigates the tab meanwhile (the omnibox, an extension), it wins.
+    let navigatedElsewhere = false
+    const onStart = (details: Electron.Event<Electron.WebContentsDidStartNavigationEventParams>): void => {
+      if (details.isMainFrame && details.url !== 'about:blank') navigatedElsewhere = true
+    }
+    wc.on('did-start-navigation', onStart)
+    tab.setup = trackIdentitySetup(wc.loadURL('about:blank').then(() => manageIdentity(wc)))
+    void tab.setup
+      .then(() => {
+        if (wc.isDestroyed()) return undefined
+        wc.off('did-start-navigation', onStart)
+        if (url !== 'about:blank' && !navigatedElsewhere) return wc.loadURL(url)
+        return undefined
+      })
+      .catch(() => {
+        /* navigation errors surface through did-fail-load; error pages come in Étape 6 */
+      })
+
+    if (opts.focusPage === false) this.keepFocusAway(tab)
+    if (opts.active !== false || this.activeId === null) this.activate(tab.id, opts.focusPage ?? true)
+    else this.emit('changed')
+    return wc
+  }
+
+  activate(id: TabId, focusPage = true): void {
+    const next = this.tabs.get(id)
+    if (!next || id === this.activeId) return
+    const previous = this.activeId !== null ? this.tabs.get(this.activeId) : undefined
+    // Like Chrome, leaving a tab ends its full screen.
+    if (previous && this.fullScreenTab === previous.id) {
+      void previous.wc.executeJavaScript('document.fullscreenElement && document.exitFullscreen()', true).catch(() => {})
+      this.leaveFullScreen(previous.id)
+    }
+
+    this.activeId = id
+    next.view.setVisible(true)
+    // Re-adding an existing child view moves it on top, above the previous tab still visible below.
+    this.window.contentView.addChildView(next.view)
+    this.layout()
+    if (focusPage) next.wc.focus()
+    this.emit('activated', previous?.wc ?? null, next.wc)
+    this.emit('changed')
+    if (previous) void this.hideWhenLeft(previous)
+  }
+
+  /** Ctrl+Tab / Ctrl+Shift+Tab, wrapping around. */
+  activateRelative(delta: number): void {
+    if (this.order.length === 0 || this.activeId === null) return
+    const index = this.order.indexOf(this.activeId)
+    const n = this.order.length
+    this.activate(this.order[(((index + delta) % n) + n) % n]!)
+  }
+
+  /** Cmd/Ctrl+1..8 → that tab, Cmd/Ctrl+9 → last tab (like Chrome). */
+  activateNumber(n: number): void {
+    const id = n >= 9 ? this.order[this.order.length - 1] : this.order[n - 1]
+    if (id !== undefined) this.activate(id)
+  }
+
+  private async hideWhenLeft(tab: Tab): Promise<void> {
+    if (this.beforeHide && !tab.wc.isDestroyed()) {
+      await Promise.race([this.beforeHide(tab.wc).catch(() => {}), delay(HIDE_DELAY_MS)])
+    }
+    // The user may have switched back meanwhile, or the tab may be gone.
+    if (this.activeId !== tab.id && this.tabs.has(tab.id)) tab.view.setVisible(false)
+  }
+
+  close(id: TabId): void {
+    const tab = this.tabs.get(id)
+    if (!tab) return
+    const index = this.order.indexOf(id)
+    this.remember(tab, index)
+    this.order.splice(index, 1)
+    this.tabs.delete(id)
+
+    if (this.activeId === id) {
+      this.activeId = null
+      const neighbour = this.order[Math.min(index, this.order.length - 1)]
+      if (neighbour !== undefined) this.activate(neighbour)
+    }
+
+    this.dispose(tab)
+    if (this.order.length === 0) this.emit('empty')
+    else this.emit('changed')
+  }
+
+  /**
+   * "Tout fermer" (broom, Cmd/Ctrl+Shift+W), à la Arc: closes every tab but the active one and the
+   * pinned ones, without asking. They all go to the reopen stack.
+   */
+  closeAllButActive(): void {
+    if (this.activeId !== null) this.closeOthers(this.activeId)
+  }
+
+  /** Window teardown: drop everything without filling the reopen stack. */
+  closeAll(): void {
+    // Reset state first: 'removed' listeners may read getState() while we iterate.
+    const closing = this.order.map((id) => this.tabs.get(id)!)
+    this.tabs.clear()
+    this.order = []
+    this.activeId = null
+    for (const tab of closing) this.dispose(tab)
+  }
+
+  closeOthers(id: TabId): void {
+    for (const other of [...this.order]) if (other !== id && !this.tabs.get(other)?.pinned) this.close(other)
+  }
+
+  closeToTheRight(id: TabId): void {
+    const index = this.order.indexOf(id)
+    for (const other of this.order.slice(index + 1)) this.close(other)
+  }
+
+  /** Cmd/Ctrl+Shift+T. Returns false when there is nothing to reopen. */
+  reopenClosed(): boolean {
+    const entry = this.closed.pop()
+    if (!entry) return false
+    this.create(entry.url, { active: true, index: entry.index, pinned: entry.pinned })
+    return true
+  }
+
+  duplicate(id: TabId): void {
+    const tab = this.tabs.get(id)
+    if (!tab) return
+    this.create(tab.wc.getURL() || tab.url, { active: true, index: this.order.indexOf(id) + 1, pinned: tab.pinned })
+  }
+
+  setPinned(id: TabId, pinned: boolean): void {
+    const tab = this.tabs.get(id)
+    if (!tab || tab.pinned === pinned) return
+    this.order.splice(this.order.indexOf(id), 1)
+    tab.pinned = pinned
+    // Pinning appends to the pinned group; unpinning puts the tab first among the others.
+    const [start, end] = this.groupRange(pinned)
+    this.order.splice(pinned ? end : start, 0, id)
+    this.emit('changed')
+  }
+
+  /** Drag & drop in the strip. The tab stays within its group (pinned / not pinned). */
+  move(id: TabId, index: number): void {
+    const tab = this.tabs.get(id)
+    if (!tab) return
+    this.order.splice(this.order.indexOf(id), 1)
+    const [start, end] = this.groupRange(tab.pinned)
+    this.order.splice(clamp(index, start, end), 0, id)
+    this.emit('changed')
+  }
+
+  toggleMute(id: TabId): void {
+    const wc = this.tabs.get(id)?.wc
+    if (!wc || wc.isDestroyed()) return
+    wc.setAudioMuted(!wc.isAudioMuted())
+    this.emit('changed')
+  }
+
+  navigate(id: TabId, input: string): void {
+    const wc = this.tabs.get(id)?.wc
+    if (!wc) return
+    wc.loadURL(toUrl(input, TabManager.searchEngine())).catch(() => {})
+    // Like Chrome, Enter in the omnibox moves focus to the page. Electron also derives the
+    // extension-facing `sender.tab.active` from focus, and Dashlane only autofills active tabs.
+    if (id === this.activeId) wc.focus()
+  }
+
+  get(id: TabId): WebContents | undefined {
+    return this.tabs.get(id)?.wc
+  }
+
+  getActive(): WebContents | undefined {
+    return this.activeId !== null ? this.get(this.activeId) : undefined
+  }
+
+  getActiveId(): TabId | null {
+    return this.activeId
+  }
+
+  /** Title, URL and favicon of a tab, to turn it into a favorite. */
+  snapshot(id: TabId): { title: string; url: string; favicon: string | null } | undefined {
+    const tab = this.tabs.get(id)
+    if (!tab || tab.wc.isDestroyed()) return undefined
+    const url = tab.wc.getURL()
+    return { title: tab.wc.getTitle() || url, url, favicon: tab.favicon }
+  }
+
+  isPinned(id: TabId): boolean {
+    return this.tabs.get(id)?.pinned ?? false
+  }
+
+  indexOf(id: TabId): number {
+    return this.order.indexOf(id)
+  }
+
+  count(): number {
+    return this.order.length
+  }
+
+  has(webContents: WebContents): boolean {
+    return this.tabs.has(webContents.id)
+  }
+
+  private leaveFullScreen(id: TabId): void {
+    if (this.fullScreenTab !== id) return
+    this.fullScreenTab = null
+    if (this.madeWindowFullScreen && !this.window.isDestroyed()) this.window.setFullScreen(false)
+    this.madeWindowFullScreen = false
+    this.layout()
+  }
+
+  /** Tells the chrome UI that something it shows changed (zoom…). */
+  refresh(): void {
+    this.emit('changed')
+  }
+
+  /** Where the page sits in the window (the chrome UI around it). */
+  getInsets(): LayoutInsets {
+    return this.insets
+  }
+
+  setInsets(insets: LayoutInsets): void {
+    this.insets = insets
+    this.layout()
+  }
+
+  getState(): TabsState {
+    return {
+      activeId: this.activeId,
+      tabs: this.order.map((id) => this.describe(this.tabs.get(id)!))
+    }
+  }
+
+  /** [first index, one past last index] of the pinned or unpinned group in `order`. */
+  private groupRange(pinned: boolean): [number, number] {
+    const pinnedCount = this.order.filter((id) => this.tabs.get(id)?.pinned).length
+    return pinned ? [0, pinnedCount] : [pinnedCount, this.order.length]
+  }
+
+  private remember(tab: Tab, index: number): void {
+    const url = tab.wc.isDestroyed() ? tab.url : tab.wc.getURL() || tab.url
+    if (isNewTabUrl(url)) return
+    this.closed.push({ url, index, pinned: tab.pinned })
+    if (this.closed.length > CLOSED_STACK_SIZE) this.closed.shift()
+  }
+
+  private dispose(tab: Tab): void {
+    this.emit('removed', tab.wc)
+    if (!this.window.isDestroyed()) this.window.contentView.removeChildView(tab.view)
+    // Closing a page while a CDP command of its setup is in flight leaves the main process
+    // spinning at 100 % CPU (Electron): wait for the setup (a few ms) before closing it.
+    void tab.setup.then(() => {
+      if (!tab.wc.isDestroyed()) tab.wc.close()
+    })
+  }
+
+  private describe(tab: Tab): TabInfo {
+    const wc = tab.wc
+    // An error page shows the address that failed, like Chrome.
+    const failed = failedUrlOf(wc.getURL())
+    const url = failed ?? wc.getURL()
+    return {
+      id: tab.id,
+      // about:blank reports "about:blank" as its title.
+      title: isNewTabUrl(url) ? 'Nouvel onglet' : failed ? hostOrUrl(failed) : wc.getTitle() || url,
+      url: isNewTabUrl(url) ? '' : url,
+      favicon: tab.favicon,
+      audible: wc.isCurrentlyAudible(),
+      muted: wc.isAudioMuted(),
+      loading: wc.isLoading(),
+      pinned: tab.pinned,
+      canGoBack: wc.navigationHistory.canGoBack(),
+      canGoForward: wc.navigationHistory.canGoForward(),
+      zoom: Math.round(wc.getZoomFactor() * 100)
+    }
+  }
+
+  private layout(): void {
+    const active = this.activeId !== null ? this.tabs.get(this.activeId) : undefined
+    if (!active) return
+    const { width, height } = this.window.getContentBounds()
+    if (this.fullScreenTab === active.id) {
+      active.view.setBounds({ x: 0, y: 0, width, height })
+      active.view.setBorderRadius(0)
+      return
+    }
+    active.view.setBorderRadius(PAGE_RADIUS)
+    const { left, top, right, bottom } = this.insets
+    active.view.setBounds({
+      x: left,
+      y: top,
+      width: Math.max(0, width - left - right),
+      height: Math.max(0, height - top - bottom)
+    })
+  }
+
+  /**
+   * A page that loads takes the keyboard focus (Chromium focuses a new document's view). For a new
+   * tab, the omnibox must keep it so that typing can start right away: until the page has loaded,
+   * any focus it takes goes back to the chrome UI.
+   */
+  private keepFocusAway(tab: Tab): void {
+    const wc = tab.wc
+    const giveBack = (): void => {
+      if (this.activeId === tab.id) this.focusChrome?.()
+    }
+    let timer: NodeJS.Timeout | null = null
+    const stop = (): void => {
+      if (timer) clearTimeout(timer)
+      if (!wc.isDestroyed()) {
+        wc.off('focus', giveBack)
+        wc.off('did-stop-loading', onLoaded)
+      }
+    }
+    // about:blank loads first (userAgent.ts): wait for the real page, plus a short grace period.
+    const onLoaded = (): void => {
+      if (wc.getURL() === 'about:blank') return
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(stop, 500)
+    }
+    wc.on('focus', giveBack)
+    wc.on('did-stop-loading', onLoaded)
+    timer = setTimeout(stop, 10_000)
+    wc.once('destroyed', stop)
+  }
+
+  private wireEvents(tab: Tab): void {
+    const wc = tab.wc
+    const changed = (): void => {
+      this.emit('changed')
+    }
+    wc.on('page-title-updated', changed)
+    wc.on('did-navigate', (_e, url) => {
+      tab.url = url
+      tab.favicon = null
+      changed()
+    })
+    wc.on('did-navigate-in-page', (_e, url, isMainFrame) => {
+      if (isMainFrame) tab.url = url
+      changed()
+    })
+    // A page that can't load (DNS, refused, offline, certificate…) gets our error page (§6.7).
+    wc.on('did-fail-load', (_e, code, description, url, isMainFrame) => {
+      if (!isMainFrame || code === -3 /* ABORTED: stopped, or replaced by another navigation */) return
+      if (isInternalUrl(url) || url === 'about:blank') return
+      void wc.loadURL(errorPageUrl(url, code, description)).catch(() => {})
+    })
+    wc.on('did-start-loading', changed)
+    wc.on('did-stop-loading', changed)
+    wc.on('audio-state-changed', changed)
+    wc.on('page-favicon-updated', (_e, favicons) => {
+      const favicon = favicons[0] ?? null
+      tab.favicon = favicon && isInternalUrl(favicon) ? INTERNAL_FAVICON : favicon
+      if (tab.favicon) this.emit('favicon', wc.getURL(), tab.favicon)
+      changed()
+    })
+    wc.on('context-menu', (_e, params) => this.emit('context-menu', wc, params))
+    wc.on('dom-ready', () => void wc.insertCSS(SCROLLBAR_CSS, { cssOrigin: 'user' }).catch(() => {}))
+    // HTML full screen (§6.7): the page covers the sidebar and the bars.
+    wc.on('enter-html-full-screen', () => {
+      this.fullScreenTab = tab.id
+      if (!this.window.isFullScreen()) {
+        this.madeWindowFullScreen = true
+        this.window.setFullScreen(true)
+      }
+      this.layout()
+    })
+    wc.on('leave-html-full-screen', () => this.leaveFullScreen(tab.id))
+    // Pages (and extensions, e.g. Dashlane's login tab) can close themselves: drop the tab.
+    wc.once('destroyed', () => this.close(tab.id))
+    // OAuth popups (e.g. "Sign in with Google") must look like Chrome too.
+    wc.on('did-create-window', (popup) => void trackIdentitySetup(manageIdentity(popup.webContents)))
+
+    // Like chrome:// in Chrome, internal pages are reached from the omnibox or our menus only:
+    // a web page can't navigate to them, frame them, redirect to them or open them.
+    const fromInternal = (): boolean => isInternalUrl(wc.getURL())
+    wc.on('will-frame-navigate', (details) => {
+      if (isInternalUrl(details.url) && !(details.isMainFrame && fromInternal())) details.preventDefault()
+    })
+    wc.on('will-redirect', (details) => {
+      if (isInternalUrl(details.url)) details.preventDefault()
+    })
+
+    wc.setWindowOpenHandler(({ url, disposition, features }) => {
+      if (isInternalUrl(url) && !fromInternal()) return { action: 'deny' }
+      // OAuth-style popups (explicit size or `popup` feature) get a real window in the same session.
+      if (disposition === 'new-window' || /(^|,)\s*(popup|width|height)\b/.test(features)) {
+        return { action: 'allow' }
+      }
+      // Like Chrome, links open right after the tab they come from.
+      this.create(url, { active: disposition !== 'background-tab', index: this.order.indexOf(tab.id) + 1 })
+      return { action: 'deny' }
+    })
+  }
+}
+
+const hostOrUrl = (url: string): string => {
+  try {
+    return new URL(url).host || url
+  } catch {
+    return url
+  }
+}
+
+/** Reload, or for an error page, try the page that failed again. */
+export function reloadPage(wc: WebContents): void {
+  const failed = failedUrlOf(wc.getURL())
+  if (failed) void wc.loadURL(failed).catch(() => {})
+  else wc.reload()
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max)
+}

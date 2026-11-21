@@ -1,0 +1,63 @@
+/* ZAK v1.0.0 - couleurs sRGB ; aucun effet d’ombre. */
+:root {
+  --zak-primary-plum: #2E1F2D;
+  --zak-primary-cream: #F3EDEA;
+  --zak-primary-ink: #2A1A26;
+  --zak-primary-violet: #C67AFB;
+  --zak-primary-pink: #FF0082;
+  --zak-plum-tile: #3E2F3E;
+  --zak-plum-hover: #4A3949;
+  --zak-plum-separator: #4E3A4B;
+  --zak-plum-text: #F3EBF1;
+  --zak-plum-text-secondary: #A8929F;
+  --zak-cream-field: #EBE2E2;
+  --zak-cream-border: #DECFD6;
+  --zak-cream-text-secondary: #6F5B68;
+  --zak-cream-subtitle: #C8A8A8;
+  --zak-accent-iris: #9D7BE6;
+  --zak-accent-pink-button: #E00072;
+  --zak-accent-pink-soft: #FF8CC4;
+  --zak-ribbon-01: #E9D8E4;
+  --zak-ribbon-02: #E8C4C4;
+  --zak-ribbon-03: #D9C4DC;
+  --zak-ribbon-04: #D9B4C4;
+  --zak-ribbon-05: #B9A6D8;
+  --zak-ribbon-06: #A993DD;
+  --zak-legacy-icon-background: #1F141F;
+  --zak-legacy-icon-ribbon-violet: #B39CF0;
+  --zak-legacy-icon-ribbon-rose: #E3B5CF;
+  --zak-legacy-icon-ribbon-pink: #FFC1D8;
+  --zak-font-ui: "DM Sans", system-ui, sans-serif;
+  --zak-font-heading: "Fraunces", Georgia, serif;
+  --zak-font-url: "JetBrains Mono", ui-monospace, monospace;
+}
+:root, [data-theme="light"] {
+  --zak-color-frame: #2E1F2D;
+  --zak-color-surface: #F3EDEA;
+  --zak-color-text: #2A1A26;
+  --zak-color-text-secondary: #6F5B68;
+  --zak-color-field: #EBE2E2;
+  --zak-color-border: #DECFD6;
+  --zak-color-accent: #C67AFB;
+  --zak-color-highlight: #FF0082;
+}
+[data-theme="dark"] {
+  --zak-color-frame: #1C131C;
+  --zak-color-surface: #2A1F29;
+  --zak-color-text: #F3EBF1;
+  --zak-color-text-secondary: #A8929F;
+  --zak-color-field: #3E2F3E;
+  --zak-color-border: #4E3A4B;
+  --zak-color-accent: #C67AFB;
+  --zak-color-highlight: #FF8CC4;
+}
+[data-theme="private"] {
+  --zak-color-frame: #150C2B;
+  --zak-color-surface: #2A1850;
+  --zak-color-text: #F3EBF1;
+  --zak-color-text-secondary: #D9C4DC;
+  --zak-color-field: #2A1850;
+  --zak-color-border: #9D7BE6;
+  --zak-color-accent: #C67AFB;
+  --zak-color-highlight: #FF8CC4;
+}

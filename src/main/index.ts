@@ -1,0 +1,318 @@
+import { mkdirSync } from 'node:fs'
+import { join } from 'node:path'
+import { app, BrowserWindow, components, dialog, ipcMain, nativeTheme, type IpcMainInvokeEvent } from 'electron'
+import type { InvokeChannel, InvokeChannels, SendChannel, SendChannels } from '@shared/ipc'
+import type { WidevineStatus } from '@shared/types'
+import { chromeUserAgent, identitySettled } from './userAgent'
+import { SessionManager } from './sessions/SessionManager'
+import { WindowManager } from './windows/WindowManager'
+import { ExtensionsHost } from './extensions/ExtensionsHost'
+import { PipController } from './pip/PipController'
+import { enableAdBlocker } from './adblock/AdBlocker'
+import { installAppMenu } from './menu/AppMenu'
+import { showSplash } from './windows/Splash'
+import { Updater } from './updates/Updater'
+import { installShortcuts } from './shortcuts/Shortcuts'
+import { openDatabase } from './store/db'
+import { FavoritesStore } from './store/favorites'
+import { HistoryStore } from './store/history'
+import { SitesStore } from './store/sites'
+import { SessionStore } from './store/sessions'
+import { SessionRestore } from './sessions/SessionRestore'
+import { reloadPage, TabManager } from './tabs/TabManager'
+import { recordHistory } from './history/HistoryRecorder'
+import { FindController } from './find/FindController'
+import { ZoomController } from './tabs/zoom'
+import { PermissionsHandler } from './permissions/PermissionsHandler'
+import { DownloadsManager } from './downloads/DownloadsManager'
+import { suggest } from './omnibox/suggest'
+import { SettingsStore } from './store/settings'
+import { SidebarController } from './sidebar/SidebarController'
+import { handleInternalProtocol, registerInternalScheme, type InternalApiHandlers } from './internal/InternalProtocol'
+import { defaultBrowserStatus, LinkReceiver, makeDefaultBrowser } from './system/DefaultBrowser'
+
+// Separate profile for the e2e tests (tests/e2e), so they never touch the real one.
+// Downloads too, so tests never write into the real Downloads folder.
+const testProfile = process.env['ZAK_USER_DATA']
+if (testProfile) {
+  app.setPath('userData', testProfile)
+  mkdirSync(join(testProfile, 'Downloads'), { recursive: true })
+  app.setPath('downloads', join(testProfile, 'Downloads'))
+}
+
+// Must be set before any session/webContents exists (CLAUDE.md §6.5).
+app.userAgentFallback = chromeUserAgent()
+// zak://extensions… (privileged schemes must be registered before ready).
+registerInternalScheme()
+// Links from other apps once ZAK is the default browser (they can arrive before ready).
+// One process per profile: a second launch hands its URLs to this one and quits.
+const links = new LinkReceiver()
+const primaryInstance = links.install()
+
+let widevine: WidevineStatus = { ready: false, detail: 'pending' }
+
+async function waitForWidevine(): Promise<void> {
+  try {
+    // castLabs ECS: downloads/registers the Widevine CDM on first launch (can take a few seconds).
+    await components.whenReady()
+    widevine = { ready: true, detail: JSON.stringify(components.status()) }
+  } catch (err) {
+    widevine = { ready: false, detail: String(err) }
+  }
+  console.log('[widevine]', widevine)
+}
+
+function handle<C extends InvokeChannel>(
+  channel: C,
+  fn: (event: IpcMainInvokeEvent, ...args: InvokeChannels[C]['args']) => InvokeChannels[C]['result'] | Promise<InvokeChannels[C]['result']>
+): void {
+  ipcMain.handle(channel, (event, ...args) => fn(event, ...(args as InvokeChannels[C]['args'])))
+}
+
+function on<C extends SendChannel>(channel: C, fn: (event: Electron.IpcMainEvent, payload: SendChannels[C]) => void): void {
+  ipcMain.on(channel, (event, payload) => fn(event, payload as SendChannels[C]))
+}
+
+interface Services {
+  windows: WindowManager
+  sidebar: SidebarController
+  favorites: FavoritesStore
+  history: HistoryStore
+  settings: SettingsStore
+  find: FindController
+  zoom: ZoomController
+  permissions: PermissionsHandler
+  downloads: DownloadsManager
+}
+
+function registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads }: Services): void {
+  const windowOf = (event: IpcMainInvokeEvent | Electron.IpcMainEvent) => {
+    const handle = windows.fromWebContents(event.sender)
+    if (!handle) throw new Error('IPC from unknown window')
+    return handle
+  }
+  const tabsOf = (event: IpcMainInvokeEvent | Electron.IpcMainEvent) => windowOf(event).tabs
+
+  handle('tabs:create', (e, url) => {
+    if (url !== undefined) return tabsOf(e).create(url).id
+    windows.newTab(windowOf(e))
+    return tabsOf(e).getActiveId()!
+  })
+  handle('tabs:activate', (e, id) => tabsOf(e).activate(id))
+  handle('tabs:close', (e, id) => tabsOf(e).close(id))
+  handle('tabs:navigate', (e, id, input) => tabsOf(e).navigate(id, input))
+  handle('tabs:back', (e, id) => tabsOf(e).get(id)?.navigationHistory.goBack())
+  handle('tabs:forward', (e, id) => tabsOf(e).get(id)?.navigationHistory.goForward())
+  handle('tabs:reload', (e, id) => {
+    const wc = tabsOf(e).get(id)
+    if (wc) reloadPage(wc)
+  })
+  handle('tabs:stop', (e, id) => tabsOf(e).get(id)?.stop())
+  handle('tabs:closeAll', (e) => tabsOf(e).closeAllButActive())
+  handle('tabs:setPinned', (e, id, pinned) => tabsOf(e).setPinned(id, pinned))
+  handle('tabs:toggleMute', (e, id) => tabsOf(e).toggleMute(id))
+  handle('tabs:move', (e, id, index) => tabsOf(e).move(id, index))
+  handle('tabs:showContextMenu', (e, id) => windows.showTabMenu(windowOf(e), id))
+  handle('tabs:getState', (e) => tabsOf(e).getState())
+  handle('widevine:getStatus', () => widevine)
+
+  handle('sidebar:getState', () => sidebar.state())
+  handle('sidebar:setLayout', (_e, layout) => sidebar.setLayout(layout))
+  handle('favorites:add', (_e, input) => sidebar.change(() => favorites.addFavorite(input)))
+  handle('favorites:addFromTab', (e, tabId, folderId, index) => sidebar.addFromTab(windowOf(e), tabId, folderId, index))
+  handle('favorites:update', (_e, id, input) => sidebar.change(() => favorites.updateFavorite(id, input)))
+  handle('favorites:remove', (_e, id) => sidebar.change(() => favorites.removeFavorite(id)))
+  handle('favorites:move', (_e, id, folderId, index) => sidebar.change(() => favorites.moveFavorite(id, folderId, index)))
+  handle('favorites:open', (e, id, disposition) => sidebar.open(windowOf(e), id, disposition))
+  handle('favorites:showContextMenu', (e, id) => sidebar.showFavoriteMenu(windowOf(e), id))
+  handle('folders:add', (_e, input) => sidebar.change(() => favorites.addFolder(input)))
+  handle('folders:update', (_e, id, input) => sidebar.change(() => favorites.updateFolder(id, input)))
+  handle('folders:setCollapsed', (_e, id, collapsed) => sidebar.change(() => favorites.setFolderCollapsed(id, collapsed)))
+  handle('folders:move', (_e, id, index) => sidebar.change(() => favorites.moveFolder(id, index)))
+  handle('folders:showContextMenu', (e, id) => sidebar.showFolderMenu(windowOf(e), id))
+  handle('overlay:open', (e, request) => windowOf(e).overlay.open(request))
+  handle('overlay:close', (e) => windowOf(e).overlay.close())
+  handle('overlay:hide', (e, kind) => {
+    const { overlay } = windowOf(e)
+    if (overlay.showing()?.kind === kind) overlay.hide()
+  })
+  handle('omnibox:suggest', (_e, text) => suggest(text, settings.getGeneral().searchEngine, favorites, history))
+  handle('find:query', (e, tabId, text, forward, findNext) => find.query(windowOf(e), tabId, text, forward, findNext))
+  handle('find:close', (e) => windowOf(e).overlay.close())
+  handle('permission:answer', (_e, requestId, granted) => permissions.answer(requestId, granted))
+  handle('downloads:getState', (e) => downloads.stateFor(windowOf(e).session))
+  handle('downloads:action', (_e, id, action) => downloads.act(id, action))
+  handle('tabs:resetZoom', (e, id) => {
+    const wc = tabsOf(e).get(id)
+    if (wc) zoom.change(wc, 0)
+  })
+
+  on('layout:update', (e, insets) => tabsOf(e).setInsets(insets))
+}
+
+app.whenReady().then(async () => {
+  if (!primaryInstance) return
+  // Packaged builds get the icon from the bundle; in development, show it in the Dock too.
+  if (!app.isPackaged && process.platform === 'darwin') app.dock?.setIcon(join(__dirname, '../../build/icon.png'))
+  // Usually instant; on first launch the CDM download takes a few seconds: show why nothing opens.
+  let splash: BrowserWindow | null = null
+  const splashTimer = setTimeout(() => (splash = showSplash()), 400)
+  await waitForWidevine()
+  clearTimeout(splashTimer)
+
+  const sessions = new SessionManager()
+  const browsingSession = sessions.getMain()
+  const settings = new SettingsStore()
+  const windows = new WindowManager(sessions, new PipController(() => settings.getPip()))
+  const db = openDatabase(app.getPath('userData'))
+  const favorites = new FavoritesStore(db)
+  const history = new HistoryStore(db)
+  const sites = new SitesStore(db)
+  const session = new SessionRestore(new SessionStore(db), windows)
+  sessionRestore = session
+  TabManager.searchEngine = () => settings.getGeneral().searchEngine
+  nativeTheme.themeSource = settings.getGeneral().theme
+  recordHistory(windows, history)
+  const sidebar = new SidebarController(favorites, settings, windows)
+  const find = new FindController(windows)
+  const zoom = new ZoomController(sites, windows)
+  const permissions = new PermissionsHandler(sites, windows)
+  const downloads = new DownloadsManager(windows, () => settings.getGeneral().downloadDir)
+  permissions.attach(browsingSession, false)
+  downloads.attach(browsingSession)
+  registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads })
+  installAppMenu(windows, { find, zoom, session, updater: new Updater() })
+  installShortcuts(windows)
+
+  const extensions = new ExtensionsHost(browsingSession, windows, settings)
+  await extensions.init()
+  const internalApi: InternalApiHandlers = {
+    'extensions/list': () => extensions.list(),
+    'extensions/setEnabled': async ({ id, enabled }) => {
+      await extensions.setEnabled(id, enabled)
+      return null
+    },
+    'extensions/uninstall': async ({ id }) => {
+      await extensions.uninstall(id)
+      return null
+    },
+    'extensions/openOptions': ({ id }) => {
+      extensions.openOptions(id)
+      return null
+    },
+    'extensions/openStore': () => {
+      extensions.openStore()
+      return null
+    },
+    'settings/get': () => ({
+      general: settings.getGeneral(),
+      pip: settings.getPip(),
+      permissions: sites.permissions(),
+      sidebarCollapsed: settings.getSidebar().collapsed,
+      extensionBar: settings.getExtensionBar()
+    }),
+    'settings/listExtensions': () => extensions.list(),
+    'settings/setExtensionBar': (bar) => sidebar.change(() => settings.setExtensionBar(bar)),
+    'settings/importBookmarks': async () => {
+      const result = await dialog.showOpenDialog({
+        title: 'Importer des favoris',
+        properties: ['openFile'],
+        filters: [{ name: 'Favoris (HTML)', extensions: ['html', 'htm'] }]
+      })
+      return result.canceled || !result.filePaths[0] ? null : sidebar.importBookmarks(result.filePaths[0])
+    },
+    'settings/setSidebarCollapsed': ({ collapsed }) => {
+      sidebar.setLayout({ ...settings.getSidebar(), collapsed })
+      return null
+    },
+    'settings/setGeneral': (patch) => {
+      // The folder only changes through the picker below.
+      const { downloadDir: _ignored, ...rest } = patch
+      const general = settings.setGeneral(rest)
+      nativeTheme.themeSource = general.theme
+      return general
+    },
+    'settings/chooseDownloadDir': async () => {
+      const current = settings.getGeneral()
+      const result = await dialog.showOpenDialog({
+        title: 'Dossier de téléchargement',
+        defaultPath: current.downloadDir,
+        properties: ['openDirectory', 'createDirectory']
+      })
+      return result.canceled || !result.filePaths[0] ? current : settings.setGeneral({ downloadDir: result.filePaths[0] })
+    },
+    'settings/removePermission': ({ origin, permission }) => {
+      sites.removePermission(origin, permission)
+      return sites.permissions()
+    },
+    'settings/clearData': async ({ period, history: clearHistory, siteData, cache }) => {
+      if (clearHistory) history.clear(period)
+      // Electron can't clear site data or cache by time range: these are always cleared entirely.
+      if (siteData) await browsingSession.clearStorageData()
+      if (cache) await browsingSession.clearCache()
+      return null
+    },
+    'settings/setPip': (pip) => settings.setPip(pip),
+    'settings/defaultBrowser': () => defaultBrowserStatus(),
+    'settings/makeDefaultBrowser': () => makeDefaultBrowser(),
+    'history/search': ({ query, before }) => history.search(query, before),
+    'history/remove': ({ ids }) => {
+      history.remove(ids)
+      return null
+    },
+    'history/clear': ({ period }) => {
+      history.clear(period)
+      return null
+    },
+    'newtab/state': () => ({ canReopenSession: session.canReopenPrevious(), recent: history.recentByHost(4) }),
+    'newtab/suggest': ({ text }) => suggest(text, settings.getGeneral().searchEngine, favorites, history),
+    'newtab/reopenSession': () => {
+      session.reopenPrevious()
+      return null
+    }
+  }
+  handleInternalProtocol(browsingSession, internalApi)
+  await enableAdBlocker(browsingSession)
+  // Private windows (§6.3): internal pages and the built-in ad blocker, but no extensions.
+  sessions.onPrivateSession = (ses) => {
+    handleInternalProtocol(ses, internalApi)
+    void enableAdBlocker(ses)
+    permissions.attach(ses, true)
+    downloads.attach(ses)
+  }
+
+  const restored = session.launchWindows(settings.getGeneral().startup)
+  // A link that launched the app opens after the restored tabs (in the last window), or alone.
+  const launchUrls = links.takePending()
+  if (restored.length > 0) {
+    restored.forEach((tabs, i) => {
+      const opened = i === restored.length - 1 ? launchUrls : []
+      const added = opened.map((url, j) => ({ url, title: url, pinned: false, active: j === 0 }))
+      const kept = added.length > 0 ? tabs.map((tab) => ({ ...tab, active: false })) : tabs
+      windows.create([], { tabs: [...kept, ...added] })
+    })
+  } else windows.create(launchUrls)
+  links.start((urls) => windows.openFromSystem(urls))
+  // Closed only now: on Windows/Linux, no window at all would quit the app.
+  ;(splash as BrowserWindow | null)?.destroy()
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) windows.create()
+  })
+})
+
+// Quitting while a tab's CDP setup is in flight would hang the process (userAgent.ts): let it finish.
+let quitting = false
+let sessionRestore: SessionRestore | null = null
+app.on('before-quit', (event) => {
+  // Saved before the windows start closing (each close would drop its tabs from the session).
+  sessionRestore?.freeze()
+  if (quitting) return
+  event.preventDefault()
+  quitting = true
+  void identitySettled().then(() => app.quit())
+})
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit()
+})

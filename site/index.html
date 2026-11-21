@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZAK — un navigateur calme</title>
+<meta name="description" content="ZAK : un navigateur de bureau basé sur Chromium, avec les extensions Chrome, le streaming, une barre de favoris en emojis et le lecteur flottant automatique. Gratuit et open source.">
+<link rel="icon" href="brand/favicon.ico" sizes="16x16 32x32 48x48 64x64">
+<link rel="icon" href="brand/favicon.svg" type="image/svg+xml" sizes="any">
+<link rel="apple-touch-icon" href="brand/apple-touch-icon.png" sizes="180x180">
+<link rel="mask-icon" href="brand/safari-pinned-tab.svg" color="#2E1F2D">
+<link rel="manifest" href="brand/site.webmanifest">
+<meta name="theme-color" content="#2E1F2D">
+<meta property="og:title" content="ZAK — un navigateur calme">
+<meta property="og:description" content="Un peu d'espace pour vos prochaines idées. Gratuit et open source.">
+<meta property="og:image" content="https://guillaumevergano.github.io/zak/brand/zak-social.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --frame: #2e1f2d; --frame-2: #3e2f3e; --frame-text: #f3ebf1; --frame-sub: #a8929f;
+    --cream: #f3edea; --cream-2: #ebe2e2; --cream-edge: #decfd6; --ink: #2a1a26; --sub: #6f5b68;
+    --violet: #c67afb; --iris: #9d7be6; --pink: #ff0082;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--cream); color: var(--ink); font: 16px/1.55 'DM Sans', system-ui, sans-serif; }
+  a { color: inherit; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+
+  header.top { display: flex; align-items: center; justify-content: space-between; padding: 22px 0; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; text-decoration: none; }
+  .brand img { display: block; height: 40px; width: auto; }
+  nav a { margin-left: 22px; color: var(--sub); text-decoration: none; font-weight: 600; font-size: 15px; }
+  nav a:hover { color: var(--ink); }
+
+  .hero { text-align: center; padding: 56px 0 40px; }
+  .hero h1 { font: 600 clamp(40px, 7vw, 72px)/1.05 'Fraunces', Georgia, serif; margin: 0 0 16px; letter-spacing: -0.5px; }
+  .hero p.lead { max-width: 620px; margin: 0 auto 30px; color: var(--sub); font-size: 19px; }
+  .download { display: inline-flex; flex-direction: column; align-items: center; gap: 10px; }
+  .btn { display: inline-flex; align-items: center; gap: 10px; padding: 14px 26px; border-radius: 999px; border: 0;
+         background: var(--frame); color: var(--frame-text); font: 700 17px 'DM Sans', sans-serif; text-decoration: none;
+         box-shadow: 0 10px 30px rgb(46 31 45 / 0.25); transition: transform 120ms ease, background 120ms ease; }
+  .btn:hover { background: #3b2839; transform: translateY(-1px); }
+  .btn:focus-visible { outline: 3px solid var(--violet); outline-offset: 3px; }
+  .others { font-size: 14px; color: var(--sub); }
+  .others a { color: var(--ink); font-weight: 600; }
+  .note { font-size: 13px; color: var(--sub); margin-top: 6px; }
+
+  /* A drawing of the browser (no screenshot of anyone's data). */
+  .shot { margin: 48px auto 0; max-width: 960px; border-radius: 16px; background: var(--frame); padding: 0 8px 8px;
+          box-shadow: 0 30px 80px rgb(46 31 45 / 0.35); text-align: left; }
+  .strip { display: flex; align-items: center; gap: 8px; height: 44px; padding-left: 10px; }
+  .lights { display: flex; gap: 7px; margin-right: 14px; }
+  .lights i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+  .tab { height: 30px; flex: 0 1 170px; min-width: 0; border-radius: 9px; background: var(--frame-2); color: var(--frame-text);
+         font-size: 13px; display: flex; align-items: center; gap: 8px; padding: 0 12px; white-space: nowrap; overflow: hidden; }
+  .tab.active { background: var(--cream); color: var(--ink); border-radius: 10px 10px 0 0; height: 36px; align-self: flex-end; }
+  .bar { display: flex; align-items: center; gap: 10px; height: 50px; background: var(--cream); border-radius: 14px 14px 14px 0;
+         padding: 0 14px; color: var(--sub); }
+  .omni { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; height: 32px; border-radius: 999px; background: var(--cream-2); border: 1px solid var(--cream-edge);
+          display: flex; align-items: center; padding: 0 14px; font: 13px 'JetBrains Mono', ui-monospace, monospace; color: var(--ink); }
+  .ext { width: 26px; height: 26px; border-radius: 8px; background: var(--cream-2); display: grid; place-items: center; font-size: 14px; }
+  .body { display: flex; height: 360px; }
+  .page { flex: 1; background: var(--cream); border-radius: 0 0 14px 14px; display: grid; place-items: center; text-align: center;
+          background-image: radial-gradient(circle at 20% 30%, #ffd9ec 0, transparent 40%), radial-gradient(circle at 80% 70%, #e3d9ff 0, transparent 45%); }
+  .page h2 { font: 600 34px 'Fraunces', Georgia, serif; margin: 0; }
+  .page p { margin: 4px 0 18px; color: #c8a8a8; }
+  .page .field { width: min(380px, 70%); height: 40px; border-radius: 999px; background: #fff; border: 1px solid var(--cream-edge);
+                 margin: 0 auto; color: var(--sub); font-size: 14px; display: flex; align-items: center; padding: 0 16px; }
+  .side { width: 220px; position: relative; padding: 16px 14px; }
+  .side::before { content: ''; position: absolute; top: 0; left: 0; width: 14px; height: 14px;
+                  background: radial-gradient(circle at 100% 100%, transparent 13.5px, var(--cream) 14px); }
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .tiles span { aspect-ratio: 1; border-radius: 10px; background: var(--frame-2); display: grid; place-items: center; font-size: 18px; }
+  .tiles span.on { outline: 2px solid var(--iris); }
+  .folder { margin-top: 16px; color: var(--frame-text); font-size: 13px; display: flex; gap: 8px; align-items: center; }
+  .folder small { margin-left: auto; color: var(--frame-sub); }
+
+  section.features { padding: 80px 0 40px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 560px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: #fff8; border: 1px solid var(--cream-edge); border-radius: 16px; padding: 22px; }
+  .card .ico { font-size: 26px; }
+  .card h3 { margin: 10px 0 6px; font-size: 18px; }
+  .card p { margin: 0; color: var(--sub); font-size: 15px; }
+
+  section.open { margin: 60px 0; background: var(--frame); color: var(--frame-text); border-radius: 22px; padding: 40px; }
+  section.open h2 { font: 600 32px 'Fraunces', Georgia, serif; margin: 0 0 10px; }
+  section.open p { color: var(--frame-sub); max-width: 640px; margin: 0 0 22px; }
+  section.open .btn { background: var(--cream); color: var(--ink); box-shadow: none; }
+  section.open .btn.ghost { background: transparent; color: var(--frame-text); border: 1px solid var(--frame-sub); margin-left: 8px; }
+
+  footer { padding: 30px 0 50px; color: var(--sub); font-size: 14px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+
+  @media (max-width: 720px) {
+    nav a:not(:last-child) { display: none; }
+    .side { display: none; }
+    .bar, .page { border-radius: 14px 14px 0 0; }
+    .page { border-radius: 0 0 14px 14px; }
+    .tab:not(.active):nth-of-type(n+3) { display: none; }
+    .body { height: 280px; }
+    section.open { padding: 28px 22px; }
+    section.open .btn.ghost { margin: 10px 0 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="./"><img src="brand/zak-horizontal-color.svg" alt="ZAK" width="104" height="40"></a>
+    <nav>
+      <a href="#features">Fonctionnalités</a>
+      <a href="#open-source">Open source</a>
+      <a data-repo-link href="#">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1>Un peu d'espace.</h1>
+      <p class="lead">ZAK est un navigateur calme, construit sur Chromium : vos extensions Chrome, vos séries en streaming, vos favoris en emojis, et rien de superflu.</p>
+      <div class="download">
+        <a class="btn" id="primary" href="#">Télécharger ZAK</a>
+        <div class="others" id="others"></div>
+        <div class="note">Gratuit · macOS 12+ et Windows 10+ · se met à jour tout seul</div>
+      </div>
+
+      <div class="shot" aria-hidden="true">
+        <div class="strip">
+          <div class="lights"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>
+          <div class="tab">📮 Boîte de réception</div>
+          <div class="tab">🎬 Ce soir</div>
+          <div class="tab active">✨ Nouvel onglet</div>
+        </div>
+        <div class="bar">← → ⟳ <div class="omni">Où voulez-vous aller ?</div><span class="ext">🛡️</span><span class="ext">🔑</span></div>
+        <div class="body">
+          <div class="page"><div><h2>Un peu d'espace.</h2><p>Pour vos prochaines idées.</p><div class="field">Où voulez-vous aller ?</div></div></div>
+          <div class="side">
+            <div class="tiles"><span>📮</span><span class="on">🎬</span><span>📅</span><span>🎵</span><span>📰</span><span>🛒</span><span>💡</span><span>🗺️</span></div>
+            <div class="folder">📁 Travail <small>6</small></div>
+            <div class="folder">🎮 Jeux <small>4</small></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="features" id="features">
+      <div class="grid">
+        <div class="card"><div class="ico">🧩</div><h3>Extensions Chrome</h3><p>Installez-les directement depuis le Chrome Web Store : uBlock Origin, Dashlane et les autres.</p></div>
+        <div class="card"><div class="ico">🎬</div><h3>Streaming</h3><p>Netflix, Prime Video, Canal+ et Disney+ se lisent comme dans Chrome.</p></div>
+        <div class="card"><div class="ico">⭐</div><h3>Favoris en emojis</h3><p>Une barre latérale de tuiles et de dossiers, réorganisables d'un glisser-déposer.</p></div>
+        <div class="card"><div class="ico">🪟</div><h3>Lecteur flottant automatique</h3><p>Changez d'onglet pendant une vidéo : elle continue dans une petite fenêtre, comme dans Arc.</p></div>
+        <div class="card"><div class="ico">🧹</div><h3>Un coup de balai</h3><p>Fermez tous les onglets sauf celui que vous lisez. ⌘⇧T les rouvre si besoin.</p></div>
+        <div class="card"><div class="ico">🕶️</div><h3>Navigation privée</h3><p>Une fenêtre qui ne garde rien : ni historique, ni cookies, ni session.</p></div>
+      </div>
+    </section>
+
+    <section class="open" id="open-source">
+      <h2>Open source, et ouvert aux contributions</h2>
+      <p>Le code de ZAK est public, sous licence MIT. Signalez un bug, proposez une idée ou envoyez une pull request : tout se passe sur GitHub.</p>
+      <a class="btn" data-repo-link href="#">Voir le code</a>
+      <a class="btn ghost" data-repo-link data-path="/blob/main/CONTRIBUTING.md" href="#">Contribuer</a>
+    </section>
+  </main>
+
+  <footer>
+    <span>ZAK · licence MIT</span>
+    <a data-repo-link data-path="/releases" href="#">Toutes les versions</a>
+  </footer>
+</div>
+
+<script>
+  // The only place to change if the repository moves.
+  const REPO = 'https://github.com/guillaumevergano/zak'
+  // Stable file names (electron-builder.yml → artifactName): always the latest release.
+  const latest = (file) => `${REPO}/releases/latest/download/${file}`
+  const BUILDS = {
+    macArm: { label: 'Télécharger pour Mac (Apple Silicon)', short: 'Mac Apple Silicon', href: latest('ZAK-mac-arm64.dmg') },
+    macIntel: { label: 'Télécharger pour Mac (Intel)', short: 'Mac Intel', href: latest('ZAK-mac-x64.dmg') },
+    win: { label: 'Télécharger pour Windows', short: 'Windows', href: latest('ZAK-Setup-x64.exe') }
+  }
+
+  for (const a of document.querySelectorAll('[data-repo-link]')) a.href = REPO + (a.dataset.path ?? '')
+
+  // Browsers don't reliably tell Apple Silicon from Intel: Apple Silicon first (every Mac sold since 2021).
+  const ua = navigator.userAgent
+  const os = /Windows/i.test(ua) ? 'win' : /Mac/i.test(ua) && !/iPhone|iPad/i.test(ua) ? 'mac' : 'other'
+  const primary = document.getElementById('primary')
+  const others = document.getElementById('others')
+  const link = (b) => `<a href="${b.href}">${b.short}</a>`
+  if (os === 'win') {
+    primary.textContent = BUILDS.win.label
+    primary.href = BUILDS.win.href
+    others.innerHTML = `Aussi pour ${link(BUILDS.macArm)} et ${link(BUILDS.macIntel)}`
+  } else if (os === 'mac') {
+    primary.textContent = BUILDS.macArm.label
+    primary.href = BUILDS.macArm.href
+    others.innerHTML = `Aussi pour ${link(BUILDS.macIntel)} et ${link(BUILDS.win)}`
+  } else {
+    primary.textContent = 'Toutes les versions'
+    primary.href = `${REPO}/releases/latest`
+    others.innerHTML = `ZAK est disponible pour ${link(BUILDS.macArm)}, ${link(BUILDS.macIntel)} et ${link(BUILDS.win)}`
+  }
+</script>
+</body>
+</html>
