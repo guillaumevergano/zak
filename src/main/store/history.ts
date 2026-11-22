@@ -52,6 +52,23 @@ export class HistoryStore {
       .run(url, title || null, now)
   }
 
+  /**
+   * Visits imported from another browser: added to the history, keeping for each page the most
+   * recent visit and the highest count (importing twice changes nothing). Returns how many pages.
+   */
+  importVisits(visits: { url: string; title: string | null; visitedAt: number; visitCount: number }[]): number {
+    const insert = this.db.prepare(
+      `INSERT INTO history (url, title, visited_at, visit_count) VALUES (?, ?, ?, ?)
+       ON CONFLICT(url) DO UPDATE SET visited_at = MAX(history.visited_at, excluded.visited_at),
+         visit_count = MAX(history.visit_count, excluded.visit_count), title = COALESCE(history.title, excluded.title)`
+    )
+    const recordable = visits.filter((v) => isRecordable(v.url))
+    this.db.transaction(() => {
+      for (const v of recordable) insert.run(v.url, v.title || null, v.visitedAt, Math.max(1, v.visitCount))
+    })()
+    return recordable.length
+  }
+
   setTitle(url: string, title: string): void {
     if (title) this.db.prepare('UPDATE history SET title = ? WHERE url = ?').run(title, url)
   }

@@ -10,6 +10,15 @@ import { ExtensionsHost } from './extensions/ExtensionsHost'
 import { PipController } from './pip/PipController'
 import { enableAdBlocker } from './adblock/AdBlocker'
 import { SafeBrowsing, leaveDangerousPage } from './safety/SafeBrowsing'
+import { detectBrowsers, readChromiumBookmarks, readChromiumHistory } from './import/chromium'
+import type { ImportSource } from '@shared/types'
+
+/** Chromium browsers to import from (ZAK_IMPORT_HOME: a fake home folder for the e2e tests). */
+function importSources(): ImportSource[] {
+  const home = process.env['ZAK_IMPORT_HOME'] ?? app.getPath('home')
+  const localAppData = process.env['ZAK_IMPORT_HOME'] ?? process.env['LOCALAPPDATA']
+  return detectBrowsers({ platform: process.platform, home, localAppData }).map((b) => ({ browser: b.name, profiles: b.profiles }))
+}
 import { installAppMenu } from './menu/AppMenu'
 import { showSplash } from './windows/Splash'
 import { Updater } from './updates/Updater'
@@ -229,6 +238,15 @@ app.whenReady().then(async () => {
         filters: [{ name: 'Favoris (HTML)', extensions: ['html', 'htm'] }]
       })
       return result.canceled || !result.filePaths[0] ? null : sidebar.importBookmarks(result.filePaths[0])
+    },
+    'settings/importSources': () => importSources(),
+    'settings/importFrom': ({ profile, bookmarks, history: withHistory }) => {
+      // Only a profile found by importSources: the page cannot make main read any folder.
+      if (!importSources().some((s) => s.profiles.some((p) => p.path === profile))) throw new Error('Profil inconnu')
+      const parsed = bookmarks ? readChromiumBookmarks(profile) : null
+      const added = parsed ? sidebar.importParsed(parsed) : { favorites: 0, folders: 0 }
+      const pages = withHistory ? history.importVisits(readChromiumHistory(profile)) : 0
+      return { ...added, pages }
     },
     'settings/setSidebarCollapsed': ({ collapsed }) => {
       sidebar.setLayout({ ...settings.getSidebar(), collapsed })

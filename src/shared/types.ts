@@ -200,6 +200,12 @@ export interface SitePermission {
 /** Permissions that get a prompt under the omnibox. */
 export type PermissionKind = 'notifications' | 'camera' | 'microphone' | 'geolocation' | 'clipboard'
 
+/** Another browser to import from (zak://settings → Importer). */
+export interface ImportSource {
+  browser: string
+  profiles: { path: string; name: string }[]
+}
+
 /** "Effacer les données de navigation" on zak://settings. */
 export interface ClearDataRequest {
   period: ClearPeriod

@@ -5,13 +5,15 @@ export function SmallButton(props: {
   danger?: boolean
   /** Submit button of a form (then no onClick). */
   submit?: boolean
+  disabled?: boolean
   children: React.ReactNode
 }): JSX.Element {
   return (
     <button
       type={props.submit ? 'submit' : 'button'}
       onClick={props.onClick}
-      className={`cursor-pointer rounded-[10px] border px-3 py-1 text-[12.5px] font-semibold ${
+      disabled={props.disabled}
+      className={`cursor-pointer rounded-[10px] disabled:cursor-default disabled:opacity-50 border px-3 py-1 text-[12.5px] font-semibold ${
         props.danger
           ? 'border-pink-button bg-pink-button text-white hover:bg-pink'
           : 'border-cream-edge bg-cream-2 text-violet hover:border-violet/40'

@@ -7,6 +7,7 @@ import type {
   ExtensionBarSettings,
   ExtensionInfo,
   GeneralSettings,
+  ImportSource,
   PipSettings
 } from '@shared/types'
 import { orderExtensions } from '@shared/extensionBar'
@@ -121,6 +122,7 @@ function SettingsPage(): JSX.Element {
             ))}
           </div>
         </Row>
+        <ImportFromBrowser onError={fail} />
         <ImportBookmarks onError={fail} />
         <Row
           title="Mettre en veille les onglets inactifs"
@@ -370,6 +372,73 @@ function ImportBookmarks({ onError }: { onError: (err: unknown) => void }): JSX.
       detail={result ?? 'Depuis le fichier HTML exporté par Chrome, Arc, Firefox ou Safari.'}
     >
       <SmallButton onClick={run}>Choisir le fichier…</SmallButton>
+    </Row>
+  )
+}
+
+const plural = (n: number, word: string): string => `${n} ${word}${n > 1 ? 's' : ''}`
+
+/** Favorites and history of Chrome, Edge, Brave, Arc… read from their profile on this computer. */
+function ImportFromBrowser({ onError }: { onError: (err: unknown) => void }): JSX.Element | null {
+  const [sources, setSources] = useState<ImportSource[] | null>(null)
+  const [profile, setProfile] = useState('')
+  const [bookmarks, setBookmarks] = useState(true)
+  const [withHistory, setWithHistory] = useState(true)
+  const [busy, setBusy] = useState(false)
+  const [result, setResult] = useState<string | null>(null)
+
+  useEffect(() => {
+    callInternal('settings/importSources', null)
+      .then((found) => {
+        setSources(found)
+        setProfile(found[0]?.profiles[0]?.path ?? '')
+      })
+      .catch(() => setSources([]))
+  }, [])
+
+  if (!sources || sources.length === 0) return null
+  const run = (): void => {
+    setBusy(true)
+    setResult(null)
+    callInternal('settings/importFrom', { profile, bookmarks, history: withHistory })
+      .then((r) => {
+        const parts = [
+          bookmarks && plural(r.favorites, 'favori'),
+          bookmarks && r.folders > 0 && plural(r.folders, 'dossier'),
+          withHistory && `${plural(r.pages, 'page')} d'historique`
+        ].filter(Boolean)
+        setResult(`Importé : ${parts.join(', ')}.`)
+      })
+      .catch(onError)
+      .finally(() => setBusy(false))
+  }
+  return (
+    <Row
+      title="Importer depuis un autre navigateur"
+      detail={result ?? 'Lu directement sur cet ordinateur. Les mots de passe s\'importent depuis un fichier CSV (section Mots de passe).'}
+    >
+      <div className="flex flex-col items-end gap-2">
+        <select aria-label="Navigateur à importer" className={selectClass} value={profile} onChange={(e) => setProfile(e.target.value)}>
+          {sources.map((s) =>
+            s.profiles.map((p) => (
+              <option key={p.path} value={p.path}>
+                {s.profiles.length > 1 ? `${s.browser} — ${p.name}` : s.browser}
+              </option>
+            ))
+          )}
+        </select>
+        <div className="flex items-center gap-3 text-[13px] text-ink">
+          <label className="flex items-center gap-1.5">
+            <input type="checkbox" checked={bookmarks} onChange={(e) => setBookmarks(e.target.checked)} /> Favoris
+          </label>
+          <label className="flex items-center gap-1.5">
+            <input type="checkbox" checked={withHistory} onChange={(e) => setWithHistory(e.target.checked)} /> Historique
+          </label>
+          <SmallButton onClick={run} disabled={busy || (!bookmarks && !withHistory)}>
+            {busy ? 'Import…' : 'Importer'}
+          </SmallButton>
+        </div>
+      </div>
     </Row>
   )
 }

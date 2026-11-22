@@ -1,4 +1,5 @@
 import type {
+  ImportSource,
   BrowserSettings,
   DownloadAction,
   DownloadInfo,
@@ -237,6 +238,13 @@ export interface InternalApiRoutes {
   'settings/setExtensionBar': { body: ExtensionBarSettings; result: ExtensionBarSettings }
   /** Picks a bookmarks HTML file and imports it; null when cancelled. */
   'settings/importBookmarks': { body: null; result: { favorites: number; folders: number } | null }
+  /** Other Chromium browsers installed (Chrome, Edge, Brave, Arc…) and their profiles. */
+  'settings/importSources': { body: null; result: ImportSource[] }
+  /** Imports a profile's favorites and/or history (`profile` = a path from importSources). */
+  'settings/importFrom': {
+    body: { profile: string; bookmarks: boolean; history: boolean }
+    result: { favorites: number; folders: number; pages: number }
+  }
   'settings/defaultBrowser': { body: null; result: DefaultBrowserStatus }
   /** macOS shows a confirmation dialog; Windows opens its default apps settings. */
   'settings/makeDefaultBrowser': { body: null; result: DefaultBrowserStatus }
@@ -271,6 +279,8 @@ export const INTERNAL_API_ROUTES = [
   'settings/listExtensions',
   'settings/setExtensionBar',
   'settings/importBookmarks',
+  'settings/importSources',
+  'settings/importFrom',
   'settings/defaultBrowser',
   'settings/makeDefaultBrowser',
   'history/search',

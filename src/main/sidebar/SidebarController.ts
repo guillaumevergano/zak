@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { clipboard, Menu } from 'electron'
-import { parseBookmarksHtml } from './bookmarksHtml'
+import { parseBookmarksHtml, type ImportedBookmarks } from './bookmarksHtml'
 import type { OpenDisposition, SidebarLayout, SidebarState, TabId } from '@shared/types'
 import type { FavoritesStore } from '../store/favorites'
 import type { SettingsStore } from '../store/settings'
@@ -30,7 +30,11 @@ export class SidebarController {
    * Returns how many favorites and folders were added.
    */
   async importBookmarks(path: string): Promise<{ favorites: number; folders: number }> {
-    const parsed = parseBookmarksHtml(await readFile(path, 'utf8'))
+    return this.importParsed(parseBookmarksHtml(await readFile(path, 'utf8')))
+  }
+
+  /** Adds imported bookmarks (HTML file or another browser's profile), skipping pages already saved. */
+  importParsed(parsed: ImportedBookmarks): { favorites: number; folders: number } {
     const known = new Set(this.favorites.favorites().map((f) => f.url))
     let favorites = 0
     let folders = 0

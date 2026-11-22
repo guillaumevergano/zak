@@ -149,7 +149,7 @@ Les fenêtres privées n'écrivent **rien** dans `history` ni `tab_sessions`.
 - Ajouter : bouton ★ dans la toolbar (page courante) → popover « Titre / Emoji / Dossier » ; ou glisser un onglet depuis la barre d'onglets vers la sidebar ; ou clic droit sur un lien → « Ajouter aux favoris de la sidebar ».
 - Dossiers en **liste** (chevron, emoji, nom, nombre de favoris) ; un dossier déplié montre ses favoris en lignes (icône + titre).
 - Dossiers : bouton « + Nouveau dossier » sous la liste, nom + emoji, drag & drop pour réordonner et déplacer des favoris dedans/dehors. Clic sur un dossier = plier/déplier ; clic droit → « Ouvrir tous dans des onglets ».
-- Persistance immédiate en SQLite (pas de bouton enregistrer). Import depuis un fichier HTML de favoris Chrome/Arc (v1.1).
+- Persistance immédiate en SQLite (pas de bouton enregistrer). Import depuis un fichier HTML de favoris (Chrome, Arc, Firefox, Safari…) ou directement depuis le profil d'un navigateur Chromium installé (Chrome, Edge, Brave, Arc, Vivaldi : favoris et historique, `src/main/import/chromium.ts`).
 
 ### 6.3 Mode navigation privée
 - `Cmd/Ctrl+Shift+N` ou menu → nouvelle **fenêtre** privée. Toute la fenêtre est privée (comme Chrome), pas un onglet isolé.
