@@ -235,6 +235,15 @@ export interface SavedLogin {
 /** « Enregistrer le mot de passe ? »: save, never for this site, or not now. */
 export type SavePasswordChoice = 'save' | 'never' | 'dismiss'
 
+/** Zak's MCP server, as shown in the settings. */
+export interface McpState {
+  enabled: boolean
+  /** http://127.0.0.1:<port>/mcp when running. */
+  url: string | null
+  token: string
+  error: string | null
+}
+
 /** A mod (src/main/mods/): a theme and/or a new tab page, from the profile's mods folder. */
 export interface ModInfo {
   /** Its folder's name. */

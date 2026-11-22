@@ -20,6 +20,8 @@ interface Settings {
   onboarded: boolean
   /** Mods in use (folder names in the mods folder), null = Zak's own. */
   mods: { theme: string | null; newtab: string | null }
+  /** Zak's MCP server (mcp/ZakMcpServer.ts): off by default; port and token kept across launches. */
+  mcp: { enabled: boolean; port: number; token: string }
 }
 
 const SCHEMA_URL = 'https://raw.githubusercontent.com/guillaumevergano/zak/main/docs/customize/settings.schema.json'
@@ -32,7 +34,7 @@ export class SettingsStore {
   private store = new Store<Settings>({
     // The file can be edited by hand or by an AI agent (docs/customize/): changes apply at once.
     watch: true,
-    defaults: { sidebar: { width: 300, collapsed: false }, disabledExtensions: [], unpackedExtensions: [], pip: DEFAULT_PIP_SETTINGS, general: {}, extensionBar: DEFAULT_EXTENSION_BAR, onboarded: false, mods: { theme: null, newtab: null } }
+    defaults: { sidebar: { width: 300, collapsed: false }, disabledExtensions: [], unpackedExtensions: [], pip: DEFAULT_PIP_SETTINGS, general: {}, extensionBar: DEFAULT_EXTENSION_BAR, onboarded: false, mods: { theme: null, newtab: null }, mcp: { enabled: false, port: 0, token: '' } }
   })
 
   /** Where the settings live (config.json in the profile folder), for « Ouvrir le fichier de réglages ». */
@@ -105,6 +107,19 @@ export class SettingsStore {
 
   setMods(mods: { theme: string | null; newtab: string | null }): void {
     this.store.set('mods', mods)
+  }
+
+  getMcp(): { enabled: boolean; port: number; token: string } {
+    const mcp = this.store.get('mcp')
+    return {
+      enabled: mcp?.enabled === true,
+      port: Number.isInteger(mcp?.port) && mcp.port > 0 && mcp.port < 65536 ? mcp.port : 0,
+      token: typeof mcp?.token === 'string' ? mcp.token : ''
+    }
+  }
+
+  setMcp(mcp: { enabled: boolean; port: number; token: string }): void {
+    this.store.set('mcp', mcp)
   }
 
   isOnboarded(): boolean {

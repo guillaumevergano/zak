@@ -372,5 +372,14 @@ export const EN_UI: Record<string, string> = {
   'Un mod peut la remplacer par la vôtre (sans accès à Internet).': 'A mod can replace it with your own (with no internet access).',
   'Celle de Zak': 'Zak’s own',
   'Dossier des mods': 'Mods folder',
-  '{n} mod(s) dans {dir}. Chaque mod est un dossier avec un mod.json.': '{n} mod(s) in {dir}. Each mod is a folder with a mod.json.'
+  '{n} mod(s) dans {dir}. Chaque mod est un dossier avec un mod.json.': '{n} mod(s) in {dir}. Each mod is a folder with a mod.json.',
+
+  // settings.tsx (MCP server)
+  'puis, dans votre terminal :': 'then, in your terminal:',
+  'Laisser Claude Code ou Codex piloter Zak': 'Let Claude Code or Codex drive Zak',
+  'Serveur MCP local : l’agent peut gérer vos onglets, groupes, favoris, réglages et mods. Jamais le contenu des pages, l’historique ni les mots de passe.':
+    'Local MCP server: the agent can manage your tabs, groups, favorites, settings and mods. Never the content of pages, your history or your passwords.',
+  'Le serveur n’a pas pu démarrer : {error}': 'The server couldn’t start: {error}',
+  'Le jeton donne accès à Zak : ne le partagez pas.': 'The token gives access to Zak: don’t share it.',
+  'Nouveau jeton': 'New token'
 }

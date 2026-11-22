@@ -2,7 +2,7 @@ import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { app, BrowserWindow, components, dialog, ipcMain, nativeTheme, shell, webContents, type IpcMainInvokeEvent } from 'electron'
 import { NEWTAB_PAGE_URL, SETTINGS_PAGE_URL, WELCOME_PAGE_URL, type InvokeChannel, type InvokeChannels, type SendChannel, type SendChannels } from '@shared/ipc'
-import type { WidevineStatus } from '@shared/types'
+import type { McpState, WidevineStatus } from '@shared/types'
 import { resolveLang, setLang, t, type LangSetting } from '@shared/i18n'
 import { chromeUserAgent, identitySettled } from './userAgent'
 import { SessionManager } from './sessions/SessionManager'
@@ -55,6 +55,9 @@ import { SettingsStore } from './store/settings'
 import { SidebarController } from './sidebar/SidebarController'
 import { handleInternalProtocol, registerInternalScheme, setNewtabOverride, type InternalApiHandlers } from './internal/InternalProtocol'
 import { ModsManager } from './mods/ModsManager'
+import { ZakMcpServer } from './mcp/ZakMcpServer'
+import { zakControl } from './mcp/control'
+import { randomBytes } from 'node:crypto'
 import { defaultBrowserStatus, LinkReceiver, makeDefaultBrowser } from './system/DefaultBrowser'
 
 // Separate profile for the e2e tests (tests/e2e), so they never touch the real one.
@@ -235,6 +238,43 @@ app.whenReady().then(async () => {
   const mods = new ModsManager({ get: () => settings.getMods(), set: (m) => settings.setMods(m) })
   mods.start()
   setNewtabOverride((pathname) => mods.newtabResponse(pathname))
+  // Zak's MCP server (Settings → Customize): off by default, on 127.0.0.1 only, behind a token.
+  const zakMcp = new ZakMcpServer(
+    zakControl({
+      windows,
+      favorites,
+      sidebar,
+      settings,
+      mods,
+      applySettings: (general) => {
+        nativeTheme.themeSource = general.theme
+      }
+    })
+  )
+  let mcpError: string | null = null
+  const syncMcp = async (): Promise<void> => {
+    const config = settings.getMcp()
+    mcpError = null
+    if (!config.enabled) return zakMcp.stop()
+    try {
+      const port = await zakMcp.start(config.port, config.token)
+      if (port !== config.port) settings.setMcp({ ...config, port })
+    } catch (err) {
+      // The port is taken (another profile, another app): pick a free one next time.
+      mcpError = String(err)
+      settings.setMcp({ ...config, port: 0 })
+    }
+  }
+  const mcpState = (): McpState => {
+    const config = settings.getMcp()
+    return {
+      enabled: config.enabled,
+      url: zakMcp.running ? `http://127.0.0.1:${config.port}/mcp` : null,
+      token: config.token,
+      error: mcpError
+    }
+  }
+  void syncMcp()
   // A new tab page changed: the new tabs open show it at once.
   mods.onChange(() => {
     for (const wc of webContents.getAllWebContents()) if (wc.getURL().startsWith(NEWTAB_PAGE_URL)) wc.reload()
@@ -342,6 +382,18 @@ app.whenReady().then(async () => {
         filters: [{ name: t('Favoris (HTML)'), extensions: ['html', 'htm'] }]
       })
       return result.canceled || !result.filePaths[0] ? null : sidebar.importBookmarks(result.filePaths[0])
+    },
+    'settings/mcp': () => mcpState(),
+    'settings/setMcp': async ({ enabled }) => {
+      const current = settings.getMcp()
+      settings.setMcp({ ...current, enabled, token: current.token || randomBytes(24).toString('base64url') })
+      await syncMcp()
+      return mcpState()
+    },
+    'settings/newMcpToken': async () => {
+      settings.setMcp({ ...settings.getMcp(), token: randomBytes(24).toString('base64url') })
+      await syncMcp()
+      return mcpState()
     },
     'settings/mods': () => ({ dir: mods.dir, mods: mods.list() }),
     'settings/selectMod': ({ kind, id }) => {

@@ -42,6 +42,14 @@ turn this protection off in Settings → Security.
 - **Translate a page** (right-click → Translate) opens the page through Google Translate, which
   then receives its address.
 
+## AI agents (MCP)
+
+If you turn on *Let Claude Code or Codex drive Zak*, Zak listens on your computer only
+(127.0.0.1), behind a secret token, for the agent you connected. That agent can see your open tabs
+(titles and addresses), favorites and settings, and act on them; never the content of pages, your
+history, passwords or cookies. What the agent does with what it sees is governed by that agent's
+own privacy policy. It is off by default.
+
 ## Extensions
 
 Chrome extensions you install run with the permissions they ask for, as in Chrome. Their privacy

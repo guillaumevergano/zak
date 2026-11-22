@@ -4,12 +4,13 @@ Zak is meant to be shaped by the people who use it. You don't need to know how t
 coding agent such as [Claude Code](https://claude.com/claude-code) or
 [Codex](https://openai.com/codex) can do it for you, in plain words.
 
-There are three ways, and none requires rebuilding Zak, so you keep getting its updates:
+There are four ways, and none requires rebuilding Zak, so you keep getting its updates:
 
 | | What it changes | How |
 |---|---|---|
 | **Settings file** | everything in Settings: search engine, theme, startup, tab sleep, picture-in-picture, sidebar… | the agent edits one JSON file; Zak applies it as soon as it is saved |
 | **Mods** | Zak itself: a theme for its interface, your own new tab page | the agent writes a folder in Zak's mods folder; you pick it in Settings |
+| **Drive Zak from your agent** | your open tabs, groups, favorites, settings, mods | turn on Zak's MCP server; the agent then acts on the running browser |
 | **Home-made extensions** | anything a Chrome extension can do: new buttons, page tweaks, shortcuts, reader modes, themes for websites… | the agent writes an extension in a folder; you load it once, Zak reloads it on every change |
 
 ## 1. The settings file
@@ -115,6 +116,39 @@ The smallest possible extension, for reference:
   profile (File → Profiles) keeps it away from your accounts.
 - Extensions are off in private windows.
 - *Remove* in Extensions forgets the extension; its folder stays where it is.
+
+## 4. Let Claude Code or Codex drive Zak (MCP)
+
+Zak has a built-in [MCP](https://modelcontextprotocol.io) server, so an agent can act on the
+browser you have open: "group my tabs by project", "add these five sites to my sidebar in a
+Reading folder with emojis", "switch to the Nuit bleue theme".
+
+Turn it on in Settings → *Customize with Claude Code or Codex* → *Let Claude Code or Codex drive
+Zak*. Zak then shows what to paste:
+
+```
+claude mcp add --transport http zak http://127.0.0.1:<port>/mcp --header "Authorization: Bearer <token>"
+```
+
+```toml
+# Codex: ~/.codex/config.toml
+[mcp_servers.zak]
+url = "http://127.0.0.1:<port>/mcp"
+bearer_token_env_var = "ZAK_MCP_TOKEN"
+```
+
+| Tool | What it does |
+|---|---|
+| `list_tabs` | windows, tabs (id, title, address), tab groups |
+| `open_tab`, `close_tabs`, `activate_tab` | open an address or a search, close, show a tab |
+| `group_tabs` | put tabs into a named, colored group |
+| `list_favorites`, `add_favorite` | read the sidebar, add a favorite (emoji, folder) |
+| `get_settings`, `update_settings` | read and change the general settings |
+| `list_mods`, `use_mod` | list the mods, pick a theme or a new tab page |
+
+On purpose, the server can't read the content of pages, your history, passwords or cookies. It is
+off by default, only listens on your computer (127.0.0.1), needs the token, and refuses requests
+coming from web pages. *New token* in Settings disconnects every agent that had the old one.
 
 ## Going further: changing Zak itself
 

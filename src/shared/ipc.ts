@@ -1,5 +1,6 @@
 import type {
   ImportSource,
+  McpState,
   ModInfo,
   ProfileInfo,
   TabGroupInfo,
@@ -266,6 +267,10 @@ export interface InternalApiRoutes {
   /** « Personnaliser avec Claude Code ou Codex »: where the settings file is, open or show it. */
   'settings/customizeInfo': { body: null; result: { settingsPath: string } }
   'settings/openSettingsFile': { body: { reveal: boolean }; result: null }
+  /** Zak's MCP server: state, on/off, a new token. `error` when it couldn't start. */
+  'settings/mcp': { body: null; result: McpState }
+  'settings/setMcp': { body: { enabled: boolean }; result: McpState }
+  'settings/newMcpToken': { body: null; result: McpState }
   /** Mods (src/main/mods/): what the mods folder holds, and which theme / new tab is in use. */
   'settings/mods': { body: null; result: { dir: string; mods: ModInfo[] } }
   'settings/selectMod': { body: { kind: 'theme' | 'newtab'; id: string | null }; result: { dir: string; mods: ModInfo[] } }
@@ -332,6 +337,9 @@ export const INTERNAL_API_ROUTES = [
   'settings/listExtensions',
   'settings/setExtensionBar',
   'settings/importBookmarks',
+  'settings/mcp',
+  'settings/setMcp',
+  'settings/newMcpToken',
   'settings/mods',
   'settings/selectMod',
   'settings/openModsFolder',

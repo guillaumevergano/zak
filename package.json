@@ -24,12 +24,14 @@
   },
   "dependencies": {
     "@ghostery/adblocker-electron": "2.20.3",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "better-sqlite3": "13.2.0",
     "electron-chrome-extensions": "4.10.0",
     "electron-chrome-web-store": "0.13.0",
     "electron-store": "12.0.0",
     "electron-updater": "6.8.11",
-    "tldts-experimental": "7.5.4"
+    "tldts-experimental": "7.5.4",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@dnd-kit/core": "6.3.1",

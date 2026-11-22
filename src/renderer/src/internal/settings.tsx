@@ -9,6 +9,7 @@ import type {
   ExtensionInfo,
   GeneralSettings,
   ImportSource,
+  McpState,
   ModInfo,
   PipSettings,
   ProfileInfo
@@ -521,6 +522,7 @@ function CustomizeSection({ onError }: { onError: (err: unknown) => void }): JSX
         </div>
       </Row>
       <ModsBlock onError={onError} />
+      <McpBlock onError={onError} />
       <Row title={t('Extensions maison')} detail={t('Une extension écrite par l’IA se charge dans Extensions et se recharge à chaque modification.')}>
         <a href={EXTENSIONS_PAGE_URL} className="rounded-[10px] border border-cream-edge bg-cream-2 px-3 py-1 text-[12.5px] font-semibold text-violet no-underline hover:border-violet/40">
           {t('Extensions')}
@@ -550,6 +552,70 @@ function CustomizeSection({ onError }: { onError: (err: unknown) => void }): JSX
         </div>
       )}
     </Section>
+  )
+}
+
+/**
+ * « Laisser Claude Code ou Codex piloter Zak »: Zak's MCP server (main/mcp/), off by default, and
+ * the commands that connect an agent to it.
+ */
+function McpBlock({ onError }: { onError: (err: unknown) => void }): JSX.Element {
+  const [state, setState] = useState<McpState | null>(null)
+  const [copied, setCopied] = useState<string | null>(null)
+  useEffect(() => {
+    callInternal('settings/mcp', null).then(setState).catch(() => {})
+  }, [])
+  const copy = (key: string, text: string): void =>
+    void navigator.clipboard.writeText(text).then(() => {
+      setCopied(key)
+      setTimeout(() => setCopied(null), 1500)
+    })
+  const claude = state?.url ? `claude mcp add --transport http zak ${state.url} --header "Authorization: Bearer ${state.token}"` : ''
+  const codex = state?.url
+    ? `# ~/.codex/config.toml
+[mcp_servers.zak]
+url = "${state.url}"
+bearer_token_env_var = "ZAK_MCP_TOKEN"
+
+# ${t('puis, dans votre terminal :')}
+export ZAK_MCP_TOKEN=${state.token}`
+    : ''
+  return (
+    <>
+      <Row
+        title={t('Laisser Claude Code ou Codex piloter Zak')}
+        detail={t('Serveur MCP local : l’agent peut gérer vos onglets, groupes, favoris, réglages et mods. Jamais le contenu des pages, l’historique ni les mots de passe.')}
+      >
+        <Toggle
+          label={t('Laisser Claude Code ou Codex piloter Zak')}
+          on={state?.enabled ?? false}
+          onChange={(enabled) => void callInternal('settings/setMcp', { enabled }).then(setState).catch(onError)}
+        />
+      </Row>
+      {state?.error && <p className="m-0 pb-2 text-[12.5px] text-pink-button">{t('Le serveur n’a pas pu démarrer : {error}', { error: state.error })}</p>}
+      {state?.enabled && state.url && (
+        <div className="flex flex-col gap-2 border-t border-violet/10 py-3" data-testid="mcp-setup">
+          {[
+            { key: 'claude', label: 'Claude Code', text: claude },
+            { key: 'codex', label: 'Codex', text: codex }
+          ].map((item) => (
+            <div key={item.key} className="flex items-start gap-3 rounded-[12px] bg-cream-2 px-3 py-2">
+              <div className="min-w-0 flex-1">
+                <span className="text-[12px] font-semibold text-ink">{item.label}</span>
+                <pre className="m-0 mt-1 overflow-x-auto font-mono text-[11.5px] whitespace-pre-wrap break-all text-sub">{item.text}</pre>
+              </div>
+              <SmallButton onClick={() => copy(item.key, item.text)}>{copied === item.key ? t('Copié') : t('Copier')}</SmallButton>
+            </div>
+          ))}
+          <div className="flex items-center gap-3">
+            <span className="flex-1 text-[12px] text-sub">{t('Le jeton donne accès à Zak : ne le partagez pas.')}</span>
+            <SmallButton onClick={() => void callInternal('settings/newMcpToken', null).then(setState).catch(onError)}>
+              {t('Nouveau jeton')}
+            </SmallButton>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
