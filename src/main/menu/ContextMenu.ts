@@ -128,8 +128,7 @@ export function buildTabMenu(tabs: TabManager, id: TabId, newTabBeside: () => vo
       ]
   // Split view (§6.1): also by dropping a tab on another one.
   const partner = tabs.splitPartner(id)
-  const activeId = tabs.getActiveId()
-  const besideActive = activeId !== null && activeId !== id && !tabs.isPinned(activeId) && tabs.splitPartner(activeId) === null
+  const candidates = tabs.getState().tabs.filter((tab) => tab.id !== id && !tab.pinned && tabs.splitPartner(tab.id) === null)
   const splitItems: Electron.MenuItemConstructorOptions[] = pinned
     ? []
     : partner !== null
@@ -139,13 +138,19 @@ export function buildTabMenu(tabs: TabManager, id: TabId, newTabBeside: () => vo
           { type: 'separator' }
         ]
       : [
-          ...(besideActive ? [{ label: t('Afficher à côté de l’onglet actif'), click: () => void tabs.split(activeId, id) }] : []),
-          { label: t('Nouvel onglet côte à côte'), click: newTabBeside },
+          {
+            label: t('Afficher côte à côte avec'),
+            submenu: [
+              ...candidates.map((tab) => ({ label: menuTitle(tab.title), click: () => void tabs.split(tab.id, id) })),
+              ...(candidates.length > 0 ? [{ type: 'separator' as const }] : []),
+              { label: t('Un nouvel onglet'), click: newTabBeside }
+            ]
+          },
           { type: 'separator' }
         ]
   return Menu.buildFromTemplate([
-    { label: t('Nouvel onglet à droite'), click: () => tabs.create(undefined, { index: tabs.indexOf(id) + 1 }) },
     ...splitItems,
+    { label: t('Nouvel onglet à droite'), click: () => tabs.create(undefined, { index: tabs.indexOf(id) + 1 }) },
     ...groupItems,
     { type: 'separator' },
     { label: t('Recharger'), click: () => wc && reloadPage(wc) },
@@ -162,6 +167,9 @@ export function buildTabMenu(tabs: TabManager, id: TabId, newTabBeside: () => vo
     }
   ])
 }
+
+/** A tab's title in a menu: short enough to keep the menu narrow. */
+const menuTitle = (title: string): string => (title.length > 60 ? `${title.slice(0, 59)}…` : title)
 
 /** A color's name, in the interface language. */
 const colorName = (color: TabGroupColor): string =>

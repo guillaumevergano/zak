@@ -9,12 +9,16 @@ async function captureMenus(app: ElectronApplication): Promise<void> {
   })
 }
 
-async function clickMenuItem(app: ElectronApplication, label: string): Promise<void> {
-  await app.evaluate((_electron, label) => {
-    const item = (globalThis as unknown as { lastMenu: Electron.Menu }).lastMenu.items.find((it) => it.label === label)
-    if (!item) throw new Error(`No menu item ${label}`)
-    item.click()
-  }, label)
+async function clickMenuItem(app: ElectronApplication, ...path: string[]): Promise<void> {
+  await app.evaluate((_electron, labels) => {
+    let items = (globalThis as unknown as { lastMenu: Electron.Menu }).lastMenu.items
+    for (const [i, label] of labels.entries()) {
+      const item = items.find((it) => it.label === label)
+      if (!item) throw new Error(`No menu item ${label}`)
+      if (i === labels.length - 1) item.click()
+      else items = item.submenu!.items
+    }
+  }, path)
 }
 
 /** Visible tab pages, left to right: [x, width]. */
@@ -44,15 +48,20 @@ test('two tabs can be shown side by side, by drag & drop or the tab menu, and co
   await expect.poll(() => activeTabTitle(chrome)).toBe('Page /b')
   await expect.poll(async () => (await visiblePages(app)).length).toBe(1)
 
-  // Hold tab b over the middle of tab a, then drop: one pill, two pages.
+  // Drag tab b over the middle of tab a (crossing its edge first, like a hand would), then drop:
+  // one pill, two pages.
   const tabs = chrome.getByTestId('tab')
   const a = (await tabs.nth(0).boundingBox())!
   const b = (await tabs.nth(1).boundingBox())!
   await chrome.mouse.move(b.x + b.width / 2, b.y + b.height / 2)
   await chrome.mouse.down()
   await chrome.mouse.move(b.x + b.width / 2 - 10, b.y + b.height / 2, { steps: 4 })
-  await chrome.mouse.move(a.x + a.width / 2, a.y + a.height / 2, { steps: 12 })
+  await chrome.mouse.move(a.x + a.width - 10, a.y + a.height / 2, { steps: 8 })
+  await expect(chrome.locator('[data-merge-target]')).toHaveCount(0) // its edge: reorder
+  await chrome.mouse.move(a.x + a.width / 2, a.y + a.height / 2, { steps: 8 })
   await expect(chrome.locator('[data-merge-target]')).toHaveCount(1)
+  // The strip stays still: tab a is still under the pointer.
+  await expect.poll(async () => Math.round((await chrome.locator('[data-merge-target]').boundingBox())!.x)).toBe(Math.round(a.x))
   await chrome.mouse.up()
   await expect(chrome.getByTestId('split-tab')).toHaveCount(1)
   await expect(chrome.getByTestId('split-divider')).toBeVisible()
@@ -73,9 +82,9 @@ test('two tabs can be shown side by side, by drag & drop or the tab menu, and co
   await expect(chrome.getByTestId('split-tab')).toHaveCount(0)
   await expect.poll(async () => (await visiblePages(app)).length).toBe(1)
 
-  // From the menu of a background tab: next to the active one.
+  // From the tab menu: « Afficher côte à côte avec › » lists the other tabs.
   await tabs.nth(1).click({ button: 'right' })
-  await clickMenuItem(app, 'Afficher à côté de l’onglet actif')
+  await clickMenuItem(app, 'Afficher côte à côte avec', 'Page /a')
   await expect(chrome.getByTestId('split-tab')).toHaveCount(1)
   await expect.poll(async () => (await visiblePages(app)).length).toBe(2)
   await app.close()

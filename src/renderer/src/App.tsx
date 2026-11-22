@@ -115,12 +115,10 @@ function openEditor({ kind, id }: { kind: 'favorite' | 'folder'; id: string }): 
   }
 }
 
-/** How long a dragged tab must be held over the middle of another one to show them side by side. */
-const MERGE_DELAY_MS = 350
-
 /**
- * The tab a dragged tab would join in a split view: the pointer is over the middle half of a tab
- * that isn't pinned nor already in a split view. Over its edges, the drag reorders as usual.
+ * The tab a dragged tab would join in a split view: the pointer is over the middle of a tab that
+ * isn't pinned nor already in a split view. Over its edges, the drag reorders as usual. While over
+ * the middle the strip stays still (TabStrip), so the target doesn't slide away from the pointer.
  */
 function mergeCandidate({ active, over, delta, activatorEvent }: DragMoveEvent): number | null {
   const from = parseDndId(active.id)
@@ -135,7 +133,7 @@ function mergeCandidate({ active, over, delta, activatorEvent }: DragMoveEvent):
   const y = activatorEvent.clientY + delta.y
   const r = over.rect
   const across = (x - r.left) / r.width
-  return y >= r.top - 6 && y <= r.top + r.height + 6 && across > 0.25 && across < 0.75 ? target.id : null
+  return y >= r.top - 6 && y <= r.top + r.height + 6 && across > 0.2 && across < 0.8 ? target.id : null
 }
 
 /**
@@ -150,33 +148,20 @@ function DragAndDrop({ children }: { children: React.ReactNode }): JSX.Element {
   const tabs = useBrowserStore((s) => s.tabs)
   const sidebar = useBrowserStore((s) => s.sidebar)
   const mergeTarget = useBrowserStore((s) => s.mergeTarget)
-  const merge = useRef<{ candidate: number | null; timer: ReturnType<typeof setTimeout> | null }>({ candidate: null, timer: null })
-
-  const stopMerge = (): void => {
-    if (merge.current.timer) clearTimeout(merge.current.timer)
-    merge.current = { candidate: null, timer: null }
-    if (useBrowserStore.getState().mergeTarget !== null) useBrowserStore.getState().setMergeTarget(null)
+  const setMergeTarget = (id: number | null): void => {
+    if (useBrowserStore.getState().mergeTarget !== id) useBrowserStore.getState().setMergeTarget(id)
   }
 
   const onDragStart = ({ active }: DragStartEvent): void => setDragging(parseDndId(active.id))
 
-  // Held over the middle of another tab for a moment: the strip stops reordering and the target
-  // lights up; dropping then shows both tabs side by side.
-  const onDragMove = (event: DragMoveEvent): void => {
-    const candidate = mergeCandidate(event)
-    if (candidate === merge.current.candidate) return
-    stopMerge()
-    if (candidate === null) return
-    merge.current = {
-      candidate,
-      timer: setTimeout(() => useBrowserStore.getState().setMergeTarget(candidate), MERGE_DELAY_MS)
-    }
-  }
+  // Over the middle of another tab: the strip stops reordering and the target lights up; dropping
+  // then shows both tabs side by side.
+  const onDragMove = (event: DragMoveEvent): void => setMergeTarget(mergeCandidate(event))
 
   const onDragEnd = ({ active, over }: DragEndEvent): void => {
     setDragging(null)
     const merging = useBrowserStore.getState().mergeTarget
-    stopMerge()
+    setMergeTarget(null)
     const from = parseDndId(active.id)
     if (merging !== null && from.kind === 'tab') {
       void api.invoke('tabs:split', merging, Number(from.id))
@@ -246,7 +231,7 @@ function DragAndDrop({ children }: { children: React.ReactNode }): JSX.Element {
       onDragEnd={onDragEnd}
       onDragCancel={() => {
         setDragging(null)
-        stopMerge()
+        setMergeTarget(null)
       }}
     >
       {children}
