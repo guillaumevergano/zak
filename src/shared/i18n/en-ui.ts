@@ -246,7 +246,7 @@ export const EN_UI: Record<string, string> = {
   'Barre latérale réduite': 'Collapsed sidebar',
   'Icônes seules (⌘B).': 'Icons only (⌘B).',
   'Dossier de téléchargement': 'Download folder',
-  'Modifier…': 'Change…',
+  'Modifier…@@dossier': 'Change…',
   'Lecteur vidéo flottant': 'Picture-in-picture',
   'Quand vous quittez un onglet où une vidéo est en lecture, elle continue dans une petite fenêtre flottante, toujours au premier plan.':
     'When you leave a tab where a video is playing, it keeps playing in a small floating window, always on top.',
@@ -302,7 +302,7 @@ export const EN_UI: Record<string, string> = {
   Favoris: 'Favorites',
   'Import…': 'Importing…',
   Importer: 'Import',
-  'Les liens ouverts depuis les autres applications arrivent dans Zak.': 'Links opened from other apps open in Zak.',
+  'Les liens ouverts depuis les autres applications arrivent dans Zak.': 'Links opened from other apps now open in Zak.',
   "Disponible dans l'application installée, pas en mode développement.": 'Available in the installed app, not in development mode.',
   'Ouvrir dans Zak les liens cliqués dans les autres applications.': 'Open links clicked in other apps in Zak.',
   'Navigateur par défaut': 'Default browser',

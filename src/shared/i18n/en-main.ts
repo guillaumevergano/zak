@@ -21,7 +21,7 @@ export const EN_MAIN: Record<string, string> = {
   Réglages: 'Settings',
   'Imprimer…': 'Print…',
   Édition: 'Edit',
-  Annuler: 'Undo',
+  'Annuler@@undo': 'Undo',
   Rétablir: 'Redo',
   Couper: 'Cut',
   Copier: 'Copy',
@@ -142,7 +142,7 @@ export const EN_MAIN: Record<string, string> = {
   'Vous pourrez redémarrer Zak une fois le téléchargement terminé.': 'You can restart Zak once the download is finished.',
   'Impossible de vérifier les mises à jour': 'Could not check for updates',
   'Redémarrer maintenant': 'Restart now',
-  'Plus tard': 'Later',
+  'Plus tard': 'Not now',
   'Zak {version} est prêt': 'Zak {version} is ready',
   'Redémarrez pour l’installer. Sinon, elle s’installera à la prochaine fermeture.':
     'Restart to install it. Otherwise it will install the next time you quit.',

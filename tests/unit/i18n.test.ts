@@ -3,6 +3,9 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { plural, resolveLang, setLang, t } from '../../src/shared/i18n'
 import { EN } from '../../src/shared/i18n.en'
+import { EN_MAIN } from '../../src/shared/i18n/en-main'
+import { EN_UI } from '../../src/shared/i18n/en-ui'
+import { EN_WELCOME } from '../../src/shared/i18n/en-welcome'
 
 const files = (dir: string): string[] =>
   readdirSync(dir).flatMap((name) => {
@@ -30,6 +33,14 @@ describe('i18n', () => {
   it('has an English text for every French text of the interface', () => {
     const missing = [...frenchTexts()].filter(([fr]) => !(fr in EN)).map(([fr, file]) => `${file.split('/src/')[1]}: ${fr}`)
     expect(missing).toEqual([])
+  })
+
+  it('translates a French text the same way everywhere (use `texte@@sens` for two meanings)', () => {
+    const parts = [EN_MAIN, EN_UI, EN_WELCOME]
+    const clashes = parts.flatMap((a, i) =>
+      parts.slice(i + 1).flatMap((b) => Object.keys(a).filter((k) => k in b && a[k] !== b[k]).map((k) => `${k}: ${a[k]} / ${b[k]}`))
+    )
+    expect(clashes).toEqual([])
   })
 
   it('keeps the placeholders in the English texts', () => {

@@ -66,7 +66,7 @@ export function buildPageMenu(
 
   if (params.isEditable) {
     const flags = params.editFlags
-    add({ label: t('Annuler'), role: 'undo', enabled: flags.canUndo })
+    add({ label: t('Annuler@@undo'), role: 'undo', enabled: flags.canUndo })
     add({ label: t('Rétablir'), role: 'redo', enabled: flags.canRedo })
     separator()
     add({ label: t('Couper'), role: 'cut', enabled: flags.canCut })

@@ -27,7 +27,10 @@ export function resolveLang(setting: LangSetting | undefined, systemLocale: stri
 }
 
 export function t(french: string, params?: Record<string, string | number>): string {
-  const text = current === 'en' ? (EN[french] ?? french) : french
+  // `Annuler@@undo`: one French word, two meanings (undo / cancel) — the part after @@ only tells
+  // the translations apart, it is never shown.
+  const shown = french.split('@@')[0]!
+  const text = current === 'en' ? (EN[french] ?? shown) : shown
   if (!params) return text
   return text.replace(/\{(\w+)\}/g, (whole, name: string) => (name in params ? String(params[name]) : whole))
 }

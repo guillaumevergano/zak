@@ -136,7 +136,7 @@ export function installAppMenu(windows: WindowManager, { find, zoom, session, up
     {
       label: t('Édition'),
       submenu: [
-        { role: 'undo', label: t('Annuler') },
+        { role: 'undo', label: t('Annuler@@undo') },
         { role: 'redo', label: t('Rétablir') },
         { type: 'separator' },
         { role: 'cut', label: t('Couper') },

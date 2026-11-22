@@ -190,7 +190,7 @@ function SettingsPage(): JSX.Element {
                 .catch(fail)
             }
           >
-            {t('Modifier…')}
+            {t('Modifier…@@dossier')}
           </SmallButton>
         </Row>
       </Section>
