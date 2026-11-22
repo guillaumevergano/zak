@@ -7,7 +7,7 @@ import { SETTINGS_PAGE_URL } from '@shared/ipc'
 import { selectActiveTab, useBrowserStore } from '../store/useBrowserStore'
 import { dndId, ROOT_ZONE } from '../lib/dnd'
 import { matchFavorite, rectOf } from '../lib/favorites'
-import { ChevronIcon, GearIcon, GlobeIcon, PlusIcon } from './Icons'
+import { ChevronIcon, GearIcon, GlobeIcon, PlusIcon, SidebarIcon } from './Icons'
 import { t } from '@shared/i18n'
 
 const api = window.zak
@@ -83,7 +83,17 @@ export function Sidebar(): JSX.Element {
         </button>
       </div>
 
-      <footer className={`flex shrink-0 items-center pt-2 pb-3 ${collapsed ? 'justify-center' : 'justify-end px-3'}`}>
+      <footer className={`flex shrink-0 items-center gap-2 pt-2 pb-3 ${collapsed ? 'flex-col justify-center' : 'justify-end px-3'}`}>
+        {/* Folded: icons only, the favorites one below the other (also ⌘B). */}
+        <button
+          data-testid="toggle-sidebar"
+          aria-expanded={!collapsed}
+          title={collapsed ? t('Déplier la barre latérale (⌘B)') : t('Réduire la barre latérale (⌘B)')}
+          onClick={() => useBrowserStore.getState().toggleSidebar()}
+          className="grid h-10 w-10 place-items-center rounded-full border border-frame-line text-frame-text hover:bg-frame-2"
+        >
+          <SidebarIcon collapse={!collapsed} />
+        </button>
         <button
           data-testid="open-settings"
           title={t('Réglages (⌘,)')}

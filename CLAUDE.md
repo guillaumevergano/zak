@@ -145,7 +145,7 @@ Les fenêtres privées n'écrivent **rien** dans `history` ni `tab_sessions`.
 - Mise en veille des onglets inactifs (réglage Général : jamais par défaut, 15 min à 2 h) : la page est remplacée par about:blank, l'onglet garde titre et icône (estompé) et se recharge quand on y revient. Jamais un onglet qui joue du son, qui charge, ou dont la page refuse de partir (beforeunload).
 
 ### 6.2 Barre latérale droite — favoris
-- Panneau fixe à droite (sous la barre d'outils), largeur réglable (220–380 px), repliable (`Cmd/Ctrl+B`) en mode « icônes seules ». Roue crantée en bas → `zak://settings`.
+- Panneau fixe à droite (sous la barre d'outils), largeur réglable (220–380 px), repliable (`Cmd/Ctrl+B`, ou le bouton à côté de la roue) en mode « icônes seules » : une colonne, les favoris les uns sous les autres. Roue crantée en bas → `zak://settings`.
 - Contenu : liste ordonnée de **dossiers** (repliables) et de **favoris** à la racine. Un dossier contient des favoris (un seul niveau de profondeur en v1).
 - Favoris de la racine en **mosaïque de 5 tuiles carrées par ligne** : chaque tuile n'affiche que l'**emoji** (choisi via picker), ou le favicon si pas d'emoji ; le titre apparaît en infobulle au survol. La tuile du site ouvert dans l'onglet actif est mise en avant. Clic = ouvrir dans l'onglet courant ; `Cmd/Ctrl+clic` ou clic molette = nouvel onglet.
 - Ajouter : bouton ★ dans la toolbar (page courante) → popover « Titre / Emoji / Dossier » ; ou glisser un onglet depuis la barre d'onglets vers la sidebar ; ou clic droit sur un lien → « Ajouter aux favoris de la sidebar ».

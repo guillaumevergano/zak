@@ -107,3 +107,27 @@ test('drag favorites into an empty folder and onto a folder title', async () => 
   await drag(sidebar.getByRole('button', { name: 'Deux', exact: true }), folder.getByRole('button', { name: /Cible/ }))
   await expect(folder.getByRole('button', { name: 'Deux', exact: true })).toBeVisible()
 })
+
+test('the button next to the gear folds the sidebar: favorites one below the other', async () => {
+  const sidebar = chrome.getByTestId('sidebar')
+  await chrome.evaluate(async () => {
+    const api = window.zak
+    await api.invoke('favorites:add', { title: 'Trois', url: 'https://trois.test/', emoji: '3️⃣', folderId: null })
+    await api.invoke('favorites:add', { title: 'Quatre', url: 'https://quatre.test/', emoji: '4️⃣', folderId: null })
+  })
+  const three = sidebar.getByRole('button', { name: 'Trois', exact: true })
+  const four = sidebar.getByRole('button', { name: 'Quatre', exact: true })
+  const toggle = chrome.getByTestId('toggle-sidebar')
+  // Unfolded: side by side in the mosaic.
+  await expect.poll(async () => (await four.boundingBox())!.y - (await three.boundingBox())!.y).toBe(0)
+
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  await expect.poll(async () => Math.round((await sidebar.boundingBox())!.width)).toBe(64)
+  await expect.poll(async () => (await four.boundingBox())!.x - (await three.boundingBox())!.x).toBe(0)
+  expect((await four.boundingBox())!.y).toBeGreaterThan((await three.boundingBox())!.y)
+
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+  await expect.poll(async () => (await sidebar.boundingBox())!.width).toBeGreaterThan(200)
+})
