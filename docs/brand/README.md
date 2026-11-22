@@ -1,11 +1,11 @@
-> Extrait du kit de marque v2.0 versionné dans le dépôt : les logos SVG (`logos/`), la palette,
+> Extrait du kit de marque v3.0 versionné dans le dépôt : les logos SVG (`logos/`), la palette,
 > les jetons CSS et la charte PDF. Les icônes de l'app sont dans `build/` (icon.icns, icon.ico, icon.png),
 > celles du site dans `site/brand/`, le favicon des pages internes dans `src/renderer/public/zak.svg`.
 > Les autres chemins cités plus bas renvoient au kit complet.
 
-# Zak - kit de marque final v2.0
+# Zak - kit de marque final v3.0
 
-**Logo retenu : proposition 03, « Le k en réserve ».**
+**Logo retenu : proposition 02, « La branche ».**
 Version du 22 novembre 2026.
 
 ## Commencer ici
@@ -40,10 +40,10 @@ Version du 22 novembre 2026.
 
 ## Ce qui a été finalisé
 
-Le grand logo de la proposition 03 a été converti en courbes de Bézier, avec
-conservation de sa silhouette, de ses liaisons et des ouvertures du a et du k.
+Le grand logo de la proposition 02 a été converti en courbes de Bézier, avec
+conservation de sa silhouette, de la branche continue et de l’encoche sous l’oiseau.
 Les couleurs sont normalisées à la palette : prune #2E1F2D, crème #F3EDEA,
-violet #C67AFB et rose #FF0082. L’œil, la contreforme du a et l’ouverture du k
+violet #C67AFB et rose #FF0082. L’œil, la contreforme du a et l’encoche sous l’oiseau
 sont de véritables espaces transparents.
 
 Les SVG de production contiennent uniquement des tracés et, pour les versions
@@ -53,8 +53,10 @@ DM Sans, Fraunces et JetBrains Mono conservent leurs rôles dans l’interface.
 
 Le symbole utilisé dans les favicons reprend la tête, la huppe, l’aile et le bec
 de cette nouvelle version. Sa traverse basse est refermée pour qu’il fonctionne
-seul. L’œil est agrandi sur la variante micro ; le logo complet reste inchangé.
-Les anciennes propositions et les kits v1 restent dans leurs dossiers d’origine.
+seul. L’œil est agrandi et l’encoche est simplifiée sur la variante micro ; le logo
+complet reste fidèle à la pièce jointe.
+Ce kit La branche remplace le kit v2.0 pour le projet. Les anciens dossiers sont
+conservés comme historique ; utiliser les fichiers de ce nouveau kit.
 
 ## Intégrer sur le site
 

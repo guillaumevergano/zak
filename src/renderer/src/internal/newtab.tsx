@@ -157,11 +157,7 @@ function NewTabPage(): JSX.Element {
                   className="group flex items-center gap-4 rounded-[14px] border border-cream-edge bg-cream p-2.5 text-cream-ink no-underline hover:bg-cream-2"
                 >
                   <span className="grid size-[52px] shrink-0 place-items-center rounded-[14px] bg-gradient-to-br from-[#e9d8e4] via-[#d9c4dc] to-[#b9a6d8]">
-                    {entry.favicon ? (
-                      <img src={entry.favicon} alt="" className="size-7 rounded-md" />
-                    ) : (
-                      <span className="text-[20px] font-bold text-white/90">{hostOf(entry.url).charAt(0).toUpperCase()}</span>
-                    )}
+                    <RecentIcon favicon={entry.favicon} url={entry.url} />
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate text-[16px] font-semibold">{entry.title}</span>
@@ -259,6 +255,13 @@ function ClockIcon(): JSX.Element {
       <path d="M10 6.5V10l2.5 1.5" strokeLinecap="round" />
     </svg>
   )
+}
+
+/** The site's favicon, or its initial when there is none or it fails to load. */
+function RecentIcon({ favicon, url }: { favicon: string | null; url: string }): JSX.Element {
+  const [failed, setFailed] = useState(false)
+  if (favicon && !failed) return <img src={favicon} alt="" onError={() => setFailed(true)} className="size-7 rounded-md" />
+  return <span className="text-[20px] font-bold text-white/90">{hostOf(url).charAt(0).toUpperCase()}</span>
 }
 
 /** The Zak logo (docs/brand/): the reverse version on a dark page (dark theme, private window). */
