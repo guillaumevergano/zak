@@ -25,9 +25,14 @@ const check = (ok, what) => {
     env: { ...process.env, ZAK_USER_DATA: mkdtempSync(join(tmpdir(), 'zak-packaged-')), ZAK_LANG: 'fr', ZAK_E2E: '1' }
   })
   const isChrome = (p) => /\/index\.html(\?|$)/.test(p.url()) && !p.url().includes('#overlay')
-  for (let i = 0; i < 100 && !app.windows().some(isChrome); i++) await new Promise((r) => setTimeout(r, 200))
+  // A fresh profile first fetches the Widevine CDM (up to 20 s, more on a slow CI runner).
+  for (let i = 0; i < 450 && !app.windows().some(isChrome); i++) await new Promise((r) => setTimeout(r, 200))
   const chrome = app.windows().find(isChrome)
   check(Boolean(chrome), 'chrome UI loaded')
+  if (!chrome) {
+    await app.close().catch(() => {})
+    process.exit(1)
+  }
   await chrome.waitForSelector('[data-testid="tab"]')
 
   const widevine = await chrome.evaluate(() => window.zak.invoke('widevine:getStatus'))

@@ -31,8 +31,12 @@ test('a new profile is created from the settings and opens as a separate Zak', a
     args: [root, `--zak-profile=${opened![0]}`],
     env: { ...process.env, ZAK_PROFILES_DIR: profilesDir, ZAK_LANG: 'fr', ZAK_E2E: '1' }
   })
-  const workChrome = await firstChrome(work)
-  await expect(workChrome.getByTestId('profile-badge')).toHaveText('💼 Travail')
-  expect(await work.evaluate(({ app: a }) => a.getPath('userData'))).toBe(join(profilesDir, opened![0]!))
-  await work.close()
+  try {
+    const workChrome = await firstChrome(work)
+    await expect(workChrome.getByTestId('profile-badge')).toHaveText('💼 Travail')
+    expect(await work.evaluate(({ app: a }) => a.getPath('userData'))).toBe(join(profilesDir, opened![0]!))
+  } finally {
+    // Closed even on failure: a stuck app makes the worker's teardown time out (and fails the run).
+    await work.close().catch(() => {})
+  }
 })
