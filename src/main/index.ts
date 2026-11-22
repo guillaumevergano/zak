@@ -44,7 +44,7 @@ if (testProfile) {
 app.userAgentFallback = chromeUserAgent()
 // zak://extensions… (privileged schemes must be registered before ready).
 registerInternalScheme()
-// Links from other apps once ZAK is the default browser (they can arrive before ready).
+// Links from other apps once Zak is the default browser (they can arrive before ready).
 // One process per profile: a second launch hands its URLs to this one and quits.
 const links = new LinkReceiver()
 const primaryInstance = links.install()

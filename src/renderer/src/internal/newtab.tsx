@@ -4,6 +4,8 @@ import { toUrl, type SearchEngine } from '@shared/url'
 import type { HistoryEntry, OmniboxSuggestion } from '@shared/types'
 import { callInternal } from './api'
 import { GlobeIcon, SearchIcon, SparkleIcon } from '../components/Icons'
+import logo from '../assets/brand/zak-logo-color.svg'
+import logoReverse from '../assets/brand/zak-logo-reverse.svg'
 import '../styles.css'
 
 /** Private windows open it with `?private=1`: same dark theme as their chrome UI (CLAUDE.md §6.3). */
@@ -75,7 +77,7 @@ function NewTabPage(): JSX.Element {
 
   return (
     <main className="flex min-h-full flex-col items-center justify-center px-6 pt-[6vh] pb-[10vh] text-cream-ink">
-      <InfinityMark />
+      <Logo />
       <h1 className="m-0 mt-4 text-center font-serif text-[clamp(44px,7vw,84px)] leading-[1.05] font-semibold tracking-[-0.02em]">
         Un peu d’espace.
       </h1>
@@ -154,7 +156,7 @@ function NewTabPage(): JSX.Element {
                   data-testid="recent"
                   className="group flex items-center gap-4 rounded-[14px] border border-cream-edge bg-cream p-2.5 text-cream-ink no-underline hover:bg-cream-2"
                 >
-                  <span className="grid h-[58px] w-[110px] shrink-0 place-items-center rounded-[10px] bg-gradient-to-br from-[#e9d8e4] via-[#d9c4dc] to-[#b9a6d8]">
+                  <span className="grid size-[52px] shrink-0 place-items-center rounded-[14px] bg-gradient-to-br from-[#e9d8e4] via-[#d9c4dc] to-[#b9a6d8]">
                     {entry.favicon ? (
                       <img src={entry.favicon} alt="" className="size-7 rounded-md" />
                     ) : (
@@ -259,21 +261,17 @@ function ClockIcon(): JSX.Element {
   )
 }
 
-/** The pastel infinity ribbon of the mockup. */
-function InfinityMark(): JSX.Element {
-  const loop = 'M100 60C75 22 24 26 24 60s51 38 76 0 76-38 76 0-51 38-76 0Z'
+/** The Zak logo (docs/brand/): the reverse version on a dark page (dark theme, private window). */
+function Logo(): JSX.Element {
+  const img = (src: string): JSX.Element => (
+    <img src={src} alt="Zak" width={240} height={114} draggable={false} data-testid="newtab-logo" className="block select-none" />
+  )
+  if (isPrivate) return img(logoReverse)
   return (
-    <svg viewBox="0 0 200 120" width={260} height={156} aria-hidden className="-rotate-12 opacity-90">
-      <defs>
-        <linearGradient id="ribbon" x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0" stopColor="#a993dd" />
-          <stop offset="0.55" stopColor="#d9b4c4" />
-          <stop offset="1" stopColor="#e8c4c4" />
-        </linearGradient>
-      </defs>
-      <path d={loop} fill="none" stroke="url(#ribbon)" strokeWidth={18} strokeLinecap="round" opacity={0.55} />
-      <path d={loop} fill="none" stroke="url(#ribbon)" strokeWidth={7} strokeLinecap="round" opacity={0.7} transform="translate(3 -4)" />
-    </svg>
+    <picture>
+      <source srcSet={logoReverse} media="(prefers-color-scheme: dark)" />
+      {img(logo)}
+    </picture>
   )
 }
 

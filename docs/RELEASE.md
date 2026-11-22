@@ -40,8 +40,8 @@ Puis :
 npm run release:mac
 ```
 
-Le log doit montrer `VMP signing …` et `verify-pkg` **avant** `signing file=…ZAK.app`, puis la
-notarisation. Résultat : `dist/ZAK-<version>-arm64.dmg` et `-x64.dmg`.
+Le log doit montrer `VMP signing …` et `verify-pkg` **avant** `signing file=…Zak.app`, puis la
+notarisation. Résultat : `dist/Zak-<version>-arm64.dmg` et `-x64.dmg`.
 
 Windows (sur une machine Windows) : `npm run release:win`, avec `CSC_LINK` / `CSC_KEY_PASSWORD`
 pour Authenticode (recommandé).
@@ -50,8 +50,8 @@ pour Authenticode (recommandé).
 
 | # | Vérification | Résultat |
 |---|---|---|
-| 7.1 | `spctl -a -vv dist/mac-arm64/ZAK.app` → `accepted, source=Notarized Developer ID` | |
-| 7.2 | `.venv/bin/python -m castlabs_evs.vmp verify-pkg dist/mac-arm64/ZAK.app` → signature valide | |
+| 7.1 | `spctl -a -vv dist/mac-arm64/Zak.app` → `accepted, source=Notarized Developer ID` | |
+| 7.2 | `.venv/bin/python -m castlabs_evs.vmp verify-pkg dist/mac-arm64/Zak.app` → signature valide | |
 | 7.3 | https://bitmovin.com/demos/drm (Widevine) : la vidéo démarre | |
 | 7.4 | **Netflix** : lecture d'un épisode, sans erreur M7121-1331 | |
 | 7.5 | **Prime Video** : lecture d'un épisode | |
@@ -82,8 +82,8 @@ quand un tag de version est poussé ; le site (`site/`) et la mise à jour autom
    Les pull requests de contributeurs n'ont jamais accès à ces secrets.
 2. À chaque version : monter `version` dans `package.json`, commiter, puis
    `git tag v0.1.0 && git push --tags`. Le workflow vérifie que le tag et la version concordent.
-3. Les fichiers gardent un nom fixe (`ZAK-mac-arm64.dmg`, `ZAK-mac-x64.dmg`,
-   `ZAK-Setup-x64.exe`) : les liens `releases/latest/download/…` du site pointent toujours sur
+3. Les fichiers gardent un nom fixe (`Zak-mac-arm64.dmg`, `Zak-mac-x64.dmg`,
+   `Zak-Setup-x64.exe`) : les liens `releases/latest/download/…` du site pointent toujours sur
    la dernière version.
 
 `electron-builder.yml` → `publish` désigne le dépôt (`guillaumevergano/zak`) ; à changer si le

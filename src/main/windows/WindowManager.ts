@@ -66,7 +66,7 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
       minWidth: 480,
       minHeight: 320,
       show: false,
-      title: 'ZAK',
+      title: 'Zak',
       titleBarStyle: isMac ? 'hiddenInset' : 'hidden',
       // Design (CLAUDE.md §7): an opaque plum frame, the traffic lights (or, elsewhere, the caption
       // buttons) in the tab strip. Private windows: a darker frame (forced dark theme, §6.3).
@@ -99,7 +99,7 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
       const state = tabs.getState()
       this.sendTo(window, 'tabs:state', state)
       const active = state.tabs.find((t) => t.id === state.activeId)
-      const app = isPrivate ? 'ZAK (navigation privée)' : 'ZAK'
+      const app = isPrivate ? 'Zak (navigation privée)' : 'Zak'
       window.setTitle(active ? `${active.title} — ${app}` : app)
       this.emit('tabs-changed', handle)
     }
@@ -203,7 +203,7 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
   }
 
   /**
-   * Links and pages sent by other apps (ZAK as the default browser): new tabs in the focused
+   * Links and pages sent by other apps (Zak as the default browser): new tabs in the focused
    * normal window, else the most recent one, brought to the front; a new window if there is none.
    * No URL (the app launched again from Explorer): just bring a window to the front.
    */

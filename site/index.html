@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ZAK — un navigateur calme</title>
-<meta name="description" content="ZAK : un navigateur de bureau basé sur Chromium, avec les extensions Chrome, le streaming, une barre de favoris en emojis et le lecteur flottant automatique. Gratuit et open source.">
+<title>Zak — un navigateur calme</title>
+<meta name="description" content="Zak : un navigateur de bureau basé sur Chromium, avec les extensions Chrome, le streaming, une barre de favoris en emojis et le lecteur flottant automatique. Gratuit et open source.">
 <link rel="icon" href="brand/favicon.ico" sizes="16x16 32x32 48x48 64x64">
 <link rel="icon" href="brand/favicon.svg" type="image/svg+xml" sizes="any">
 <link rel="apple-touch-icon" href="brand/apple-touch-icon.png" sizes="180x180">
 <link rel="mask-icon" href="brand/safari-pinned-tab.svg" color="#2E1F2D">
 <link rel="manifest" href="brand/site.webmanifest">
 <meta name="theme-color" content="#2E1F2D">
-<meta property="og:title" content="ZAK — un navigateur calme">
+<meta property="og:title" content="Zak — un navigateur calme">
 <meta property="og:description" content="Un peu d'espace pour vos prochaines idées. Gratuit et open source.">
 <meta property="og:image" content="https://guillaumevergano.github.io/zak/brand/zak-social.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -111,7 +111,7 @@
 <body>
 <div class="wrap">
   <header class="top">
-    <a class="brand" href="./"><img src="brand/logo.svg" alt="ZAK" width="101" height="48"></a>
+    <a class="brand" href="./"><img src="brand/logo.svg" alt="Zak" width="101" height="48"></a>
     <nav>
       <a href="#features">Fonctionnalités</a>
       <a href="#open-source">Open source</a>
@@ -122,9 +122,9 @@
   <main>
     <section class="hero">
       <h1>Un peu d'espace.</h1>
-      <p class="lead">ZAK est un navigateur calme, construit sur Chromium : vos extensions Chrome, vos séries en streaming, vos favoris en emojis, et rien de superflu.</p>
+      <p class="lead">Zak est un navigateur calme, construit sur Chromium : vos extensions Chrome, vos séries en streaming, vos favoris en emojis, et rien de superflu.</p>
       <div class="download">
-        <a class="btn" id="primary" href="#">Télécharger ZAK</a>
+        <a class="btn" id="primary" href="#">Télécharger Zak</a>
         <div class="others" id="others"></div>
         <div class="note">Gratuit · macOS 12+ et Windows 10+ · se met à jour tout seul</div>
       </div>
@@ -161,14 +161,14 @@
 
     <section class="open" id="open-source">
       <h2>Open source, et ouvert aux contributions</h2>
-      <p>Le code de ZAK est public, sous licence MIT. Signalez un bug, proposez une idée ou envoyez une pull request : tout se passe sur GitHub.</p>
+      <p>Le code de Zak est public, sous licence MIT. Signalez un bug, proposez une idée ou envoyez une pull request : tout se passe sur GitHub.</p>
       <a class="btn" data-repo-link href="#">Voir le code</a>
       <a class="btn ghost" data-repo-link data-path="/blob/main/CONTRIBUTING.md" href="#">Contribuer</a>
     </section>
   </main>
 
   <footer>
-    <span>ZAK · licence MIT</span>
+    <span>Zak · licence MIT</span>
     <a data-repo-link data-path="/releases" href="#">Toutes les versions</a>
   </footer>
 </div>
@@ -179,9 +179,9 @@
   // Stable file names (electron-builder.yml → artifactName): always the latest release.
   const latest = (file) => `${REPO}/releases/latest/download/${file}`
   const BUILDS = {
-    macArm: { label: 'Télécharger pour Mac (Apple Silicon)', short: 'Mac Apple Silicon', href: latest('ZAK-mac-arm64.dmg') },
-    macIntel: { label: 'Télécharger pour Mac (Intel)', short: 'Mac Intel', href: latest('ZAK-mac-x64.dmg') },
-    win: { label: 'Télécharger pour Windows', short: 'Windows', href: latest('ZAK-Setup-x64.exe') }
+    macArm: { label: 'Télécharger pour Mac (Apple Silicon)', short: 'Mac Apple Silicon', href: latest('Zak-mac-arm64.dmg') },
+    macIntel: { label: 'Télécharger pour Mac (Intel)', short: 'Mac Intel', href: latest('Zak-mac-x64.dmg') },
+    win: { label: 'Télécharger pour Windows', short: 'Windows', href: latest('Zak-Setup-x64.exe') }
   }
 
   for (const a of document.querySelectorAll('[data-repo-link]')) a.href = REPO + (a.dataset.path ?? '')
@@ -203,7 +203,7 @@
   } else {
     primary.textContent = 'Toutes les versions'
     primary.href = `${REPO}/releases/latest`
-    others.innerHTML = `ZAK est disponible pour ${link(BUILDS.macArm)}, ${link(BUILDS.macIntel)} et ${link(BUILDS.win)}`
+    others.innerHTML = `Zak est disponible pour ${link(BUILDS.macArm)}, ${link(BUILDS.macIntel)} et ${link(BUILDS.win)}`
   }
 </script>
 </body>

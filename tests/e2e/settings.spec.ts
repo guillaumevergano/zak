@@ -75,7 +75,7 @@ test('bookmarks exported from Chrome are imported into the sidebar', async () =>
 
 test('links sent by other apps open in a new tab; the default browser row explains why it is off in dev', async () => {
   const count = await chrome.getByTestId('tab').count()
-  // What macOS sends once ZAK is the default browser (a link clicked in Mail, Slack…).
+  // What macOS sends once Zak is the default browser (a link clicked in Mail, Slack…).
   const url = 'data:text/html,<title>Externe</title>'
   await app.evaluate(({ app }, link) => app.emit('open-url', { preventDefault: () => {} }, link), url)
   await expect(chrome.getByTestId('tab')).toHaveCount(count + 1)

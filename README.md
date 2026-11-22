@@ -1,4 +1,4 @@
-# ZAK
+# Zak
 
 A calm desktop browser built on Chromium (castLabs Electron), with the things people like in
 Chrome, Arc and Vivaldi:

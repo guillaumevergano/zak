@@ -1,5 +1,5 @@
 appId: app.zak.browser
-productName: ZAK
+productName: Zak
 directories:
   buildResources: build
   output: dist
@@ -65,7 +65,7 @@ nsis:
   artifactName: ${productName}-Setup-${arch}.${ext}
   oneClick: false
   allowToChangeInstallationDirectory: true
-  # Registers ZAK as a browser, so Windows lists it in Settings → Default apps.
+  # Registers Zak as a browser, so Windows lists it in Settings → Default apps.
   include: build/installer.nsh
 
 # Updates (electron-updater, src/main/updates/Updater.ts) and the website's download buttons both

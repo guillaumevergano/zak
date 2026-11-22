@@ -35,7 +35,7 @@ Rien de ce qui suit n'a été testé à la main (installation réelle d'extensio
 npm install
 npm run dev                 # dev, HMR sur le renderer — PAS pour tester le DRM
 ZAK_SKIP_VMP=1 CSC_IDENTITY_AUTO_DISCOVERY=false npm run build:dir   # build packagé, non signé
-open dist/mac-arm64/ZAK.app
+open dist/mac-arm64/Zak.app
 ```
 
 Le premier lancement attend le téléchargement du CDM Widevine (quelques secondes, fenêtre pas
@@ -66,7 +66,7 @@ en `npm run dev` ; le DRM **uniquement** sur un build packagé et signé.
 |---|---|---|
 | 2.1 | Ouvrir `chromewebstore.google.com`, page d'une extension → le bouton « Ajouter à Chrome » est actif | |
 | 2.2 | **uBlock Origin Lite** : s'installe, icône dans la toolbar, popup s'ouvre au clic, pubs bloquées sur un site d'actu | ❌ uBO Lite ne bloque rien (Electron n'applique pas `declarativeNetRequest`), uBO MV2 plante → **bloqueur intégré Ghostery** à la place : pubs bloquées et encarts masqués (docs/EXTENSIONS.md) |
-| 2.3 | Redémarrer l'app → l'extension est toujours là (chargée depuis `~/Library/Application Support/ZAK/Extensions`) | |
+| 2.3 | Redémarrer l'app → l'extension est toujours là (chargée depuis `~/Library/Application Support/Zak/Extensions`) | |
 | 2.4 | **Connexion Google** dans un onglet (accounts.google.com) : pas d'écran « Ce navigateur ou cette application ne sont peut-être pas sécurisés » | ✅ après shim `window.chrome` ; 2FA par passkey bloquée → autre méthode OK |
 | 2.5 | **Dashlane** : installation, connexion au compte (popup + éventuel onglet de login) | ✅ (code de vérification reçu par e-mail) |
 | 2.6 | Dashlane : autoremplissage d'identifiants sur 3 sites (noter lesquels) | ✅ après shim onglet actif (docs/EXTENSIONS.md), confirmé le 18/11 |
@@ -106,15 +106,15 @@ Prérequis (une seule fois) :
 3. Certificat **Developer ID Application** dans le trousseau (ou `CSC_LINK` + `CSC_KEY_PASSWORD`).
 4. Notarisation : exporter `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`.
 
-Build : `npm run build:mac` → `dist/ZAK-0.0.1-arm64.dmg` (+ x64). Le log doit montrer
-`VMP signing …` puis la vérification `verify-pkg`, **avant** `signing file=…ZAK.app`.
+Build : `npm run build:mac` → `dist/Zak-0.0.1-arm64.dmg` (+ x64). Le log doit montrer
+`VMP signing …` puis la vérification `verify-pkg`, **avant** `signing file=…Zak.app`.
 En CI : `EVS_ACCOUNT` / `EVS_PASSWD` en secrets, jamais commités.
 
 | # | Vérification | Résultat |
 |---|---|---|
 | 3.1 | Le build passe : VMP signé + vérifié, signature Apple, notarisation acceptée | |
-| 3.2 | `spctl -a -vv dist/mac-arm64/ZAK.app` → `accepted, source=Notarized Developer ID` | |
-| 3.3 | `python3 -m castlabs_evs.vmp verify-pkg dist/mac-arm64/ZAK.app` → signature valide | |
+| 3.2 | `spctl -a -vv dist/mac-arm64/Zak.app` → `accepted, source=Notarized Developer ID` | |
+| 3.3 | `python3 -m castlabs_evs.vmp verify-pkg dist/mac-arm64/Zak.app` → signature valide | |
 | 3.4 | https://bitmovin.com/demos/drm (Widevine) : la vidéo démarre | |
 | 3.5 | **Netflix** : lecture d'un épisode (pas d'erreur M7121-1331) | |
 | 3.6 | **Prime Video** : lecture d'un épisode | |

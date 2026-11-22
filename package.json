@@ -1,11 +1,11 @@
 {
   "name": "zak",
-  "productName": "ZAK",
+  "productName": "Zak",
   "version": "0.0.1",
   "private": true,
   "description": "Personal desktop browser built on castLabs Electron (Widevine).",
   "main": "./out/main/index.js",
-  "author": "ZAK",
+  "author": "Zak",
   "scripts": {
     "dev": "electron-vite dev",
     "start": "electron-vite preview",

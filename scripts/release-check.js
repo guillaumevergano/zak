@@ -57,7 +57,7 @@ if (isMac) {
     Boolean(process.env.APPLE_ID && process.env.APPLE_APP_SPECIFIC_PASSWORD && process.env.APPLE_TEAM_ID) ||
     Boolean(process.env.APPLE_API_KEY && process.env.APPLE_API_KEY_ID && process.env.APPLE_API_ISSUER)
   report(notarize, 'identifiants de notarisation (APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID)', [
-    'appleid.apple.com → Mots de passe pour app → générer un mot de passe pour « ZAK notarisation »',
+    'appleid.apple.com → Mots de passe pour app → générer un mot de passe pour « Zak notarisation »',
     'export APPLE_ID=… APPLE_APP_SPECIFIC_PASSWORD=… APPLE_TEAM_ID=…'
   ])
 } else if (isWin) {

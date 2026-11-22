@@ -1,6 +1,6 @@
-# ZAK — Spécification d'architecture (navigateur de bureau perso)
+# Zak — Spécification d'architecture (navigateur de bureau perso)
 
-> Nom : **ZAK** (identité visuelle : `docs/brand/`). Document destiné à être placé à la racine du repo
+> Nom : **Zak** (identité visuelle : `docs/brand/`). Document destiné à être placé à la racine du repo
 > (ex. `CLAUDE.md` ou `docs/SPEC.md`) et lu par Claude Code à chaque session.
 
 ## 1. Objectif
@@ -212,9 +212,9 @@ Choix faits à l'Étape 6 (à garder) :
 Maquette de référence : **`docs/design/maquette-v2.png`**. Jetons dans `src/renderer/src/styles.css`.
 - **Cadre prune** `#2E1F2D` (fenêtre opaque) : barre d'onglets en haut (feux tricolores, onglets épinglés, balai « Tout fermer », onglets, « + ») et barre latérale à droite, sous la barre d'outils. Texte `#F3EBF1`, secondaire `#A8929F`, tuiles `#3E2F3E`, accent violet `#C67AFB` (tuile active cerclée `#9D7BE6`).
 - **Panneau crème** `#F3EDEA` (coins arrondis 14 px, marge 8 px) : l'onglet actif (qui s'y raccorde, à la Chrome), la barre d'outils sur toute la largeur (← → ⟳, omnibox en pilule `#EBE2E2` bordée `#DECFD6`, puis au bout les icônes d'extensions et le bouton des téléchargements, au-dessus de la barre latérale) et la page web, à gauche de la barre latérale. Le panneau forme un L inversé : coin rentrant arrondi entre la barre d'outils et la barre latérale. Feux tricolores centrés sur les onglets. Texte `#2A1A26`, secondaire `#6F5B68`.
-- **Page Nouvel onglet** `zak://newtab` : ruban infini pastel, titre serif « Un peu d'espace. », sous-titre `#C8A8A8` « Pour vos prochaines idées. », champ « Où voulez-vous aller ? » (⌘K). « Reprendre la navigation » et « Récemment » arrivent avec l'Étape 6 (restauration de session, historique). Le sélecteur d'espaces et le « Mode focus » de la maquette sont hors périmètre.
+- **Page Nouvel onglet** `zak://newtab` : logo Zak (version inversée en thème sombre et en privé), titre serif « Un peu d'espace. », sous-titre `#C8A8A8` « Pour vos prochaines idées. », champ « Où voulez-vous aller ? » (⌘K). « Reprendre la navigation » et « Récemment » (aperçus carrés arrondis) arrivent avec l'Étape 6 (restauration de session, historique). Le sélecteur d'espaces et le « Mode focus » de la maquette sont hors périmètre.
 - **Rose `#FF0082`** réservé aux éléments marquants (chargement, focus de l'omnibox, onglet sonore) ; petit texte rose sur fond sombre `#FF8CC4`.
-- **Logo** : « Le k en réserve », oiseau-Z lié au mot Zak (kit de marque v2.0 dans `docs/brand/`, charte PDF incluse). Icônes de l'app dans `build/` (`icon.icns`, `icon.ico`, `icon.png`), favicon des pages internes `src/renderer/public/zak.svg`, icônes du site dans `site/brand/`. Ne pas recomposer le mot ZAK dans une police : utiliser les SVG.
+- **Logo** : « Le k en réserve », oiseau-Z lié au mot Zak (kit de marque v2.0 dans `docs/brand/`, charte PDF incluse). Icônes de l'app dans `build/` (`icon.icns`, `icon.ico`, `icon.png`), favicon des pages internes `src/renderer/public/zak.svg`, icônes du site dans `site/brand/`. Ne pas recomposer le mot Zak dans une police : utiliser les SVG.
 - Polices embarquées (OFL) : **DM Sans** pour l'interface, **Fraunces** pour les titres de la page Nouvel onglet, **JetBrains Mono** pour l'URL et le code. Emojis en police système.
 - Popovers et pages internes (extensions, réglages) gardent les jetons violets de la v1 (`docs/design/maquette.html`) sur fond crème.
 - Fenêtre : `titleBarStyle: 'hiddenInset'` sur macOS (feux tricolores dans la barre d'onglets), `titleBarOverlay` sur Windows.

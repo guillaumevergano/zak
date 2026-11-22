@@ -216,7 +216,7 @@ export interface HistoryEntry {
 }
 
 /**
- * Whether ZAK opens web links for the system: `unavailable` in development (the process is
+ * Whether Zak opens web links for the system: `unavailable` in development (the process is
  * Electron.app, which must not be registered).
  */
 export type DefaultBrowserStatus = 'default' | 'other' | 'unavailable'

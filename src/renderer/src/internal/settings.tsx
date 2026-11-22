@@ -363,10 +363,10 @@ function DefaultBrowser({ onError }: { onError: (err: unknown) => void }): JSX.E
 
   const detail =
     status === 'default'
-      ? 'Les liens ouverts depuis les autres applications arrivent dans ZAK.'
+      ? 'Les liens ouverts depuis les autres applications arrivent dans Zak.'
       : status === 'unavailable'
         ? "Disponible dans l'application installée, pas en mode développement."
-        : 'Ouvrir dans ZAK les liens cliqués dans les autres applications.'
+        : 'Ouvrir dans Zak les liens cliqués dans les autres applications.'
 
   return (
     <Row title="Navigateur par défaut" detail={detail}>

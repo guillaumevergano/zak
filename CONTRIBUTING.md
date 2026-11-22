@@ -1,12 +1,12 @@
-# Contributing to ZAK
+# Contributing to Zak
 
 Thanks for helping! Here is how to get going.
 
 ## Before you start
 
 - **Bugs:** open an issue with the steps to reproduce, what you expected and what happened, and
-  your OS and ZAK version (menu ZAK → À propos).
-- **Features:** open an issue first to discuss it. ZAK tries to stay small and calm: the
+  your OS and Zak version (menu Zak → À propos).
+- **Features:** open an issue first to discuss it. Zak tries to stay small and calm: the
   scope is described in [`CLAUDE.md`](CLAUDE.md) (in French), section by section.
 - **Security issues:** please don't open a public issue, see [SECURITY.md](SECURITY.md).
 

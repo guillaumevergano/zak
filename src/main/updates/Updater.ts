@@ -42,12 +42,12 @@ export class Updater {
       const result = await autoUpdater.checkForUpdates()
       const latest = result?.updateInfo.version
       if (!latest || latest === app.getVersion()) {
-        await dialog.showMessageBox({ type: 'info', message: 'ZAK est à jour', detail: `Version ${app.getVersion()}.` })
+        await dialog.showMessageBox({ type: 'info', message: 'Zak est à jour', detail: `Version ${app.getVersion()}.` })
       } else {
         await dialog.showMessageBox({
           type: 'info',
           message: `La version ${latest} se télécharge`,
-          detail: 'Vous pourrez redémarrer ZAK une fois le téléchargement terminé.'
+          detail: 'Vous pourrez redémarrer Zak une fois le téléchargement terminé.'
         })
       }
     } catch (err) {
@@ -71,7 +71,7 @@ export class Updater {
       buttons: ['Redémarrer maintenant', 'Plus tard'],
       defaultId: 0,
       cancelId: 1,
-      message: `ZAK ${version} est prêt`,
+      message: `Zak ${version} est prêt`,
       detail: 'Redémarrez pour l’installer. Sinon, elle s’installera à la prochaine fermeture.'
     })
     if (response === 0) autoUpdater.quitAndInstall()

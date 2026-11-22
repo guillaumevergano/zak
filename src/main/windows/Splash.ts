@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron'
 
-const HTML = `<!doctype html><html lang="fr"><meta charset="utf-8"><title>ZAK</title>
+const HTML = `<!doctype html><html lang="fr"><meta charset="utf-8"><title>Zak</title>
 <style>
   html,body{margin:0;height:100%;background:#2e1f2d;color:#f3ebf1;font:15px -apple-system,system-ui,sans-serif;-webkit-user-select:none;-webkit-app-region:drag}
   body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}

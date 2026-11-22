@@ -9,8 +9,8 @@ const { tmpdir } = require('node:os')
 const { join } = require('node:path')
 
 const exe = {
-  darwin: `dist/mac-${process.arch}/ZAK.app/Contents/MacOS/ZAK`,
-  win32: 'dist/win-unpacked/ZAK.exe',
+  darwin: `dist/mac-${process.arch}/Zak.app/Contents/MacOS/Zak`,
+  win32: 'dist/win-unpacked/Zak.exe',
   linux: 'dist/linux-unpacked/zak'
 }[process.platform]
 
@@ -43,7 +43,7 @@ const check = (ok, what) => {
   check(Boolean(newtab) && (await newtab.textContent('h1')) === 'Un peu d’espace.', 'internal page zak://newtab served from the asar')
 
   const ua = await chrome.evaluate(() => navigator.userAgent)
-  check(!/Electron|ZAK/.test(ua), `Chrome user agent (${ua})`)
+  check(!/Electron|Zak/i.test(ua), `Chrome user agent (${ua})`)
 
   // Electron reads preloads through its asar-aware fs: they only need to exist.
   const preloads = await app.evaluate(({ session }) => {

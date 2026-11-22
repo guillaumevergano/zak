@@ -19,7 +19,7 @@ export function toOpenableUrl(arg: string, cwd = process.cwd()): string | null {
 }
 
 /**
- * Links and pages the system sends to ZAK once it is the default browser (CLAUDE.md §6.7):
+ * Links and pages the system sends to Zak once it is the default browser (CLAUDE.md §6.7):
  * macOS uses `open-url` / `open-file` (which can fire before `ready`, even to launch the app);
  * Windows and Linux start a second process with the URL in its arguments, which hands it over to
  * the running one and quits.
@@ -75,7 +75,7 @@ export class LinkReceiver {
   }
 }
 
-/** Whether ZAK handles web links, and whether this build can claim them. */
+/** Whether Zak handles web links, and whether this build can claim them. */
 export function defaultBrowserStatus(): DefaultBrowserStatus {
   // In development the process is Electron.app: registering it would hijack every link.
   if (!app.isPackaged) return 'unavailable'
@@ -84,12 +84,12 @@ export function defaultBrowserStatus(): DefaultBrowserStatus {
 
 /**
  * macOS asks the user to confirm (system dialog). Windows 10+ only lets the user change it in the
- * system settings: open them at ZAK's entry (the installer registers the app, build/installer.nsh).
+ * system settings: open them at Zak's entry (the installer registers the app, build/installer.nsh).
  */
 export async function makeDefaultBrowser(): Promise<DefaultBrowserStatus> {
   if (!app.isPackaged) return 'unavailable'
   if (process.platform === 'win32') {
-    await shell.openExternal('ms-settings:defaultapps?registeredAppUser=ZAK')
+    await shell.openExternal('ms-settings:defaultapps?registeredAppUser=Zak')
     return defaultBrowserStatus()
   }
   for (const scheme of WEB_SCHEMES) app.setAsDefaultProtocolClient(scheme)

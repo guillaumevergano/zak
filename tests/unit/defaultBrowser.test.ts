@@ -24,7 +24,7 @@ describe('toOpenableUrl', () => {
   it('ignores flags, the app path and other files', () => {
     expect(toOpenableUrl('--remote-debugging-port=0')).toBeNull()
     expect(toOpenableUrl('.')).toBeNull()
-    expect(toOpenableUrl('/Applications/ZAK.app')).toBeNull()
+    expect(toOpenableUrl('/Applications/Zak.app')).toBeNull()
     expect(toOpenableUrl('notes.txt')).toBeNull()
     expect(toOpenableUrl('mailto:someone@example.com')).toBeNull()
   })
