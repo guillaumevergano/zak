@@ -571,7 +571,12 @@ app.on('before-quit', (event) => {
   if (quitting) return
   event.preventDefault()
   quitting = true
-  void identitySettled().then(() => app.quit())
+  // Never stuck quitting: if the setup doesn't settle (or quitting hangs anyway), exit after a while.
+  const settled = Promise.race([identitySettled(), new Promise<void>((resolve) => setTimeout(resolve, 3_000))])
+  void settled.then(() => {
+    setTimeout(() => app.exit(0), 10_000).unref()
+    app.quit()
+  })
 })
 
 app.on('window-all-closed', () => {
