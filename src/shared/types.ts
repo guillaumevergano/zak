@@ -235,6 +235,19 @@ export interface SavedLogin {
 /** « Enregistrer le mot de passe ? »: save, never for this site, or not now. */
 export type SavePasswordChoice = 'save' | 'never' | 'dismiss'
 
+/** A mod (src/main/mods/): a theme and/or a new tab page, from the profile's mods folder. */
+export interface ModInfo {
+  /** Its folder's name. */
+  id: string
+  name: string
+  version: string
+  description: string
+  hasTheme: boolean
+  hasNewtab: boolean
+  themeActive: boolean
+  newtabActive: boolean
+}
+
 /** A profile (src/main/profiles/): a separate Zak with its own data. */
 export interface ProfileInfo {
   id: string

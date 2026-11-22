@@ -9,6 +9,7 @@ import type {
   ExtensionInfo,
   GeneralSettings,
   ImportSource,
+  ModInfo,
   PipSettings,
   ProfileInfo
 } from '@shared/types'
@@ -519,6 +520,7 @@ function CustomizeSection({ onError }: { onError: (err: unknown) => void }): JSX
           <SmallButton onClick={() => void callInternal('settings/openSettingsFile', { reveal: true }).catch(onError)}>{t('Afficher le dossier')}</SmallButton>
         </div>
       </Row>
+      <ModsBlock onError={onError} />
       <Row title={t('Extensions maison')} detail={t('Une extension écrite par l’IA se charge dans Extensions et se recharge à chaque modification.')}>
         <a href={EXTENSIONS_PAGE_URL} className="rounded-[10px] border border-cream-edge bg-cream-2 px-3 py-1 text-[12.5px] font-semibold text-violet no-underline hover:border-violet/40">
           {t('Extensions')}
@@ -548,6 +550,62 @@ function CustomizeSection({ onError }: { onError: (err: unknown) => void }): JSX
         </div>
       )}
     </Section>
+  )
+}
+
+/** Mods: a theme for Zak itself and a new tab page of one's own (docs/customize/). */
+function ModsBlock({ onError }: { onError: (err: unknown) => void }): JSX.Element {
+  const [state, setState] = useState<{ dir: string; mods: ModInfo[] } | null>(null)
+  useEffect(() => {
+    const load = (): void => void callInternal('settings/mods', null).then(setState).catch(() => {})
+    load()
+    // Mods written meanwhile (by hand or by an agent) show when coming back to the page.
+    window.addEventListener('focus', load)
+    return () => window.removeEventListener('focus', load)
+  }, [])
+  const select = (kind: 'theme' | 'newtab', id: string | null): void =>
+    void callInternal('settings/selectMod', { kind, id }).then(setState).catch(onError)
+  const themes = state?.mods.filter((m) => m.hasTheme) ?? []
+  const newtabs = state?.mods.filter((m) => m.hasNewtab) ?? []
+  return (
+    <>
+      <Row title={t('Thème')} detail={t('Un mod peut changer les couleurs et les formes de Zak.')}>
+        <select
+          aria-label={t('Thème de Zak')}
+          className={selectClass}
+          value={themes.find((m) => m.themeActive)?.id ?? ''}
+          onChange={(e) => select('theme', e.target.value || null)}
+        >
+          <option value="">{t('Celui de Zak')}</option>
+          {themes.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.name}
+            </option>
+          ))}
+        </select>
+      </Row>
+      <Row title={t('Page Nouvel onglet')} detail={t('Un mod peut la remplacer par la vôtre (sans accès à Internet).')}>
+        <select
+          aria-label={t('Page Nouvel onglet')}
+          className={selectClass}
+          value={newtabs.find((m) => m.newtabActive)?.id ?? ''}
+          onChange={(e) => select('newtab', e.target.value || null)}
+        >
+          <option value="">{t('Celle de Zak')}</option>
+          {newtabs.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.name}
+            </option>
+          ))}
+        </select>
+      </Row>
+      <Row
+        title={t('Dossier des mods')}
+        detail={state ? t('{n} mod(s) dans {dir}. Chaque mod est un dossier avec un mod.json.', { n: state.mods.length, dir: state.dir }) : ''}
+      >
+        <SmallButton onClick={() => void callInternal('settings/openModsFolder', null).catch(onError)}>{t('Ouvrir')}</SmallButton>
+      </Row>
+    </>
   )
 }
 

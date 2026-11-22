@@ -362,5 +362,15 @@ export const EN_UI: Record<string, string> = {
   'Charger une extension non empaquetée…': 'Load unpacked extension…',
   'Dossier : {path} — rechargée à chaque modification': 'Folder: {path} — reloads whenever it changes',
   Retirer: 'Remove',
-  'Retirer « {name} » de Zak ? Son dossier reste en place.': 'Remove “{name}” from Zak? Its folder stays where it is.'
+  'Retirer « {name} » de Zak ? Son dossier reste en place.': 'Remove “{name}” from Zak? Its folder stays where it is.',
+
+  // settings.tsx (mods)
+  'Un mod peut changer les couleurs et les formes de Zak.': 'A mod can change Zak’s colors and shapes.',
+  'Thème de Zak': 'Zak theme',
+  'Celui de Zak': 'Zak’s own',
+  'Page Nouvel onglet': 'New tab page',
+  'Un mod peut la remplacer par la vôtre (sans accès à Internet).': 'A mod can replace it with your own (with no internet access).',
+  'Celle de Zak': 'Zak’s own',
+  'Dossier des mods': 'Mods folder',
+  '{n} mod(s) dans {dir}. Chaque mod est un dossier avec un mod.json.': '{n} mod(s) in {dir}. Each mod is a folder with a mod.json.'
 }

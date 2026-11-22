@@ -1,0 +1,6 @@
+{
+  "name": "Nuit bleue",
+  "version": "1.0",
+  "description": "A deep blue frame and a soft blue-grey panel, for the browser's interface and its own pages.",
+  "theme": "theme.css"
+}

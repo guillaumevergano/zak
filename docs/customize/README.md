@@ -4,11 +4,12 @@ Zak is meant to be shaped by the people who use it. You don't need to know how t
 coding agent such as [Claude Code](https://claude.com/claude-code) or
 [Codex](https://openai.com/codex) can do it for you, in plain words.
 
-There are two ways, and neither requires rebuilding Zak, so you keep getting its updates:
+There are three ways, and none requires rebuilding Zak, so you keep getting its updates:
 
 | | What it changes | How |
 |---|---|---|
 | **Settings file** | everything in Settings: search engine, theme, startup, tab sleep, picture-in-picture, sidebar… | the agent edits one JSON file; Zak applies it as soon as it is saved |
+| **Mods** | Zak itself: a theme for its interface, your own new tab page | the agent writes a folder in Zak's mods folder; you pick it in Settings |
 | **Home-made extensions** | anything a Chrome extension can do: new buttons, page tweaks, shortcuts, reader modes, themes for websites… | the agent writes an extension in a folder; you load it once, Zak reloads it on every change |
 
 ## 1. The settings file
@@ -41,7 +42,42 @@ The settings are in ~/Library/Application Support/Zak/config.json (schema linked
 
 Changes apply right away, except the interface language (at the next launch).
 
-## 2. Home-made extensions
+## 2. Mods: a theme, a new tab page
+
+A mod is a folder in Zak's **mods folder** (Settings → *Customize with Claude Code or Codex* →
+*Mods folder* → *Open*), with a `mod.json`:
+
+```json
+{
+  "name": "Nuit bleue",
+  "version": "1.0",
+  "description": "A deep blue frame and a soft blue-grey panel.",
+  "theme": "theme.css",
+  "newtab": "newtab.html"
+}
+```
+
+A mod has a `theme`, a `newtab`, or both. Pick them in Settings (*Theme*, *New tab page*): one of
+each at a time. Zak watches the folder, so an edit shows at once.
+
+- **Theme** — a CSS file added to Zak's interface and its own pages. It redefines Zak's color
+  tokens (`--color-frame`, `--color-cream`, `--color-pink`… — the full list is at the top of
+  [`styles.css`](../../src/renderer/src/styles.css)), with `!important` because Zak sets some of them
+  again for dark mode. Example: [`mods/nuit-bleue`](mods/nuit-bleue/theme.css).
+- **New tab page** — an HTML page (with its own CSS, scripts, images in the folder) shown instead
+  of Zak's new tab. It is sandboxed: it can't reach the internet nor any other part of Zak, only
+  its own files and the new tab's two API calls (recent sites, suggestions), documented in the
+  example [`mods/accueil-minimal`](mods/accueil-minimal/newtab.html). To open a page or search, it
+  changes `location`.
+
+```
+claude "Create a Zak mod in the mods folder (~/Library/Application Support/Zak/mods/forest)
+with a forest-green theme, following docs/customize/README.md of github.com/guillaumevergano/zak"
+```
+
+To install a mod someone shared, copy its folder into the mods folder.
+
+## 3. Home-made extensions
 
 Zak runs Chrome extensions, and AI agents write them very well. Ask for one in a folder of your
 choice, then load it once: **Extensions → Load unpacked extension…** and pick the folder. From then

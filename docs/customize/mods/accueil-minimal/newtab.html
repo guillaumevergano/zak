@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Nouvel onglet</title>
+<!--
+  A Zak new tab mod. It runs sandboxed: its own files only, no network.
+  It may call the new tab's API on its own origin:
+    POST /api/state   (header x-zak-internal: 1) → { canReopenSession, recent: [{ url, title, favicon }] }
+    POST /api/suggest (body {"text": "…"})       → [{ kind, title, url }]
+  To open a page or search, change location (location.assign(url)).
+-->
+<style>
+  :root { color-scheme: light dark; --bg: #f3edea; --ink: #2a1a26; --sub: #8a7682; --field: #ebe2e2; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1c131c; --ink: #f3ebf1; --sub: #a8929f; --field: #2c202c; } }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--ink); font: 16px system-ui, sans-serif; display: grid; place-items: center; }
+  main { width: min(560px, 90vw); text-align: center; }
+  #time { font-size: 88px; font-weight: 200; letter-spacing: -2px; margin: 0; }
+  #hello { color: var(--sub); margin: 4px 0 32px; font-size: 18px; }
+  form input { width: 100%; height: 52px; border: 0; border-radius: 26px; padding: 0 22px; background: var(--field); color: var(--ink); font: inherit; outline: none; }
+  ul { list-style: none; padding: 0; margin: 28px 0 0; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  a { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px; background: var(--field); color: var(--ink); text-decoration: none; font-size: 13px; max-width: 220px; }
+  a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  img { width: 16px; height: 16px; }
+</style>
+</head>
+<body>
+<main>
+  <p id="time"></p>
+  <p id="hello"></p>
+  <form id="search"><input id="q" autocomplete="off" placeholder="Rechercher ou saisir une adresse"></form>
+  <ul id="recent"></ul>
+</main>
+<script>
+  const en = !navigator.language.startsWith('fr')
+  if (en) document.getElementById('q').placeholder = 'Search or type a URL'
+  const tick = () => {
+    const now = new Date()
+    document.getElementById('time').textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    const h = now.getHours()
+    document.getElementById('hello').textContent = en
+      ? h < 12 ? 'Good morning.' : h < 18 ? 'Good afternoon.' : 'Good evening.'
+      : h < 18 ? 'Bonjour.' : 'Bonsoir.'
+  }
+  tick()
+  setInterval(tick, 10_000)
+
+  document.getElementById('search').addEventListener('submit', (e) => {
+    e.preventDefault()
+    const text = document.getElementById('q').value.trim()
+    if (!text) return
+    const looksLikeUrl = /^[a-z]+:\/\//i.test(text) || /^[^\s]+\.[a-z]{2,}(\/.*)?$/i.test(text)
+    location.assign(looksLikeUrl ? (/^[a-z]+:\/\//i.test(text) ? text : `https://${text}`) : `https://www.google.com/search?q=${encodeURIComponent(text)}`)
+  })
+
+  fetch('/api/state', { method: 'POST', headers: { 'x-zak-internal': '1' } })
+    .then((r) => r.json())
+    .then(({ recent }) => {
+      const list = document.getElementById('recent')
+      for (const site of recent) {
+        const a = document.createElement('a')
+        a.href = site.url
+        if (site.favicon && site.favicon.startsWith('data:')) {
+          const img = document.createElement('img')
+          img.src = site.favicon
+          a.append(img)
+        }
+        const name = document.createElement('span')
+        name.textContent = site.title
+        a.append(name)
+        const li = document.createElement('li')
+        li.append(a)
+        list.append(li)
+      }
+    })
+    .catch(() => {})
+</script>
+</body>
+</html>

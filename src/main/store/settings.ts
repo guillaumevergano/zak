@@ -18,6 +18,8 @@ interface Settings {
   extensionBar: ExtensionBarSettings
   /** The welcome page (zak://welcome) has been shown once. */
   onboarded: boolean
+  /** Mods in use (folder names in the mods folder), null = Zak's own. */
+  mods: { theme: string | null; newtab: string | null }
 }
 
 const SCHEMA_URL = 'https://raw.githubusercontent.com/guillaumevergano/zak/main/docs/customize/settings.schema.json'
@@ -30,7 +32,7 @@ export class SettingsStore {
   private store = new Store<Settings>({
     // The file can be edited by hand or by an AI agent (docs/customize/): changes apply at once.
     watch: true,
-    defaults: { sidebar: { width: 300, collapsed: false }, disabledExtensions: [], unpackedExtensions: [], pip: DEFAULT_PIP_SETTINGS, general: {}, extensionBar: DEFAULT_EXTENSION_BAR, onboarded: false }
+    defaults: { sidebar: { width: 300, collapsed: false }, disabledExtensions: [], unpackedExtensions: [], pip: DEFAULT_PIP_SETTINGS, general: {}, extensionBar: DEFAULT_EXTENSION_BAR, onboarded: false, mods: { theme: null, newtab: null } }
   })
 
   /** Where the settings live (config.json in the profile folder), for « Ouvrir le fichier de réglages ». */
@@ -93,6 +95,16 @@ export class SettingsStore {
     const clean = normalizePipSettings(pip)
     this.store.set('pip', clean)
     return clean
+  }
+
+  getMods(): { theme: string | null; newtab: string | null } {
+    const mods = this.store.get('mods')
+    const id = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? v : null)
+    return { theme: id(mods?.theme), newtab: id(mods?.newtab) }
+  }
+
+  setMods(mods: { theme: string | null; newtab: string | null }): void {
+    this.store.set('mods', mods)
   }
 
   isOnboarded(): boolean {

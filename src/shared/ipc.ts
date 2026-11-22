@@ -1,5 +1,6 @@
 import type {
   ImportSource,
+  ModInfo,
   ProfileInfo,
   TabGroupInfo,
   SavePasswordChoice,
@@ -265,6 +266,10 @@ export interface InternalApiRoutes {
   /** « Personnaliser avec Claude Code ou Codex »: where the settings file is, open or show it. */
   'settings/customizeInfo': { body: null; result: { settingsPath: string } }
   'settings/openSettingsFile': { body: { reveal: boolean }; result: null }
+  /** Mods (src/main/mods/): what the mods folder holds, and which theme / new tab is in use. */
+  'settings/mods': { body: null; result: { dir: string; mods: ModInfo[] } }
+  'settings/selectMod': { body: { kind: 'theme' | 'newtab'; id: string | null }; result: { dir: string; mods: ModInfo[] } }
+  'settings/openModsFolder': { body: null; result: null }
   /** Profiles (src/main/profiles/): the list, and the one of this window. */
   'settings/profiles': { body: null; result: { current: string; list: ProfileInfo[] } }
   'settings/createProfile': { body: { name: string; emoji: string; open: boolean }; result: { current: string; list: ProfileInfo[] } }
@@ -327,6 +332,9 @@ export const INTERNAL_API_ROUTES = [
   'settings/listExtensions',
   'settings/setExtensionBar',
   'settings/importBookmarks',
+  'settings/mods',
+  'settings/selectMod',
+  'settings/openModsFolder',
   'settings/customizeInfo',
   'settings/openSettingsFile',
   'settings/profiles',

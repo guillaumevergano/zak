@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { app, BrowserWindow, components, dialog, ipcMain, nativeTheme, shell, type IpcMainInvokeEvent } from 'electron'
-import { SETTINGS_PAGE_URL, WELCOME_PAGE_URL, type InvokeChannel, type InvokeChannels, type SendChannel, type SendChannels } from '@shared/ipc'
+import { app, BrowserWindow, components, dialog, ipcMain, nativeTheme, shell, webContents, type IpcMainInvokeEvent } from 'electron'
+import { NEWTAB_PAGE_URL, SETTINGS_PAGE_URL, WELCOME_PAGE_URL, type InvokeChannel, type InvokeChannels, type SendChannel, type SendChannels } from '@shared/ipc'
 import type { WidevineStatus } from '@shared/types'
 import { resolveLang, setLang, t, type LangSetting } from '@shared/i18n'
 import { chromeUserAgent, identitySettled } from './userAgent'
@@ -53,7 +53,8 @@ import { DownloadsManager } from './downloads/DownloadsManager'
 import { suggest } from './omnibox/suggest'
 import { SettingsStore } from './store/settings'
 import { SidebarController } from './sidebar/SidebarController'
-import { handleInternalProtocol, registerInternalScheme, type InternalApiHandlers } from './internal/InternalProtocol'
+import { handleInternalProtocol, registerInternalScheme, setNewtabOverride, type InternalApiHandlers } from './internal/InternalProtocol'
+import { ModsManager } from './mods/ModsManager'
 import { defaultBrowserStatus, LinkReceiver, makeDefaultBrowser } from './system/DefaultBrowser'
 
 // Separate profile for the e2e tests (tests/e2e), so they never touch the real one.
@@ -230,6 +231,14 @@ app.whenReady().then(async () => {
   nativeTheme.themeSource = settings.getGeneral().theme
   recordHistory(windows, history)
   const sidebar = new SidebarController(favorites, settings, windows)
+  // Mods (docs/customize/): a theme for Zak itself, a new tab page of one's own.
+  const mods = new ModsManager({ get: () => settings.getMods(), set: (m) => settings.setMods(m) })
+  mods.start()
+  setNewtabOverride((pathname) => mods.newtabResponse(pathname))
+  // A new tab page changed: the new tabs open show it at once.
+  mods.onChange(() => {
+    for (const wc of webContents.getAllWebContents()) if (wc.getURL().startsWith(NEWTAB_PAGE_URL)) wc.reload()
+  })
   // The settings file can be edited outside Zak (by hand, Claude Code, Codex): apply it at once.
   settings.markSchema()
   settings.onChange(() => {
@@ -333,6 +342,15 @@ app.whenReady().then(async () => {
         filters: [{ name: t('Favoris (HTML)'), extensions: ['html', 'htm'] }]
       })
       return result.canceled || !result.filePaths[0] ? null : sidebar.importBookmarks(result.filePaths[0])
+    },
+    'settings/mods': () => ({ dir: mods.dir, mods: mods.list() }),
+    'settings/selectMod': ({ kind, id }) => {
+      mods.select(kind, id)
+      return { dir: mods.dir, mods: mods.list() }
+    },
+    'settings/openModsFolder': async () => {
+      await shell.openPath(mods.dir)
+      return null
     },
     'settings/customizeInfo': () => ({ settingsPath: settings.path }),
     'settings/openSettingsFile': async ({ reveal }) => {

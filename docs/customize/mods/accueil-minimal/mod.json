@@ -1,0 +1,6 @@
+{
+  "name": "Accueil minimal",
+  "version": "1.0",
+  "description": "A quiet new tab: the time, a greeting, a search field and your recent sites.",
+  "newtab": "newtab.html"
+}

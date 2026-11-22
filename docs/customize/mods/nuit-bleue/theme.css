@@ -1,0 +1,30 @@
+/*
+ * A Zak theme redefines the color tokens of the interface (src/renderer/src/styles.css).
+ * `!important` is needed: Zak sets some tokens again for dark mode and private windows.
+ * Private windows keep their own colors (body.private) so they stay recognizable.
+ */
+body:not(.private) {
+  /* Frame: tab strip and sidebar */
+  --color-frame: #14213d !important;
+  --color-frame-2: #1f2f52 !important;
+  --color-frame-3: #2a3c63 !important;
+  --color-frame-line: #2f4270 !important;
+  --color-frame-text: #e8eef9 !important;
+  --color-frame-sub: #9aa8c4 !important;
+  --color-frame-dim: #6f7fa3 !important;
+  --color-iris: #7fb2ff !important;
+  --color-iris-ring: #5d8fe0 !important;
+
+  /* Panel: active tab, toolbar, pages */
+  --color-cream: #eef2f8 !important;
+  --color-cream-2: #e1e8f2 !important;
+  --color-cream-edge: #c9d4e5 !important;
+  --color-cream-ink: #14213d !important;
+  --color-cream-sub: #4f5f80 !important;
+  --color-cream-dim: #8b98b3 !important;
+  --color-blush: #7c8db0 !important;
+
+  /* Accent */
+  --color-pink: #ff7a59 !important;
+  --color-pink-button: #e8603e !important;
+}
