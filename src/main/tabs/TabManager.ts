@@ -5,7 +5,7 @@ import type { LayoutInsets, Rect, TabGroupInfo, TabId, TabInfo, TabSplitInfo, Ta
 import { randomUUID } from 'node:crypto'
 import { endOfGroup, groupAt, nextColor, usedGroups } from './groups'
 import { outsideSplits, partnerOf, repairSplits, splitOf } from './splits'
-import { clampRatio, splitRects } from '@shared/split'
+import { clampRatio, splitRects, SPLIT_ZOOM } from '@shared/split'
 import { manageIdentity, trackIdentitySetup } from '../userAgent'
 import { NEW_TAB_URL, errorPageUrl, failedUrlOf, isNewTabUrl, toUrl, type SearchEngine } from '@shared/url'
 import { isInternalUrl } from '../internal/InternalProtocol'
@@ -107,6 +107,8 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
   private activeId: TabId | null = null
   /** Tabs whose page is on screen: the active one, and its partner in a split view. */
   private shown = new Set<TabId>()
+  /** Tabs zoomed out for their split view (isolated zoom, see syncSplitZoom). */
+  private readonly splitZoomed = new Set<TabId>()
   private insets: LayoutInsets = { left: 0, top: 0, right: 0, bottom: 0 }
   private closed: ClosedTab[] = []
 
@@ -132,6 +134,9 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
    * or null when off. Set by index.ts from the settings.
    */
   static sleepAfterMinutes: () => number | null = () => null
+
+  /** Zoom remembered for the site of a URL (ZoomController); set once by index.ts. */
+  static siteZoom: (url: string) => number = () => 1
 
   constructor(
     private readonly window: BaseWindow,
@@ -333,6 +338,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
       // Not present() yet: the partner stays on screen (no automatic PiP), it becomes the active tab.
       this.dropEmptyGroups()
       repairSplits(this.order, this.tabs, this.splits)
+      this.syncSplitZoom()
       // The other page of its split view takes the whole area.
       const neighbour = partner ?? this.order[Math.min(index, this.order.length - 1)]
       if (neighbour !== undefined) this.activate(neighbour)
@@ -360,6 +366,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     this.groups.clear()
     this.splits.clear()
     this.shown.clear()
+    this.splitZoomed.clear()
     this.activeId = null
     for (const tab of closing) this.dispose(tab)
   }
@@ -497,6 +504,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     const split = splitOf(this.splits, id)
     if (!split) return
     this.splits.delete(split.id)
+    this.syncSplitZoom()
     this.present()
     this.emit('changed')
   }
@@ -535,7 +543,33 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
   private afterStripChange(): void {
     this.dropEmptyGroups()
     repairSplits(this.order, this.tabs, this.splits)
+    this.syncSplitZoom()
     this.present()
+  }
+
+  /**
+   * The pages of a split view are zoomed out (SPLIT_ZOOM of their site's zoom), each on its own:
+   * isolated zoom, so other tabs of the same site and the remembered zoom don't change. Leaving the
+   * split view gives the page its site's zoom back. ZoomController keeps it across navigations.
+   */
+  private syncSplitZoom(): void {
+    const inSplit = new Set([...this.splits.values()].flatMap((s) => s.tabs))
+    for (const id of inSplit) {
+      const wc = this.tabs.get(id)?.wc
+      if (this.splitZoomed.has(id) || !wc || wc.isDestroyed()) continue
+      this.splitZoomed.add(id)
+      wc.setZoomMode('isolated')
+      wc.setZoomFactor(TabManager.siteZoom(wc.getURL()) * SPLIT_ZOOM)
+    }
+    for (const id of this.splitZoomed) {
+      if (inSplit.has(id)) continue
+      this.splitZoomed.delete(id)
+      const wc = this.tabs.get(id)?.wc
+      if (!wc || wc.isDestroyed()) continue
+      // Back to the site's zoom (the default mode alone keeps the page's level when the site has none).
+      wc.setZoomMode('default')
+      wc.setZoomFactor(TabManager.siteZoom(wc.getURL()))
+    }
   }
 
   updateGroup(groupId: string, changes: Partial<Omit<TabGroupInfo, 'id'>>): void {

@@ -303,6 +303,7 @@ app.whenReady().then(async () => {
   })
   const find = new FindController(windows)
   const zoom = new ZoomController(sites, windows)
+  TabManager.siteZoom = (url) => zoom.siteZoom(url)
   const permissions = new PermissionsHandler(sites, windows)
   const downloads = new DownloadsManager(windows, () => settings.getGeneral().downloadDir)
   permissions.attach(browsingSession, false)

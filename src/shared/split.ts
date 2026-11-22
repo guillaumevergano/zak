@@ -4,6 +4,11 @@ import type { Rect } from './types'
 export const SPLIT_GAP = 10
 /** Margin around the pages of a split view, where the ring of the focused page is drawn. */
 export const SPLIT_INSET = 3
+/**
+ * Zoom of the pages of a split view, relative to their site's zoom: half the width, so the page is
+ * zoomed out to show more of itself (each tab on its own, other tabs of the site keep theirs).
+ */
+export const SPLIT_ZOOM = 0.8
 export const SPLIT_MIN_RATIO = 0.2
 export const SPLIT_MAX_RATIO = 0.8
 

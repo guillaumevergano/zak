@@ -34,6 +34,18 @@ async function visiblePages(app: ElectronApplication): Promise<[number, number][
   })
 }
 
+/** Zoom (%) of each tab page, by path. */
+async function zooms(app: ElectronApplication): Promise<Record<string, number>> {
+  return app.evaluate(({ webContents }) =>
+    Object.fromEntries(
+      webContents
+        .getAllWebContents()
+        .filter((wc) => wc.getURL().startsWith('http://127.0.0.1'))
+        .map((wc) => [new URL(wc.getURL()).pathname, Math.round(wc.getZoomFactor() * 100)])
+    )
+  )
+}
+
 test('two tabs can be shown side by side, by drag & drop or the tab menu, and come back with the session', async () => {
   const { server, origin } = await serve((req, res) => {
     res.setHeader('content-type', 'text/html')
@@ -70,6 +82,17 @@ test('two tabs can be shown side by side, by drag & drop or the tab menu, and co
   expect(left![0] + left![1]).toBeLessThan(right![0])
   // b came from the right: it stays on the right, and it is the tab in use.
   await expect.poll(() => activeTabTitle(chrome)).toBe('Page /b')
+  // Both pages are zoomed out on their own; another tab of the same site keeps its zoom.
+  await expect.poll(() => zooms(app)).toEqual({ '/a': 80, '/b': 80 })
+  // dnd-kit swallows clicks for 50 ms after a drop (no hand is that fast).
+  await chrome.waitForTimeout(100)
+  await chrome.getByTestId('new-tab').click()
+  await expect(chrome.getByTestId('tab')).toHaveCount(3)
+  await expect.poll(() => activeTabTitle(chrome)).toBe('Nouvel onglet')
+  await visit(chrome, `${origin}/c`)
+  await expect.poll(() => zooms(app)).toEqual({ '/a': 80, '/b': 80, '/c': 100 })
+  await chrome.getByTestId('tab').nth(2).hover()
+  await chrome.getByTestId('tab-close').nth(2).click()
 
   // Clicking the other half makes it the active tab; both pages stay on screen.
   await tabs.nth(0).click()
@@ -81,6 +104,7 @@ test('two tabs can be shown side by side, by drag & drop or the tab menu, and co
   await clickMenuItem(app, 'Séparer les onglets')
   await expect(chrome.getByTestId('split-tab')).toHaveCount(0)
   await expect.poll(async () => (await visiblePages(app)).length).toBe(1)
+  await expect.poll(() => zooms(app)).toEqual({ '/a': 100, '/b': 100 })
 
   // From the tab menu: « Afficher côte à côte avec › » lists the other tabs.
   await tabs.nth(1).click({ button: 'right' })
@@ -93,6 +117,7 @@ test('two tabs can be shown side by side, by drag & drop or the tab menu, and co
   ;({ app, chrome } = await launch('splitview', profile))
   await expect(chrome.getByTestId('split-tab')).toHaveCount(1)
   await expect.poll(async () => (await visiblePages(app)).length).toBe(2)
+  await expect.poll(() => zooms(app)).toEqual({ '/a': 80, '/b': 80 })
 
   // Closing one of the two: the other takes the whole area.
   await chrome.getByTestId('tab').nth(0).hover()
