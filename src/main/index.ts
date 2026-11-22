@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { app, BrowserWindow, components, dialog, ipcMain, nativeTheme, type IpcMainInvokeEvent } from 'electron'
-import { WELCOME_PAGE_URL, type InvokeChannel, type InvokeChannels, type SendChannel, type SendChannels } from '@shared/ipc'
+import { SETTINGS_PAGE_URL, WELCOME_PAGE_URL, type InvokeChannel, type InvokeChannels, type SendChannel, type SendChannels } from '@shared/ipc'
 import type { WidevineStatus } from '@shared/types'
 import { resolveLang, setLang, t, type LangSetting } from '@shared/i18n'
 import { chromeUserAgent, identitySettled } from './userAgent'
@@ -14,6 +14,7 @@ import { SafeBrowsing, leaveDangerousPage } from './safety/SafeBrowsing'
 import { detectBrowsers, readChromiumBookmarks, readChromiumHistory } from './import/chromium'
 import { PasswordStore } from './passwords/PasswordStore'
 import { startCrashReporter } from './support/report'
+import { DEFAULT_PROFILE_ID, Profiles } from './profiles/Profiles'
 import { PasswordManager } from './passwords/PasswordManager'
 import { keychainCipher, passwordRoutes } from './passwords/routes'
 import type { ImportSource } from '@shared/types'
@@ -63,6 +64,11 @@ if (testProfile) {
   mkdirSync(join(testProfile, 'Downloads'), { recursive: true })
   app.setPath('downloads', join(testProfile, 'Downloads'))
 }
+
+// Profiles (profiles/Profiles.ts): each one its own user data folder and process.
+const profiles = new Profiles(process.env['ZAK_PROFILES_DIR'] ?? join(app.getPath('appData'), 'Zak Profiles'))
+const currentProfile = testProfile ? DEFAULT_PROFILE_ID : Profiles.fromArgv(process.argv)
+if (currentProfile !== DEFAULT_PROFILE_ID) app.setPath('userData', profiles.dir(currentProfile))
 
 // Must be set before any session/webContents exists (CLAUDE.md §6.5).
 app.userAgentFallback = chromeUserAgent()
@@ -223,7 +229,40 @@ app.whenReady().then(async () => {
   const passwordStore = new PasswordStore(db, keychainCipher)
   const passwords = new PasswordManager(passwordStore, windows, () => settings.getGeneral().savePasswords)
   registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords })
-  installAppMenu(windows, { find, zoom, session, updater: new Updater() })
+  const menuCommands = {
+    find,
+    zoom,
+    session,
+    updater: new Updater(),
+    profiles: {
+      list: () => profiles.list(),
+      current: currentProfile,
+      open: (id: string) => openProfile(id),
+      manage: () => void windows.focusedNormal().tabs.create(`${SETTINGS_PAGE_URL}#profiles`)
+    }
+  }
+  const refreshMenu = (): void => installAppMenu(windows, menuCommands)
+  refreshMenu()
+  const profileState = () => ({ current: currentProfile, list: profiles.list() })
+  /** The menu lists the profiles; window titles show this one's name once there are several. */
+  const profilesChanged = (): void => {
+    const all = profiles.list()
+    const mine = all.find((p) => p.id === currentProfile)
+    WindowManager.profileLabel = () => (all.length > 1 && mine ? `${mine.emoji} ${mine.name}` : null)
+    refreshMenu()
+  }
+  profilesChanged()
+  /** Another profile opens in its own process (the running one shows a window instead). */
+  const openProfile = (id: string): void => {
+    if (id === currentProfile) windows.openFromSystem([])
+    // e2e tests: record the launch instead of starting a process they can't control.
+    else if (process.env['ZAK_E2E'] === '1') (globalThis as { zakOpenedProfiles?: string[] }).zakOpenedProfiles = [id]
+    else {
+      // The test profile override must not leak into the profile's own process.
+      const { ZAK_USER_DATA: _ignored, ...env } = process.env
+      profiles.open(id, { execPath: process.execPath, appPath: app.isPackaged ? null : app.getAppPath(), env })
+    }
+  }
   installShortcuts(windows)
 
   const extensions = new ExtensionsHost(browsingSession, windows, settings)
@@ -270,6 +309,27 @@ app.whenReady().then(async () => {
         filters: [{ name: t('Favoris (HTML)'), extensions: ['html', 'htm'] }]
       })
       return result.canceled || !result.filePaths[0] ? null : sidebar.importBookmarks(result.filePaths[0])
+    },
+    'settings/profiles': () => profileState(),
+    'settings/createProfile': ({ name, emoji, open }) => {
+      const profile = profiles.create(name, emoji)
+      profilesChanged()
+      if (open) openProfile(profile.id)
+      return profileState()
+    },
+    'settings/updateProfile': ({ id, name, emoji }) => {
+      profiles.update(id, { name, emoji })
+      profilesChanged()
+      return profileState()
+    },
+    'settings/removeProfile': ({ id }) => {
+      profiles.remove(id, currentProfile)
+      profilesChanged()
+      return profileState()
+    },
+    'settings/openProfile': ({ id }) => {
+      openProfile(id)
+      return null
     },
     'settings/importSources': () => importSources(),
     'settings/importFrom': ({ profile, bookmarks, history: withHistory }) => importProfile(profile, bookmarks, withHistory),

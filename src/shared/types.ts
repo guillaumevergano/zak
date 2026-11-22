@@ -233,6 +233,13 @@ export interface SavedLogin {
 /** « Enregistrer le mot de passe ? »: save, never for this site, or not now. */
 export type SavePasswordChoice = 'save' | 'never' | 'dismiss'
 
+/** A profile (src/main/profiles/): a separate Zak with its own data. */
+export interface ProfileInfo {
+  id: string
+  name: string
+  emoji: string
+}
+
 /** Another browser to import from (zak://settings → Importer). */
 export interface ImportSource {
   browser: string

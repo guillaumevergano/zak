@@ -324,5 +324,19 @@ export const EN_UI: Record<string, string> = {
   // TabStrip.tsx (tab groups)
   'Nom du groupe': 'Group name',
   'Déplier le groupe': 'Expand group',
-  'Replier le groupe': 'Collapse group'
+  'Replier le groupe': 'Collapse group',
+
+  // settings.tsx, TabStrip.tsx (profiles)
+  'Chaque profil est un Zak séparé : historique, favoris, mots de passe, cookies et extensions ne se mélangent pas. Pratique pour séparer le perso et le travail.':
+    'Each profile is a separate Zak: history, favorites, passwords, cookies and extensions never mix. Handy to keep personal and work apart.',
+  'Emoji du profil': 'Profile emoji',
+  'Nom du profil': 'Profile name',
+  'Ce profil': 'This profile',
+  'Supprimer le profil « {name} » et toutes ses données (historique, mots de passe, extensions…) ?':
+    'Delete the “{name}” profile and all its data (history, passwords, extensions…)?',
+  'Emoji du nouveau profil': 'New profile emoji',
+  'Nom du nouveau profil': 'New profile name',
+  'Nouveau profil (Travail, Famille…)': 'New profile (Work, Family…)',
+  'Créer et ouvrir': 'Create and open',
+  'Profil : {name}': 'Profile: {name}'
 }

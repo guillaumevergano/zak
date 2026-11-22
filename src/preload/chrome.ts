@@ -12,8 +12,12 @@ const allowed = <T extends string>(list: readonly T[], channel: string): channel
 const langArg = process.argv.find((arg) => arg.startsWith('--zak-lang='))
 const lang = langArg?.slice('--zak-lang='.length) === 'en' ? 'en' : 'fr'
 
+const profileArg = process.argv.find((arg) => arg.startsWith('--zak-profile-label='))
+const profile = profileArg?.slice('--zak-profile-label='.length) || null
+
 const api: ZakApi = {
   lang,
+  profile,
   invoke(channel, ...args) {
     if (!allowed(INVOKE_CHANNELS, channel)) throw new Error(`Unknown channel ${channel}`)
     return ipcRenderer.invoke(channel, ...args)

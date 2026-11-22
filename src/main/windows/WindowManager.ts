@@ -44,6 +44,9 @@ interface WindowManagerEvents {
 }
 
 export class WindowManager extends EventEmitter<WindowManagerEvents> {
+  /** « 🏠 Perso » when there are several profiles (window titles, chrome UI badge), else null. */
+  static profileLabel: () => string | null = () => null
+
   private handles = new Map<number, BrowserWindowHandle>()
 
   /** Page context menu → "Ajouter aux favoris de la sidebar" (set by the sidebar controller). */
@@ -78,7 +81,7 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
       webPreferences: {
         // The chrome UI lives in the default session; tabs live in `persist:main`.
         preload: join(__dirname, '../preload/chrome.js'),
-        additionalArguments: [`--zak-lang=${getLang()}`],
+        additionalArguments: [`--zak-lang=${getLang()}`, `--zak-profile-label=${WindowManager.profileLabel() ?? ''}`],
         sandbox: true,
         contextIsolation: true,
         nodeIntegration: false
@@ -101,7 +104,8 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
       const state = tabs.getState()
       this.sendTo(window, 'tabs:state', state)
       const active = state.tabs.find((t) => t.id === state.activeId)
-      const app = isPrivate ? t('Zak (navigation privée)') : 'Zak'
+      const profile = WindowManager.profileLabel()
+      const app = isPrivate ? t('Zak (navigation privée)') : profile ? `Zak — ${profile}` : 'Zak'
       window.setTitle(active ? `${active.title} — ${app}` : app)
       this.emit('tabs-changed', handle)
     }

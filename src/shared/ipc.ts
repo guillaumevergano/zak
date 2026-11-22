@@ -1,5 +1,6 @@
 import type {
   ImportSource,
+  ProfileInfo,
   TabGroupInfo,
   SavePasswordChoice,
   SavedLogin,
@@ -192,6 +193,8 @@ export const EVENT_CHANNELS = [
 export interface ZakApi {
   /** Interface language (src/shared/i18n.ts). */
   lang: 'fr' | 'en'
+  /** « 🏠 Perso » when there are several profiles (src/main/profiles/), else null. */
+  profile: string | null
   invoke<C extends InvokeChannel>(
     channel: C,
     ...args: InvokeChannels[C]['args']
@@ -256,6 +259,12 @@ export interface InternalApiRoutes {
   'settings/setExtensionBar': { body: ExtensionBarSettings; result: ExtensionBarSettings }
   /** Picks a bookmarks HTML file and imports it; null when cancelled. */
   'settings/importBookmarks': { body: null; result: { favorites: number; folders: number } | null }
+  /** Profiles (src/main/profiles/): the list, and the one of this window. */
+  'settings/profiles': { body: null; result: { current: string; list: ProfileInfo[] } }
+  'settings/createProfile': { body: { name: string; emoji: string; open: boolean }; result: { current: string; list: ProfileInfo[] } }
+  'settings/updateProfile': { body: { id: string; name?: string; emoji?: string }; result: { current: string; list: ProfileInfo[] } }
+  'settings/removeProfile': { body: { id: string }; result: { current: string; list: ProfileInfo[] } }
+  'settings/openProfile': { body: { id: string }; result: null }
   /** Other Chromium browsers installed (Chrome, Edge, Brave, Arc…) and their profiles. */
   'settings/importSources': { body: null; result: ImportSource[] }
   /** Imports a profile's favorites and/or history (`profile` = a path from importSources). */
@@ -310,6 +319,11 @@ export const INTERNAL_API_ROUTES = [
   'settings/listExtensions',
   'settings/setExtensionBar',
   'settings/importBookmarks',
+  'settings/profiles',
+  'settings/createProfile',
+  'settings/updateProfile',
+  'settings/removeProfile',
+  'settings/openProfile',
   'settings/importSources',
   'settings/importFrom',
   'settings/defaultBrowser',

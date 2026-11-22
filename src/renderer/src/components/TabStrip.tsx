@@ -58,7 +58,7 @@ export function TabStrip(): JSX.Element {
         <PlusIcon />
       </button>
       <div className="min-w-4 flex-1" />
-      {isPrivateWindow && <PrivateBadge />}
+      {isPrivateWindow ? <PrivateBadge /> : api.profile && <ProfileBadge label={api.profile} />}
     </div>
   )
 }
@@ -236,6 +236,19 @@ function TabItem({ tab, active, group }: { tab: TabInfo; active: boolean; group?
         </span>
       )}
     </div>
+  )
+}
+
+/** The profile of this window, when there are several (Fichier → Profils). */
+function ProfileBadge({ label }: { label: string }): JSX.Element {
+  return (
+    <span
+      data-testid="profile-badge"
+      title={t('Profil : {name}', { name: label })}
+      className="mb-[11px] flex h-6 max-w-[160px] shrink-0 items-center rounded-full bg-frame-2 px-2.5 text-[11.5px] font-bold text-frame-text"
+    >
+      <span className="truncate">{label}</span>
+    </span>
   )
 }
 

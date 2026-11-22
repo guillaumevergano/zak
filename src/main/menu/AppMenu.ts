@@ -1,5 +1,6 @@
 import { bugReportUrl, HELP_URLS } from '../support/report'
 import { t } from '@shared/i18n'
+import type { ProfileInfo } from '@shared/types'
 import { app, BrowserWindow, Menu, type MenuItemConstructorOptions } from 'electron'
 import { EXTENSIONS_PAGE_URL, HISTORY_PAGE_URL, PASSWORDS_PAGE_URL, SETTINGS_PAGE_URL } from '@shared/ipc'
 import type { BrowserWindowHandle, WindowManager } from '../windows/WindowManager'
@@ -19,9 +20,11 @@ export interface MenuCommands {
   zoom: ZoomController
   session: SessionRestore
   updater: Updater
+  profiles: { list: () => ProfileInfo[]; current: string; open: (id: string) => void; manage: () => void }
 }
 
-export function installAppMenu(windows: WindowManager, { find, zoom, session, updater }: MenuCommands): void {
+/** Builds the application menu; called again when the list of profiles changes. */
+export function installAppMenu(windows: WindowManager, { find, zoom, session, updater, profiles }: MenuCommands): void {
   const isMac = process.platform === 'darwin'
 
   /** Runs on the focused browser window; ignored when none (e.g. a DevTools window is focused). */
@@ -76,6 +79,21 @@ export function installAppMenu(windows: WindowManager, { find, zoom, session, up
           click: () => windows.newTab(windows.focusedOrFirst())
         },
         { label: t('Nouvelle fenêtre'), accelerator: 'CmdOrCtrl+N', click: () => windows.create() },
+        {
+          label: t('Profils'),
+          submenu: [
+            ...profiles.list().map(
+              (p): MenuItemConstructorOptions => ({
+                label: `${p.emoji} ${p.name}`,
+                type: 'checkbox',
+                checked: p.id === profiles.current,
+                click: () => profiles.open(p.id)
+              })
+            ),
+            { type: 'separator' },
+            { label: t('Gérer les profils…'), click: profiles.manage }
+          ]
+        },
         {
           label: t('Nouvelle fenêtre de navigation privée'),
           accelerator: 'CmdOrCtrl+Shift+N',

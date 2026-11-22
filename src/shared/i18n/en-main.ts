@@ -158,5 +158,12 @@ export const EN_MAIN: Record<string, string> = {
   'Premier lancement : téléchargement du module Widevine': 'First launch: downloading the Widevine module',
   'Zak (navigation privée)': 'Zak (private browsing)',
   'Mots de passe enregistrés dans Zak': 'Passwords saved in Zak',
-  '(sans identifiant)': '(no username)'
+  '(sans identifiant)': '(no username)',
+
+  // Profiles (menu/AppMenu.ts, profiles/Profiles.ts)
+  Profils: 'Profiles',
+  'Gérer les profils…': 'Manage profiles…',
+  Perso: 'Personal',
+  Profil: 'Profile',
+  'Ce profil ne peut pas être supprimé': 'This profile can’t be deleted'
 }

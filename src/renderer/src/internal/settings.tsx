@@ -9,7 +9,8 @@ import type {
   ExtensionInfo,
   GeneralSettings,
   ImportSource,
-  PipSettings
+  PipSettings,
+  ProfileInfo
 } from '@shared/types'
 import { orderExtensions } from '@shared/extensionBar'
 import { EXTENSIONS_PAGE_URL, PASSWORDS_PAGE_URL } from '@shared/ipc'
@@ -213,6 +214,8 @@ function SettingsPage(): JSX.Element {
         <ExcludedDomains domains={pip.excludedDomains} onChange={(excludedDomains) => savePip({ ...pip, excludedDomains })} />
       </Section>
 
+      <ProfilesSection onError={fail} />
+
       <Section id="passwords" title={t('Mots de passe')}>
         <Row title={t("Proposer d'enregistrer les mots de passe")} detail={t('Après une connexion. Chiffrés avec le trousseau de votre ordinateur.')}>
           <Toggle label={t("Proposer d'enregistrer les mots de passe")} on={general.savePasswords} onChange={(savePasswords) => saveGeneral({ savePasswords })} />
@@ -274,7 +277,7 @@ const selectClass = 'max-w-[300px] rounded-[10px] border border-cream-edge bg-cr
 
 function Section(props: { id: string; title: string; intro?: string; children: ReactNode }): JSX.Element {
   return (
-    <section aria-labelledby={`${props.id}-title`} className="glass-card flex flex-col rounded-[18px] px-5 py-4">
+    <section id={props.id} aria-labelledby={`${props.id}-title`} className="glass-card flex flex-col rounded-[18px] px-5 py-4">
       <h2 id={`${props.id}-title`} className="m-0 text-[15px] font-bold text-title">
         {props.title}
       </h2>
@@ -479,6 +482,98 @@ function ImportFromBrowser({ onError }: { onError: (err: unknown) => void }): JS
         </div>
       </div>
     </Row>
+  )
+}
+
+type ProfileState = { current: string; list: ProfileInfo[] }
+
+/**
+ * Profiles (Fichier → Profils): each one a separate Zak, with its own history, favorites,
+ * passwords, cookies and extensions.
+ */
+function ProfilesSection({ onError }: { onError: (err: unknown) => void }): JSX.Element {
+  const [state, setState] = useState<ProfileState | null>(null)
+  const [name, setName] = useState('')
+  const [emoji, setEmoji] = useState('💼')
+
+  useEffect(() => {
+    callInternal('settings/profiles', null).then(setState).catch(() => {})
+    // Opened from « Gérer les profils… »: show this section.
+    if (location.hash === '#profiles') setTimeout(() => document.getElementById('profiles')?.scrollIntoView(), 50)
+  }, [])
+
+  const create = (e: FormEvent): void => {
+    e.preventDefault()
+    callInternal('settings/createProfile', { name, emoji, open: true })
+      .then((next) => {
+        setState(next)
+        setName('')
+      })
+      .catch(onError)
+  }
+
+  return (
+    <Section
+      id="profiles"
+      title={t('Profils')}
+      intro={t('Chaque profil est un Zak séparé : historique, favoris, mots de passe, cookies et extensions ne se mélangent pas. Pratique pour séparer le perso et le travail.')}
+    >
+      <ul aria-label={t('Profils')} className="m-0 list-none p-0">
+        {state?.list.map((p) => (
+          <li key={p.id} data-testid="profile-row" className="flex items-center gap-3 border-t border-violet/10 py-2">
+            <input
+              aria-label={t('Emoji du profil')}
+              defaultValue={p.emoji}
+              maxLength={4}
+              onBlur={(e) => e.target.value !== p.emoji && callInternal('settings/updateProfile', { id: p.id, emoji: e.target.value }).then(setState).catch(onError)}
+              className="h-8 w-10 rounded-[8px] border border-cream-edge bg-cream-2 text-center text-[16px]"
+            />
+            <input
+              aria-label={t('Nom du profil')}
+              defaultValue={p.name}
+              onBlur={(e) => e.target.value !== p.name && callInternal('settings/updateProfile', { id: p.id, name: e.target.value }).then(setState).catch(onError)}
+              className="h-8 min-w-0 flex-1 rounded-[8px] border border-transparent bg-transparent px-2 text-[13.5px] font-semibold text-ink hover:border-cream-edge focus:border-pink focus:outline-none"
+            />
+            {p.id === state.current ? (
+              <span className="text-[12.5px] font-semibold text-violet">{t('Ce profil')}</span>
+            ) : (
+              <>
+                <SmallButton onClick={() => void callInternal('settings/openProfile', { id: p.id }).catch(onError)}>{t('Ouvrir')}</SmallButton>
+                {p.id !== 'default' && (
+                  <SmallButton
+                    danger
+                    onClick={() => {
+                      if (!confirm(t('Supprimer le profil « {name} » et toutes ses données (historique, mots de passe, extensions…) ?', { name: p.name }))) return
+                      callInternal('settings/removeProfile', { id: p.id }).then(setState).catch(onError)
+                    }}
+                  >
+                    {t('Supprimer')}
+                  </SmallButton>
+                )}
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
+      <form onSubmit={create} className="mt-2 flex items-center gap-2 border-t border-violet/10 pt-3">
+        <input
+          aria-label={t('Emoji du nouveau profil')}
+          value={emoji}
+          maxLength={4}
+          onChange={(e) => setEmoji(e.target.value)}
+          className="h-8 w-10 rounded-[8px] border border-cream-edge bg-cream-2 text-center text-[16px]"
+        />
+        <input
+          required
+          aria-label={t('Nom du nouveau profil')}
+          placeholder={t('Nouveau profil (Travail, Famille…)')}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className={`${selectClass} h-8 flex-1`}
+        />
+        <SmallButton submit>{t('Créer et ouvrir')}</SmallButton>
+      </form>
+    </Section>
   )
 }
 
