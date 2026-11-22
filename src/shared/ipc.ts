@@ -1,5 +1,6 @@
 import type {
   ImportSource,
+  TabGroupInfo,
   SavePasswordChoice,
   SavedLogin,
   BrowserSettings,
@@ -38,6 +39,10 @@ import type {
 export interface InvokeChannels {
   'tabs:create': { args: [url?: string]; result: TabId }
   /** `focusPage` false: keep the keyboard in the tab strip (arrow keys). */
+  /** Tab groups: rename, recolor, fold (from the chip in the strip). */
+  'tabGroups:update': { args: [groupId: string, changes: Partial<Omit<TabGroupInfo, 'id'>>]; result: void }
+  /** Right-click on a group's chip: native menu (rename, colors, ungroup, close). */
+  'tabGroups:showMenu': { args: [groupId: string]; result: void }
   'tabs:activate': { args: [id: TabId, focusPage?: boolean]; result: void }
   'tabs:close': { args: [id: TabId]; result: void }
   'tabs:navigate': { args: [id: TabId, input: string]; result: void }
@@ -109,6 +114,8 @@ export interface EventChannels {
   'sidebar:state': SidebarState
   /** Cmd/Ctrl+B. */
   'sidebar:toggle': null
+  /** « Renommer le groupe » picked in the group's menu: the chip turns into a field. */
+  'tabGroups:rename': { groupId: string }
   /** "Modifier…" picked in a native context menu: the renderer opens the editor at the tile. */
   'sidebar:edit': { kind: 'favorite' | 'folder'; id: string }
   /** Overlay view only: the popover to render, or null once hidden. */
@@ -126,6 +133,8 @@ export type EventChannel = keyof EventChannels
 export const INVOKE_CHANNELS = [
   'tabs:create',
   'tabs:activate',
+  'tabGroups:update',
+  'tabGroups:showMenu',
   'tabs:close',
   'tabs:navigate',
   'tabs:back',
@@ -173,6 +182,7 @@ export const EVENT_CHANNELS = [
   'sidebar:state',
   'sidebar:toggle',
   'sidebar:edit',
+  'tabGroups:rename',
   'overlay:show',
   'find:result',
   'downloads:state'

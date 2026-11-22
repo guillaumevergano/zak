@@ -319,5 +319,10 @@ export const EN_UI: Record<string, string> = {
   'Site à exclure': 'Site to exclude',
 
   // App.tsx (landmarks)
-  Page: 'Page'
+  Page: 'Page',
+
+  // TabStrip.tsx (tab groups)
+  'Nom du groupe': 'Group name',
+  'Déplier le groupe': 'Expand group',
+  'Replier le groupe': 'Collapse group'
 }

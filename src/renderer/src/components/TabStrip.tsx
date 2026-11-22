@@ -1,6 +1,7 @@
 import { horizontalListSortingStrategy, SortableContext, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import type { TabInfo } from '@shared/types'
+import { Fragment, useEffect, useState } from 'react'
+import type { TabGroupColor, TabGroupInfo, TabInfo } from '@shared/types'
 import { useBrowserStore } from '../store/useBrowserStore'
 import { dndId } from '../lib/dnd'
 import { BroomIcon, CloseIcon, GlobeIcon, PlusIcon, SparkleIcon, SpeakerIcon } from './Icons'
@@ -17,6 +18,7 @@ const isMac = navigator.userAgent.includes('Mac')
 export function TabStrip(): JSX.Element {
   const tabs = useBrowserStore((s) => s.tabs)
   const activeId = useBrowserStore((s) => s.activeId)
+  const groups = useBrowserStore((s) => s.groups)
   const pinned = tabs.filter((t) => t.pinned)
   const regular = tabs.filter((t) => !t.pinned)
 
@@ -35,9 +37,16 @@ export function TabStrip(): JSX.Element {
       <CloseAllButton closable={regular.filter((t) => t.id !== activeId).length} />
       <SortableContext items={regular.map((t) => dndId('tab', t.id))} strategy={horizontalListSortingStrategy}>
         <div role="tablist" aria-label={t('Onglets')} className="no-scrollbar flex min-w-0 items-end gap-1.5 overflow-x-auto px-1.5">
-          {regular.map((tab) => (
-            <TabItem key={tab.id} tab={tab} active={tab.id === activeId} />
-          ))}
+          {regular.map((tab, i) => {
+            const group = tab.groupId ? groups.find((g) => g.id === tab.groupId) : undefined
+            const startsGroup = group !== undefined && regular[i - 1]?.groupId !== group.id
+            return (
+              <Fragment key={tab.id}>
+                {startsGroup && <GroupChip group={group} />}
+                {!group?.collapsed && <TabItem tab={tab} active={tab.id === activeId} group={group} />}
+              </Fragment>
+            )
+          })}
         </div>
       </SortableContext>
       <button
@@ -54,7 +63,75 @@ export function TabStrip(): JSX.Element {
   )
 }
 
-function TabItem({ tab, active }: { tab: TabInfo; active: boolean }): JSX.Element {
+/** Tab group colors, made to sit on the plum frame. */
+export const GROUP_COLOR: Record<TabGroupColor, string> = {
+  grey: '#a8929f',
+  blue: '#7aa7ff',
+  red: '#ff6b81',
+  yellow: '#f5c84c',
+  green: '#5fd38d',
+  pink: '#ff8cc4',
+  purple: '#c67afb',
+  cyan: '#5fd3e0',
+  orange: '#ffa25f'
+}
+
+/**
+ * A group's chip, before its tabs: click folds or unfolds it (like Chrome); « Renommer le
+ * groupe… » in its menu turns it into a field.
+ */
+function GroupChip({ group }: { group: TabGroupInfo }): JSX.Element {
+  const [editing, setEditing] = useState(false)
+  const [name, setName] = useState(group.name)
+  useEffect(() => api.on('tabGroups:rename', ({ groupId }) => groupId === group.id && setEditing(true)), [group.id])
+  useEffect(() => setName(group.name), [group.name])
+  const save = (): void => {
+    setEditing(false)
+    if (name.trim() !== group.name) void api.invoke('tabGroups:update', group.id, { name: name.trim() })
+  }
+  const color = GROUP_COLOR[group.color]
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        value={name}
+        aria-label={t('Nom du groupe')}
+        onChange={(e) => setName(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') save()
+          if (e.key === 'Escape') {
+            setName(group.name)
+            setEditing(false)
+          }
+        }}
+        style={{ borderColor: color }}
+        className="no-drag mb-1.5 h-7 w-[120px] shrink-0 rounded-[9px] border-2 bg-frame-2 px-2 text-[12.5px] font-semibold text-frame-text outline-none"
+      />
+    )
+  }
+  return (
+    <button
+      type="button"
+      data-testid="tab-group"
+      aria-expanded={!group.collapsed}
+      title={group.collapsed ? t('Déplier le groupe') : t('Replier le groupe')}
+      onClick={() => void api.invoke('tabGroups:update', group.id, { collapsed: !group.collapsed })}
+      onContextMenu={(e) => {
+        e.preventDefault()
+        void api.invoke('tabGroups:showMenu', group.id)
+      }}
+      style={{ backgroundColor: color }}
+      className={`no-drag mb-1.5 flex h-7 max-w-[140px] shrink-0 cursor-default items-center rounded-[9px] text-[12.5px] font-bold text-frame outline-none focus-visible:ring-2 focus-visible:ring-frame-text ${
+        group.name ? 'px-2.5' : 'w-4 px-0'
+      }`}
+    >
+      <span className="truncate">{group.name}</span>
+    </button>
+  )
+}
+
+function TabItem({ tab, active, group }: { tab: TabInfo; active: boolean; group?: TabGroupInfo }): JSX.Element {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: dndId('tab', tab.id) })
   const close = (): void => void api.invoke('tabs:close', tab.id)
 
@@ -110,6 +187,14 @@ function TabItem({ tab, active }: { tab: TabInfo; active: boolean }): JSX.Elemen
         isDragging ? 'opacity-40' : tab.asleep && !active ? 'opacity-60' : ''
       }`}
     >
+      {group && (
+        <span
+          aria-hidden
+          data-testid="tab-group-line"
+          style={{ backgroundColor: GROUP_COLOR[group.color] }}
+          className={`pointer-events-none absolute right-2 left-2 h-[3px] rounded-full ${active ? 'top-0' : 'bottom-0'}`}
+        />
+      )}
       <Favicon tab={tab} />
       {tab.pinned ? (
         <span

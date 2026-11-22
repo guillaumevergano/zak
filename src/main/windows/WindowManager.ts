@@ -9,7 +9,7 @@ import type { SessionTab } from '../store/sessions'
 import { TabManager } from '../tabs/TabManager'
 import type { PipController } from '../pip/PipController'
 import type { SessionManager } from '../sessions/SessionManager'
-import { buildPageMenu, buildTabMenu } from '../menu/ContextMenu'
+import { buildPageMenu, buildGroupMenu, buildTabMenu } from '../menu/ContextMenu'
 import { Overlay } from './Overlay'
 
 export interface BrowserWindowHandle {
@@ -146,10 +146,20 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
     // Create tabs once the chrome UI is loaded so it receives the first state push.
     window.webContents.once('did-finish-load', () => {
       if (options.tabs && options.tabs.length > 0) {
-        for (const tab of options.tabs) tabs.create(tab.url, { active: false, pinned: tab.pinned })
-        const active = Math.max(0, options.tabs.findIndex((t) => t.active))
-        const id = tabs.getState().tabs[active]?.id
+        for (const tab of options.tabs) {
+          if (tab.group) tabs.restoreGroup(tab.group)
+          tabs.create(tab.url, { active: false, pinned: tab.pinned, groupId: tab.group?.id ?? null })
+        }
+        // The saved active tab, or else the first one not hidden in a folded group, or else a new tab.
+        const saved = options.tabs.findIndex((t) => t.active)
+        const active = saved !== -1 ? saved : options.tabs.findIndex((t) => !t.group?.collapsed)
+        const id = active === -1 ? undefined : tabs.getState().tabs[active]?.id
         if (id !== undefined) tabs.activate(id)
+        else tabs.create()
+        // Creating the first tab showed it, which unfolded its group: fold back what was folded.
+        for (const group of new Set(options.tabs.map((t) => t.group))) {
+          if (group?.collapsed) tabs.updateGroup(group.id, { collapsed: true })
+        }
       } else if (urls.length === 0) {
         tabs.create(undefined, { focusPage: false })
         this.focusOmnibox(handle)
@@ -242,6 +252,10 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
 
   showTabMenu(handle: BrowserWindowHandle, id: TabId): void {
     buildTabMenu(handle.tabs, id).popup({ window: handle.window })
+  }
+
+  showGroupMenu(handle: BrowserWindowHandle, groupId: string): void {
+    buildGroupMenu(handle.tabs, groupId, () => this.send(handle, 'tabGroups:rename', { groupId })).popup({ window: handle.window })
   }
 
   /** Sends to the chrome UI of every browser window. */

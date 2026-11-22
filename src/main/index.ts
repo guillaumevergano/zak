@@ -140,6 +140,8 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
   handle('tabs:toggleMute', (e, id) => tabsOf(e).toggleMute(id))
   handle('tabs:move', (e, id, index) => tabsOf(e).move(id, index))
   handle('tabs:showContextMenu', (e, id) => windows.showTabMenu(windowOf(e), id))
+  handle('tabGroups:update', (e, groupId, changes) => tabsOf(e).updateGroup(groupId, changes))
+  handle('tabGroups:showMenu', (e, groupId) => windows.showGroupMenu(windowOf(e), groupId))
   handle('tabs:getState', (e) => tabsOf(e).getState())
   handle('widevine:getStatus', () => widevine)
 

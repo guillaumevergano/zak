@@ -87,6 +87,28 @@ export const EN_MAIN: Record<string, string> = {
   'Fermer les autres onglets': 'Close other tabs',
   'Fermer les onglets à droite': 'Close tabs to the right',
 
+  // Tab groups (menu/ContextMenu.ts)
+  'Ajouter l’onglet à un nouveau groupe': 'Add tab to new group',
+  'Ajouter l’onglet au groupe': 'Add tab to group',
+  'Retirer du groupe': 'Remove from group',
+  'Groupe sans nom ({color})': 'Unnamed group ({color})',
+  'Renommer le groupe…': 'Rename group…',
+  Couleur: 'Color',
+  'Déplier le groupe': 'Expand group',
+  'Replier le groupe': 'Collapse group',
+  'Nouvel onglet dans le groupe': 'New tab in group',
+  Dissocier: 'Ungroup',
+  'Fermer le groupe': 'Close group',
+  Gris: 'Grey',
+  Bleu: 'Blue',
+  Rouge: 'Red',
+  Jaune: 'Yellow',
+  Vert: 'Green',
+  Rose: 'Pink',
+  Violet: 'Purple',
+  Cyan: 'Cyan',
+  Orange: 'Orange',
+
   // Sidebar context menus (sidebar/SidebarController.ts)
   'Racine (hors dossier)': 'Top level (no folder)',
   'Ouvrir dans un nouvel onglet': 'Open in new tab',

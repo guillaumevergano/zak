@@ -1,9 +1,10 @@
 import { create } from 'zustand'
-import type { DownloadInfo, SidebarLayout, SidebarState, TabId, TabInfo, TabsState } from '@shared/types'
+import type { DownloadInfo, SidebarLayout, SidebarState, TabGroupInfo, TabId, TabInfo, TabsState } from '@shared/types'
 
 interface BrowserStore {
   tabs: TabInfo[]
   activeId: TabId | null
+  groups: TabGroupInfo[]
   /** Bumped to ask the omnibox to take focus and select its text. */
   omniboxFocusTick: number
   sidebar: SidebarState | null
@@ -31,12 +32,13 @@ const api = window.zak
 export const useBrowserStore = create<BrowserStore>((set, get) => ({
   tabs: [],
   activeId: null,
+  groups: [],
   omniboxFocusTick: 0,
   sidebar: null,
   downloads: [],
   setDownloads: (downloads) => set({ downloads }),
 
-  setTabsState: ({ tabs, activeId }) => set({ tabs, activeId }),
+  setTabsState: ({ tabs, activeId, groups }) => set({ tabs, activeId, groups }),
 
   moveTabLocally: (id, index) =>
     set(({ tabs }) => {

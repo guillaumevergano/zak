@@ -1,7 +1,8 @@
 import { getLang, t } from '@shared/i18n'
 import { clipboard, Menu, MenuItem, type WebContents } from 'electron'
 import { reloadPage, TabManager } from '../tabs/TabManager'
-import type { TabId } from '@shared/types'
+import type { TabGroupColor, TabGroupInfo, TabId } from '@shared/types'
+import { GROUP_COLORS } from '../tabs/groups'
 import { SEARCH_ENGINES, searchUrl, translateUrl } from '@shared/url'
 
 /**
@@ -108,8 +109,26 @@ export function buildTabMenu(tabs: TabManager, id: TabId): Menu {
   const wc = tabs.get(id)
   const pinned = tabs.isPinned(id)
   const muted = wc?.isAudioMuted() ?? false
+  const groupId = tabs.groupOf(id)
+  const others = tabs.groupList().filter((g) => g.id !== groupId)
+  const groupItems: Electron.MenuItemConstructorOptions[] = pinned
+    ? []
+    : [
+        { label: t('Ajouter l’onglet à un nouveau groupe'), click: () => tabs.addToNewGroup([id]) },
+        ...(others.length > 0
+          ? [
+              {
+                label: t('Ajouter l’onglet au groupe'),
+                submenu: others.map((g) => ({ label: groupLabel(g), click: () => tabs.addToGroup(id, g.id) }))
+              }
+            ]
+          : []),
+        ...(groupId ? [{ label: t('Retirer du groupe'), click: () => tabs.removeFromGroup(id) }] : []),
+        { type: 'separator' as const }
+      ]
   return Menu.buildFromTemplate([
     { label: t('Nouvel onglet à droite'), click: () => tabs.create(undefined, { index: tabs.indexOf(id) + 1 }) },
+    ...groupItems,
     { type: 'separator' },
     { label: t('Recharger'), click: () => wc && reloadPage(wc) },
     { label: t('Dupliquer'), click: () => tabs.duplicate(id) },
@@ -125,3 +144,43 @@ export function buildTabMenu(tabs: TabManager, id: TabId): Menu {
     }
   ])
 }
+
+/** A color's name, in the interface language. */
+const colorName = (color: TabGroupColor): string =>
+  ({
+    grey: t('Gris'),
+    blue: t('Bleu'),
+    red: t('Rouge'),
+    yellow: t('Jaune'),
+    green: t('Vert'),
+    pink: t('Rose'),
+    purple: t('Violet'),
+    cyan: t('Cyan'),
+    orange: t('Orange')
+  })[color]
+
+const groupLabel = (g: TabGroupInfo): string => g.name || t('Groupe sans nom ({color})', { color: colorName(g.color) })
+
+/** Right-click on a group's chip in the strip. */
+export function buildGroupMenu(tabs: TabManager, groupId: string, rename: () => void): Menu {
+  const group = tabs.groupList().find((g) => g.id === groupId)
+  if (!group) return new Menu()
+  return Menu.buildFromTemplate([
+    { label: t('Renommer le groupe…'), click: rename },
+    {
+      label: t('Couleur'),
+      submenu: GROUP_COLORS.map((color) => ({
+        label: colorName(color),
+        type: 'radio' as const,
+        checked: group.color === color,
+        click: () => tabs.updateGroup(groupId, { color })
+      }))
+    },
+    { label: group.collapsed ? t('Déplier le groupe') : t('Replier le groupe'), click: () => tabs.updateGroup(groupId, { collapsed: !group.collapsed }) },
+    { type: 'separator' },
+    { label: t('Nouvel onglet dans le groupe'), click: () => tabs.addToGroup(tabs.create().id, groupId) },
+    { label: t('Dissocier'), click: () => tabs.ungroup(groupId) },
+    { label: t('Fermer le groupe'), click: () => tabs.closeGroup(groupId) }
+  ])
+}
+

@@ -41,7 +41,12 @@ const MIGRATIONS: string[] = [
      created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, used_at INTEGER
    );
    CREATE UNIQUE INDEX passwords_login ON passwords(origin, username);
-   CREATE TABLE password_never (origin TEXT PRIMARY KEY);`
+   CREATE TABLE password_never (origin TEXT PRIMARY KEY);`,
+  // 4 — tab groups in the saved session.
+  `ALTER TABLE tab_sessions ADD COLUMN group_id TEXT;
+   ALTER TABLE tab_sessions ADD COLUMN group_name TEXT;
+   ALTER TABLE tab_sessions ADD COLUMN group_color TEXT;
+   ALTER TABLE tab_sessions ADD COLUMN group_collapsed INTEGER;`
 ]
 
 export function openDatabase(dir: string): Db {

@@ -91,8 +91,14 @@ export class SessionRestore {
 
 /** Real pages only: an empty new tab isn't worth restoring. */
 function snapshot(handle: BrowserWindowHandle): SessionTab[] {
-  const { tabs, activeId } = handle.tabs.getState()
+  const { tabs, activeId, groups } = handle.tabs.getState()
   return tabs
     .filter((t) => t.url !== '' && !t.url.startsWith('zak://newtab'))
-    .map((t) => ({ url: t.url, title: t.title, pinned: t.pinned, active: t.id === activeId }))
+    .map((t) => ({
+      url: t.url,
+      title: t.title,
+      pinned: t.pinned,
+      active: t.id === activeId,
+      group: groups.find((g) => g.id === t.groupId) ?? null
+    }))
 }

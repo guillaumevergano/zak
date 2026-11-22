@@ -17,11 +17,26 @@ export interface TabInfo {
   zoom: number
   /** Unloaded by the tab sleep; reloads when shown. */
   asleep: boolean
+  /** Tab group it belongs to (TabsState.groups), or null. */
+  groupId: string | null
+}
+
+export type TabGroupColor = 'grey' | 'blue' | 'red' | 'yellow' | 'green' | 'pink' | 'purple' | 'cyan' | 'orange'
+
+/** A tab group (like Chrome's): its tabs are next to each other in the strip. */
+export interface TabGroupInfo {
+  id: string
+  /** May be empty: the chip then only shows its color. */
+  name: string
+  color: TabGroupColor
+  /** Folded: only the chip shows, its tabs are hidden. */
+  collapsed: boolean
 }
 
 export interface TabsState {
   tabs: TabInfo[]
   activeId: TabId | null
+  groups: TabGroupInfo[]
 }
 
 /** Space taken by the chrome UI around the web content area, from each window edge (CSS pixels). */

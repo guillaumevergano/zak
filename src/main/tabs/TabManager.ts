@@ -1,7 +1,9 @@
 import { t } from '@shared/i18n'
 import { EventEmitter } from 'node:events'
 import { WebContentsView, type BaseWindow, type Session, type WebContents } from 'electron'
-import type { LayoutInsets, TabId, TabInfo, TabsState } from '@shared/types'
+import type { LayoutInsets, TabGroupInfo, TabId, TabInfo, TabsState } from '@shared/types'
+import { randomUUID } from 'node:crypto'
+import { endOfGroup, groupAt, nextColor, usedGroups } from './groups'
 import { manageIdentity, trackIdentitySetup } from '../userAgent'
 import { NEW_TAB_URL, errorPageUrl, failedUrlOf, isNewTabUrl, toUrl, type SearchEngine } from '@shared/url'
 import { isInternalUrl } from '../internal/InternalProtocol'
@@ -47,6 +49,7 @@ interface Tab {
   lastActive: number
   /** Asleep: the page was swapped for about:blank to free memory; what to show and reload. */
   asleep: { url: string; title: string; favicon: string | null } | null
+  groupId: string | null
 }
 
 interface ClosedTab {
@@ -60,6 +63,8 @@ export interface CreateTabOptions {
   /** Position in the strip; defaults to the end. Clamped to the unpinned group. */
   index?: number
   pinned?: boolean
+  /** Tab group to put it in (session restore). By default a tab placed inside a group joins it. */
+  groupId?: string | null
   /**
    * Give the page the keyboard focus when it becomes active (default). Off for a new tab: the
    * omnibox takes it, and a focused page would grab it back as it loads.
@@ -93,6 +98,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
   static searchEngine: () => SearchEngine = () => 'google'
 
   private tabs = new Map<TabId, Tab>()
+  private readonly groups = new Map<string, TabGroupInfo>()
   private order: TabId[] = []
   private activeId: TabId | null = null
   private insets: LayoutInsets = { left: 0, top: 0, right: 0, bottom: 0 }
@@ -194,10 +200,14 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     })
     const wc = view.webContents
     const pinned = opts.pinned ?? false
-    const tab: Tab = { id: wc.id, view, wc, favicon: null, pinned, url, setup: Promise.resolve(), lastActive: Date.now(), asleep: null }
+    const tab: Tab = { id: wc.id, view, wc, favicon: null, pinned, url, setup: Promise.resolve(), lastActive: Date.now(), asleep: null, groupId: null }
     this.tabs.set(tab.id, tab)
     const [start, end] = this.groupRange(pinned)
-    this.order.splice(clamp(opts.index ?? end, start, end), 0, tab.id)
+    const at = clamp(opts.index ?? end, start, end)
+    this.order.splice(at, 0, tab.id)
+    // A tab opened inside a group (a link next to its opener, a duplicate) joins it, like Chrome.
+    if (opts.groupId !== undefined) tab.groupId = opts.groupId && this.groups.has(opts.groupId) ? opts.groupId : null
+    else if (!pinned && opts.index !== undefined) tab.groupId = groupAt(this.order, this.tabs, at, null)
 
     view.setBorderRadius(PAGE_RADIUS)
     view.setVisible(false)
@@ -242,6 +252,9 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     }
 
     this.activeId = id
+    // Showing a tab of a folded group unfolds it.
+    const group = next.groupId ? this.groups.get(next.groupId) : undefined
+    if (group?.collapsed) group.collapsed = false
     next.lastActive = Date.now()
     if (previous) previous.lastActive = Date.now()
     this.wake(next)
@@ -284,6 +297,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     this.remember(tab, index)
     this.order.splice(index, 1)
     this.tabs.delete(id)
+    this.dropEmptyGroups()
 
     if (this.activeId === id) {
       this.activeId = null
@@ -310,6 +324,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     const closing = this.order.map((id) => this.tabs.get(id)!)
     this.tabs.clear()
     this.order = []
+    this.groups.clear()
     this.activeId = null
     for (const tab of closing) this.dispose(tab)
   }
@@ -342,6 +357,8 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     if (!tab || tab.pinned === pinned) return
     this.order.splice(this.order.indexOf(id), 1)
     tab.pinned = pinned
+    tab.groupId = null // pinned tabs are never in a group
+    this.dropEmptyGroups()
     // Pinning appends to the pinned group; unpinning puts the tab first among the others.
     const [start, end] = this.groupRange(pinned)
     this.order.splice(pinned ? end : start, 0, id)
@@ -354,8 +371,100 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     if (!tab) return
     this.order.splice(this.order.indexOf(id), 1)
     const [start, end] = this.groupRange(tab.pinned)
-    this.order.splice(clamp(index, start, end), 0, id)
+    const at = clamp(index, start, end)
+    this.order.splice(at, 0, id)
+    // Dropped between two tabs of a group: joins it; away from its own group: leaves it.
+    if (!tab.pinned) tab.groupId = groupAt(this.order, this.tabs, at, tab.groupId)
+    this.dropEmptyGroups()
     this.emit('changed')
+  }
+
+  // ── Tab groups ────────────────────────────────────────────────────────────────────────
+
+  /** « Ajouter à un nouveau groupe »: the tabs gather where the first one is. Returns the group. */
+  addToNewGroup(ids: TabId[], init: Partial<Omit<TabGroupInfo, 'id'>> = {}): string | null {
+    const members = ids.filter((id) => this.tabs.has(id) && !this.tabs.get(id)!.pinned)
+    if (members.length === 0) return null
+    const group: TabGroupInfo = { id: randomUUID(), name: init.name ?? '', color: init.color ?? nextColor(this.groups.values()), collapsed: false }
+    this.groups.set(group.id, group)
+    const before = [...this.order]
+    const first = Math.min(...members.map((id) => this.order.indexOf(id)))
+    const anchor = this.order[first]!
+    this.order = this.order.filter((id) => !members.includes(id) || id === anchor)
+    const inStripOrder = [...members].sort((a, b) => before.indexOf(a) - before.indexOf(b))
+    this.order.splice(this.order.indexOf(anchor), 1, ...inStripOrder)
+    for (const id of members) this.tabs.get(id)!.groupId = group.id
+    this.dropEmptyGroups()
+    this.emit('changed')
+    return group.id
+  }
+
+  /** Moves a tab to the end of an existing group. */
+  addToGroup(id: TabId, groupId: string): void {
+    const tab = this.tabs.get(id)
+    if (!tab || tab.pinned || !this.groups.has(groupId) || tab.groupId === groupId) return
+    this.order.splice(this.order.indexOf(id), 1)
+    this.order.splice(endOfGroup(this.order, this.tabs, groupId, this.order.length), 0, id)
+    tab.groupId = groupId
+    this.dropEmptyGroups()
+    this.emit('changed')
+  }
+
+  /** « Retirer du groupe »: the tab goes right after the group. */
+  removeFromGroup(id: TabId): void {
+    const tab = this.tabs.get(id)
+    if (!tab?.groupId) return
+    const groupId = tab.groupId
+    tab.groupId = null
+    this.order.splice(this.order.indexOf(id), 1)
+    this.order.splice(endOfGroup(this.order, this.tabs, groupId, this.order.length), 0, id)
+    this.dropEmptyGroups()
+    this.emit('changed')
+  }
+
+  updateGroup(groupId: string, changes: Partial<Omit<TabGroupInfo, 'id'>>): void {
+    const group = this.groups.get(groupId)
+    if (!group) return
+    Object.assign(group, changes)
+    // Folding the group of the active tab: show the closest tab outside it, like Chrome.
+    const active = this.activeId !== null ? this.tabs.get(this.activeId) : undefined
+    if (changes.collapsed && active?.groupId === groupId) {
+      const index = this.order.indexOf(active.id)
+      const outside = [...this.order.slice(index + 1), ...this.order.slice(0, index).reverse()].find((id) => this.tabs.get(id)!.groupId !== groupId)
+      // Nothing outside the group: a new tab, like Chrome.
+      if (outside === undefined) this.create()
+      else this.activate(outside)
+    }
+    this.emit('changed')
+  }
+
+  /** « Dissocier »: the tabs stay, without the group. */
+  ungroup(groupId: string): void {
+    for (const tab of this.tabs.values()) if (tab.groupId === groupId) tab.groupId = null
+    this.groups.delete(groupId)
+    this.emit('changed')
+  }
+
+  closeGroup(groupId: string): void {
+    for (const id of this.order.filter((id) => this.tabs.get(id)?.groupId === groupId)) this.close(id)
+  }
+
+  groupList(): TabGroupInfo[] {
+    return [...this.groups.values()]
+  }
+
+  groupOf(id: TabId): string | null {
+    return this.tabs.get(id)?.groupId ?? null
+  }
+
+  private dropEmptyGroups(): void {
+    const used = usedGroups(this.tabs.values())
+    for (const id of this.groups.keys()) if (!used.has(id)) this.groups.delete(id)
+  }
+
+  /** Restores a group saved with the session (WindowManager), before its tabs are created. */
+  restoreGroup(group: TabGroupInfo): void {
+    this.groups.set(group.id, { ...group })
   }
 
   toggleMute(id: TabId): void {
@@ -442,7 +551,8 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
   getState(): TabsState {
     return {
       activeId: this.activeId,
-      tabs: this.order.map((id) => this.describe(this.tabs.get(id)!))
+      tabs: this.order.map((id) => this.describe(this.tabs.get(id)!)),
+      groups: this.groupList()
     }
   }
 
@@ -485,7 +595,8 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
         canGoBack: true,
         canGoForward: false,
         zoom: Math.round(wc.getZoomFactor() * 100),
-        asleep: true
+        asleep: true,
+        groupId: tab.groupId
       }
     }
     // An error page shows the address that failed, like Chrome.
@@ -504,7 +615,8 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
       canGoBack: wc.navigationHistory.canGoBack(),
       canGoForward: wc.navigationHistory.canGoForward(),
       zoom: Math.round(wc.getZoomFactor() * 100),
-      asleep: false
+      asleep: false,
+      groupId: tab.groupId
     }
   }
 
