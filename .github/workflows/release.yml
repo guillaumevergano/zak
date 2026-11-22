@@ -1,6 +1,7 @@
 # Official builds: signed for Widevine VMP (castLabs EVS), Apple (Developer ID + notarization) and
 # Authenticode, then published to GitHub Releases, where the website and the in-app updater find
 # them. Runs on a version tag (git tag v0.1.0 && git push --tags); pull requests never see the secrets.
+# Missing secrets give an unsigned « preview » build instead of failing (see « Signing setup »).
 name: Release
 
 on:
@@ -35,16 +36,33 @@ jobs:
       - name: Check that the tag matches package.json
         shell: bash
         run: test "v$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME}"
-      - name: Build, sign and publish
-        run: ${{ matrix.command }}
+      # Without the signing secrets (not set up yet), the release is a « preview »: unsigned
+      # (ad-hoc on macOS, so Apple silicon runs it after « Open anyway »), not notarized, no VMP.
+      # Only the secrets that exist are passed on: an empty CSC_LINK would make electron-builder fail.
+      - name: Signing setup
+        shell: bash
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # castLabs EVS account (VMP signing, scripts/vmp-sign.js).
           EVS_ACCOUNT: ${{ secrets.EVS_ACCOUNT }}
           EVS_PASSWD: ${{ secrets.EVS_PASSWD }}
-          # macOS: Developer ID certificate (.p12, base64) and notarization.
           CSC_LINK: ${{ runner.os == 'macOS' && secrets.MAC_CSC_LINK || secrets.WIN_CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ runner.os == 'macOS' && secrets.MAC_CSC_KEY_PASSWORD || secrets.WIN_CSC_KEY_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          for name in EVS_ACCOUNT EVS_PASSWD CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
+            if [ -n "${!name}" ]; then echo "$name=${!name}" >> "$GITHUB_ENV"; fi
+          done
+          extra=''
+          if [ -z "$EVS_ACCOUNT" ]; then echo 'ZAK_SKIP_VMP=1' >> "$GITHUB_ENV"; echo '::warning::No EVS account: no VMP signature, Netflix & co. will refuse this build'; fi
+          if [ -z "$CSC_LINK" ]; then
+            echo 'CSC_IDENTITY_AUTO_DISCOVERY=false' >> "$GITHUB_ENV"
+            echo "::warning::No ${RUNNER_OS} code signing certificate: unsigned preview build"
+            if [ "$RUNNER_OS" = macOS ]; then extra='-c.mac.identity=- -c.mac.notarize=false'; fi
+          fi
+          echo "BUILDER_EXTRA=$extra" >> "$GITHUB_ENV"
+      - name: Build, sign and publish
+        shell: bash
+        run: ${{ matrix.command }} $BUILDER_EXTRA
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -16,6 +16,15 @@ c'est normal.
 | Vérification des prérequis | `npm run release:check` |
 | Test du build packagé (asar, SQLite natif, pages internes, preloads, UA) | `npm run smoke:packaged` ✅ (19/11, macOS arm64, non signé) |
 
+## Version « aperçu » (sans les secrets)
+
+Tant que les secrets de signature manquent, `release.yml` publie quand même : macOS signé ad hoc
+(« Ouvrir quand même » dans Réglages Système → Confidentialité et sécurité), pas de notarisation,
+Windows non signé (SmartScreen), pas de VMP (pas de Netflix & co.). Sur Mac, la mise à jour
+automatique ne marche pas pour ces builds. Chaque secret ajouté est pris en compte à la release suivante.
+Le site (`site/index.html`, `site/en/index.html`) explique la première ouverture : retirer ce bloc
+`.preview` à la première release signée.
+
 ## Ce qu'il te reste à faire (une seule fois)
 
 `npm run release:check` dit précisément ce qui manque. Au 19/11 :

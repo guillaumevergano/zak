@@ -49,6 +49,9 @@
   .others { font-size: 14px; color: var(--sub); }
   .others a { color: var(--ink); font-weight: 600; }
   .note { font-size: 13px; color: var(--sub); margin-top: 6px; }
+  .preview { font-size: 13px; color: var(--sub); max-width: 460px; text-align: left; margin-top: 4px; }
+  .preview summary { cursor: pointer; text-align: center; font-weight: 600; color: var(--ink); }
+  .preview ol { margin: 8px 0 0; padding-left: 20px; line-height: 1.5; }
 
   /* A drawing of the browser (no screenshot of anyone's data). */
   .shot { margin: 48px auto 0; max-width: 960px; border-radius: 16px; background: var(--frame); padding: 0 8px 8px;
@@ -131,6 +134,14 @@
         <a class="btn" id="primary" href="#">Télécharger Zak</a>
         <div class="others" id="others"></div>
         <div class="note">Gratuit · macOS 12+ et Windows 10+ · se met à jour tout seul</div>
+        <details class="preview">
+          <summary>Version aperçu : comment l'ouvrir la première fois</summary>
+          <ol>
+            <li><b>Mac</b> : ouvrez Zak une première fois (macOS refuse), puis Réglages Système → Confidentialité et sécurité → « Ouvrir quand même ».</li>
+            <li><b>Windows</b> : sur « Windows a protégé votre ordinateur », cliquez « Informations complémentaires » puis « Exécuter quand même ».</li>
+            <li>Zak n'est pas encore signé par Apple et Microsoft, d'où ces avertissements ; ça viendra avec la version 1. Netflix et les autres services protégés ne marchent pas encore, et sur Mac l'aperçu ne se met pas à jour tout seul.</li>
+          </ol>
+        </details>
       </div>
 
       <div class="shot" aria-hidden="true">
