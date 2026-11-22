@@ -104,8 +104,8 @@ export function buildPageMenu(
   return menu
 }
 
-/** Right-click on a tab in the strip. */
-export function buildTabMenu(tabs: TabManager, id: TabId): Menu {
+/** Right-click on a tab in the strip. `newTabBeside`: a new tab in a split view with this one, omnibox focused. */
+export function buildTabMenu(tabs: TabManager, id: TabId, newTabBeside: () => void): Menu {
   const wc = tabs.get(id)
   const pinned = tabs.isPinned(id)
   const muted = wc?.isAudioMuted() ?? false
@@ -126,8 +126,26 @@ export function buildTabMenu(tabs: TabManager, id: TabId): Menu {
         ...(groupId ? [{ label: t('Retirer du groupe'), click: () => tabs.removeFromGroup(id) }] : []),
         { type: 'separator' as const }
       ]
+  // Split view (§6.1): also by dropping a tab on another one.
+  const partner = tabs.splitPartner(id)
+  const activeId = tabs.getActiveId()
+  const besideActive = activeId !== null && activeId !== id && !tabs.isPinned(activeId) && tabs.splitPartner(activeId) === null
+  const splitItems: Electron.MenuItemConstructorOptions[] = pinned
+    ? []
+    : partner !== null
+      ? [
+          { label: t('Séparer les onglets'), click: () => tabs.unsplit(id) },
+          { label: t('Inverser les côtés'), click: () => tabs.swapSplit(id) },
+          { type: 'separator' }
+        ]
+      : [
+          ...(besideActive ? [{ label: t('Afficher à côté de l’onglet actif'), click: () => void tabs.split(activeId, id) }] : []),
+          { label: t('Nouvel onglet côte à côte'), click: newTabBeside },
+          { type: 'separator' }
+        ]
   return Menu.buildFromTemplate([
     { label: t('Nouvel onglet à droite'), click: () => tabs.create(undefined, { index: tabs.indexOf(id) + 1 }) },
+    ...splitItems,
     ...groupItems,
     { type: 'separator' },
     { label: t('Recharger'), click: () => wc && reloadPage(wc) },

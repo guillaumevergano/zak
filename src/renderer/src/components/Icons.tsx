@@ -81,3 +81,11 @@ export const DownloadIcon = (): JSX.Element => (
     <path d="M8 2.5v7.5M4.8 7 8 10.2 11.2 7M3 13.5h10" />
   </Icon>
 )
+
+/** Two pages side by side (split view). */
+export const SplitIcon = (): JSX.Element => (
+  <Icon>
+    <rect x="2" y="3" width="12" height="10" rx="2" />
+    <path d="M8 3v10" />
+  </Icon>
+)

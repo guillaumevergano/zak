@@ -9,6 +9,8 @@ export interface SessionTab {
   active: boolean
   /** Its tab group, if any (the same object for every tab of the group). */
   group?: TabGroupInfo | null
+  /** Its split view, if any: the two tabs that share it are next to each other. */
+  split?: { id: string; ratio: number } | null
 }
 
 export type SessionWindow = SessionTab[]
@@ -23,6 +25,8 @@ interface Row {
   group_name: string | null
   group_color: string | null
   group_collapsed: number | null
+  split_id: string | null
+  split_ratio: number | null
 }
 
 /** The tabs of the normal windows, saved as they change and reopened at launch. */
@@ -31,15 +35,20 @@ export class SessionStore {
 
   save(windows: SessionWindow[]): void {
     const insert = this.db.prepare(
-      `INSERT INTO tab_sessions (window_id, tab_index, url, title, pinned, active, group_id, group_name, group_color, group_collapsed)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO tab_sessions (window_id, tab_index, url, title, pinned, active, group_id, group_name, group_color, group_collapsed, split_id, split_ratio)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     this.db.transaction(() => {
       this.db.prepare('DELETE FROM tab_sessions').run()
       windows.forEach((tabs, w) =>
         tabs.forEach((t, i) => {
           const g = t.group ?? null
-          insert.run(String(w), i, t.url, t.title, t.pinned ? 1 : 0, t.active ? 1 : 0, g?.id ?? null, g?.name ?? null, g?.color ?? null, g ? (g.collapsed ? 1 : 0) : null)
+          const sp = t.split ?? null
+          insert.run(
+            String(w), i, t.url, t.title, t.pinned ? 1 : 0, t.active ? 1 : 0,
+            g?.id ?? null, g?.name ?? null, g?.color ?? null, g ? (g.collapsed ? 1 : 0) : null,
+            sp?.id ?? null, sp?.ratio ?? null
+          )
         })
       )
     })()
@@ -61,7 +70,8 @@ export class SessionStore {
         }
         groups.set(r.group_id, group)
       }
-      tabs.push({ url: r.url, title: r.title, pinned: r.pinned === 1, active: r.active === 1, group })
+      const split = r.split_id ? { id: r.split_id, ratio: r.split_ratio ?? 0.5 } : null
+      tabs.push({ url: r.url, title: r.title, pinned: r.pinned === 1, active: r.active === 1, group, split })
       windows.set(r.window_id, tabs)
     }
     return [...windows.values()]

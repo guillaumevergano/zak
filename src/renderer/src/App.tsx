@@ -7,6 +7,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragMoveEvent,
   type DragStartEvent
 } from '@dnd-kit/core'
 import type { WidevineStatus } from '@shared/types'
@@ -16,6 +17,7 @@ import { rectOf } from './lib/favorites'
 import { Sidebar, TileIcon } from './components/Sidebar'
 import { TabGhost, TabStrip } from './components/TabStrip'
 import { Toolbar } from './components/Toolbar'
+import { SplitFrame } from './components/SplitFrame'
 
 const api = window.zak
 
@@ -79,8 +81,9 @@ export function App(): JSX.Element {
           <Toolbar widevine={widevine} />
         </header>
         <div className="flex min-h-0 flex-1">
-          <main aria-label={t('Page')} className="page-slot no-drag mb-2 ml-2 min-w-0 flex-1 overflow-hidden rounded-b-[14px]">
+          <main aria-label={t('Page')} className="page-slot no-drag relative mb-2 ml-2 min-w-0 flex-1 overflow-hidden rounded-b-[14px]">
             <div ref={contentRef} className="h-full w-full" />
+            <SplitFrame />
           </main>
           <Sidebar />
         </div>
@@ -112,9 +115,33 @@ function openEditor({ kind, id }: { kind: 'favorite' | 'folder'; id: string }): 
   }
 }
 
+/** How long a dragged tab must be held over the middle of another one to show them side by side. */
+const MERGE_DELAY_MS = 350
+
 /**
- * One drag & drop context for the chrome UI: reorder tabs, reorder favorites and folders,
- * move favorites between folders, drop a tab into the sidebar to make it a favorite.
+ * The tab a dragged tab would join in a split view: the pointer is over the middle half of a tab
+ * that isn't pinned nor already in a split view. Over its edges, the drag reorders as usual.
+ */
+function mergeCandidate({ active, over, delta, activatorEvent }: DragMoveEvent): number | null {
+  const from = parseDndId(active.id)
+  const to = over ? parseDndId(over.id) : null
+  if (!over || from.kind !== 'tab' || to?.kind !== 'tab' || !(activatorEvent instanceof PointerEvent)) return null
+  const { tabs, splits } = useBrowserStore.getState()
+  const dragged = tabs.find((t) => t.id === Number(from.id))
+  const target = tabs.find((t) => t.id === Number(to.id))
+  if (!dragged || !target || dragged.id === target.id || dragged.pinned || target.pinned) return null
+  if (splits.some((s) => s.tabs.includes(target.id))) return null
+  const x = activatorEvent.clientX + delta.x
+  const y = activatorEvent.clientY + delta.y
+  const r = over.rect
+  const across = (x - r.left) / r.width
+  return y >= r.top - 6 && y <= r.top + r.height + 6 && across > 0.25 && across < 0.75 ? target.id : null
+}
+
+/**
+ * One drag & drop context for the chrome UI: reorder tabs, hold a tab over another to show them
+ * side by side (split view), reorder favorites and folders, move favorites between folders, drop a
+ * tab into the sidebar to make it a favorite.
  */
 function DragAndDrop({ children }: { children: React.ReactNode }): JSX.Element {
   // A small distance keeps a plain click a click (activate, open) rather than a drag.
@@ -122,13 +149,40 @@ function DragAndDrop({ children }: { children: React.ReactNode }): JSX.Element {
   const [dragging, setDragging] = useState<{ kind: DndKind; id: string } | null>(null)
   const tabs = useBrowserStore((s) => s.tabs)
   const sidebar = useBrowserStore((s) => s.sidebar)
+  const mergeTarget = useBrowserStore((s) => s.mergeTarget)
+  const merge = useRef<{ candidate: number | null; timer: ReturnType<typeof setTimeout> | null }>({ candidate: null, timer: null })
+
+  const stopMerge = (): void => {
+    if (merge.current.timer) clearTimeout(merge.current.timer)
+    merge.current = { candidate: null, timer: null }
+    if (useBrowserStore.getState().mergeTarget !== null) useBrowserStore.getState().setMergeTarget(null)
+  }
 
   const onDragStart = ({ active }: DragStartEvent): void => setDragging(parseDndId(active.id))
 
+  // Held over the middle of another tab for a moment: the strip stops reordering and the target
+  // lights up; dropping then shows both tabs side by side.
+  const onDragMove = (event: DragMoveEvent): void => {
+    const candidate = mergeCandidate(event)
+    if (candidate === merge.current.candidate) return
+    stopMerge()
+    if (candidate === null) return
+    merge.current = {
+      candidate,
+      timer: setTimeout(() => useBrowserStore.getState().setMergeTarget(candidate), MERGE_DELAY_MS)
+    }
+  }
+
   const onDragEnd = ({ active, over }: DragEndEvent): void => {
     setDragging(null)
-    if (!over || active.id === over.id) return
+    const merging = useBrowserStore.getState().mergeTarget
+    stopMerge()
     const from = parseDndId(active.id)
+    if (merging !== null && from.kind === 'tab') {
+      void api.invoke('tabs:split', merging, Number(from.id))
+      return
+    }
+    if (!over || active.id === over.id) return
     const to = parseDndId(over.id)
     const state = useBrowserStore.getState()
 
@@ -188,12 +242,16 @@ function DragAndDrop({ children }: { children: React.ReactNode }): JSX.Element {
       sensors={sensors}
       collisionDetection={collisionDetection}
       onDragStart={onDragStart}
+      onDragMove={onDragMove}
       onDragEnd={onDragEnd}
-      onDragCancel={() => setDragging(null)}
+      onDragCancel={() => {
+        setDragging(null)
+        stopMerge()
+      }}
     >
       {children}
       <DragOverlay dropAnimation={null}>
-        {ghostTab && <TabGhost tab={ghostTab} />}
+        {ghostTab && <TabGhost tab={ghostTab} merging={mergeTarget !== null} />}
         {ghostFavorite && (
           <div className="grid h-11 w-11 place-items-center rounded-[10px] bg-frame-3 shadow-[0_8px_24px_rgb(0_0_0/0.4)]">
             <TileIcon favorite={ghostFavorite} />

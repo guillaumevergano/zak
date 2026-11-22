@@ -33,10 +33,23 @@ export interface TabGroupInfo {
   collapsed: boolean
 }
 
+/**
+ * Split view (à la Arc): two tabs shown side by side in the page area. They stay two tabs (own
+ * history, own page), next to each other in the strip, drawn as one pill.
+ */
+export interface TabSplitInfo {
+  id: string
+  /** Left tab, right tab (also their order in the strip). */
+  tabs: [TabId, TabId]
+  /** Share of the width taken by the left page (SPLIT_MIN_RATIO–SPLIT_MAX_RATIO). */
+  ratio: number
+}
+
 export interface TabsState {
   tabs: TabInfo[]
   activeId: TabId | null
   groups: TabGroupInfo[]
+  splits: TabSplitInfo[]
 }
 
 /** Space taken by the chrome UI around the web content area, from each window edge (CSS pixels). */

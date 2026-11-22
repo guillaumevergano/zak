@@ -323,6 +323,9 @@ export const EN_UI: Record<string, string> = {
 
   // TabStrip.tsx (tab groups)
   'Nom du groupe': 'Group name',
+  'Côte à côte': 'Side by side',
+  'Séparation des deux onglets': 'Divider between the two tabs',
+  'Glisser pour redimensionner · double-clic pour égaliser': 'Drag to resize · double-click to even out',
   'Déplier le groupe': 'Expand group',
   'Replier le groupe': 'Collapse group',
 

@@ -61,6 +61,10 @@ export interface InvokeChannels {
   'tabs:toggleMute': { args: [id: TabId]; result: void }
   /** Moves a tab to `index` in the strip; main keeps pinned tabs before the others. */
   'tabs:move': { args: [id: TabId, index: number]; result: void }
+  /** A tab dropped on another one: split view, the two side by side (CLAUDE.md §6.1). */
+  'tabs:split': { args: [targetId: TabId, otherId: TabId]; result: void }
+  /** The divider of a split view was dragged: share of the width of its left page. */
+  'tabs:setSplitRatio': { args: [splitId: string, ratio: number]; result: void }
   /** Native context menu of a tab in the strip (épingler, dupliquer, fermer…). */
   'tabs:showContextMenu': { args: [id: TabId]; result: void }
   'tabs:getState': { args: []; result: TabsState }
@@ -150,6 +154,8 @@ export const INVOKE_CHANNELS = [
   'tabs:setPinned',
   'tabs:toggleMute',
   'tabs:move',
+  'tabs:split',
+  'tabs:setSplitRatio',
   'tabs:showContextMenu',
   'tabs:getState',
   'widevine:getStatus',

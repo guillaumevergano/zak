@@ -46,7 +46,10 @@ const MIGRATIONS: string[] = [
   `ALTER TABLE tab_sessions ADD COLUMN group_id TEXT;
    ALTER TABLE tab_sessions ADD COLUMN group_name TEXT;
    ALTER TABLE tab_sessions ADD COLUMN group_color TEXT;
-   ALTER TABLE tab_sessions ADD COLUMN group_collapsed INTEGER;`
+   ALTER TABLE tab_sessions ADD COLUMN group_collapsed INTEGER;`,
+  // 5 — split views (two tabs side by side) in the saved session.
+  `ALTER TABLE tab_sessions ADD COLUMN split_id TEXT;
+   ALTER TABLE tab_sessions ADD COLUMN split_ratio REAL;`
 ]
 
 export function openDatabase(dir: string): Db {
