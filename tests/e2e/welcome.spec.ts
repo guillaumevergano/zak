@@ -3,7 +3,7 @@ import { activeTabTitle, launch, pageAt } from './helpers'
 import { fakeChromeHome } from '../fixtures/chromeProfile'
 
 test('the first launch opens the welcome page, which imports from another browser', async () => {
-  const { app, chrome } = await launch('welcome', undefined, { ZAK_ONBOARDING: '1', ZAK_IMPORT_HOME: fakeChromeHome() })
+  const { app, chrome } = await launch('welcome', undefined, { ZAK_ONBOARDING: '1', ZAK_IMPORT_HOME: fakeChromeHome(process.platform === 'win32' ? 'win32' : 'darwin') })
   const welcome = await pageAt(app, 'zak://welcome')
   await expect(welcome.getByRole('heading', { name: 'Bienvenue dans Zak.' })).toBeVisible()
   await welcome.getByRole('button', { name: 'Importer' }).click()
