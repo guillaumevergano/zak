@@ -196,6 +196,7 @@ Les fenêtres privées n'écrivent **rien** dans `history` ni `tab_sessions`.
 - **Plein écran** vidéo (`enter-html-full-screen`) : masquer sidebar + barres.
 - **Restauration de session** au lancement (onglets de la dernière fenêtre normale) + « Rouvrir la fenêtre fermée ».
 - **Réglages** `zak://settings` : moteur de recherche, page de démarrage, PiP, sidebar, extensions en privé, thème (clair/sombre/système), dossier de téléchargement, effacer les données.
+- **Sites dangereux** (Electron n'a pas Google Safe Browsing) : listes publiques d'hameçonnage et de logiciels malveillants (malware-filter : OpenPhish, PhishTank, URLhaus) téléchargées toutes les 12 h et vérifiées localement, sans envoyer d'URL ; page ou cadre listé bloqué, avertissement rouge dans `zak://error?threat=…` (« Retour en lieu sûr », « Continuer quand même » pour la session). Réglage Sécurité, actif par défaut (`src/main/safety/`).
 - **Impression** `Cmd/Ctrl+P` (`webContents.print`). **DevTools** `F12` / `Cmd+Opt+I`.
 - **Mise à jour** : `electron-updater` via GitHub Releases (v1.1). En attendant, suivre les releases castLabs (elles suivent de près Electron upstream, donc les correctifs de sécurité Chromium).
 

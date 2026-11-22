@@ -9,9 +9,13 @@ const root = join(__dirname, '../..')
 const electronPath = require('electron') as unknown as string
 
 /** Launches the built app on a fresh profile (or `profile`, to relaunch on the same one). */
-export async function launch(name: string, profile?: string): Promise<{ app: ElectronApplication; chrome: Page; profile: string }> {
+export async function launch(
+  name: string,
+  profile?: string,
+  env: Record<string, string> = {}
+): Promise<{ app: ElectronApplication; chrome: Page; profile: string }> {
   const dir = profile ?? mkdtempSync(join(tmpdir(), `zak-e2e-${name}-`))
-  const app = await electron.launch({ executablePath: electronPath, args: [root], env: { ...process.env, ZAK_USER_DATA: dir } })
+  const app = await electron.launch({ executablePath: electronPath, args: [root], env: { ...process.env, ZAK_USER_DATA: dir, ...env } })
   const chrome = await firstChrome(app)
   await expect(chrome.getByTestId('tab').first()).toBeVisible()
   return { app, chrome, profile: dir }

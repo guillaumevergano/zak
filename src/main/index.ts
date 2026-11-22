@@ -9,6 +9,7 @@ import { WindowManager } from './windows/WindowManager'
 import { ExtensionsHost } from './extensions/ExtensionsHost'
 import { PipController } from './pip/PipController'
 import { enableAdBlocker } from './adblock/AdBlocker'
+import { SafeBrowsing, leaveDangerousPage } from './safety/SafeBrowsing'
 import { installAppMenu } from './menu/AppMenu'
 import { showSplash } from './windows/Splash'
 import { Updater } from './updates/Updater'
@@ -163,6 +164,9 @@ app.whenReady().then(async () => {
   const sessions = new SessionManager()
   const browsingSession = sessions.getMain()
   const settings = new SettingsStore()
+  // Not awaited: the cached lists load in a moment, the first download must not delay the window.
+  const safeBrowsing = new SafeBrowsing(() => settings.getGeneral().safeBrowsing)
+  void safeBrowsing.start()
   const windows = new WindowManager(sessions, new PipController(() => settings.getPip()))
   const db = openDatabase(app.getPath('userData'))
   const favorites = new FavoritesStore(db)
@@ -269,14 +273,23 @@ app.whenReady().then(async () => {
     'newtab/reopenSession': () => {
       session.reopenPrevious()
       return null
+    },
+    'error/proceed': ({ url }) => {
+      safeBrowsing.allow(url)
+      return null
+    },
+    'error/leave': ({ page }) => {
+      leaveDangerousPage(page)
+      return null
     }
   }
   handleInternalProtocol(browsingSession, internalApi)
-  await enableAdBlocker(browsingSession)
+  const guard = safeBrowsing.guard.bind(safeBrowsing)
+  await enableAdBlocker(browsingSession, guard)
   // Private windows (§6.3): internal pages and the built-in ad blocker, but no extensions.
   sessions.onPrivateSession = (ses) => {
     handleInternalProtocol(ses, internalApi)
-    void enableAdBlocker(ses)
+    void enableAdBlocker(ses, guard)
     permissions.attach(ses, true)
     downloads.attach(ses)
   }

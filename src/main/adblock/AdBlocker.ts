@@ -23,12 +23,21 @@ let blockerReady: Promise<ElectronBlocker | null> | null = null
 const blockedSessions = new WeakSet<Session>()
 
 /** Attaches the blocker to a session. The engine is built (or read from cache) once, then shared. */
-export async function enableAdBlocker(session: Session): Promise<void> {
+export async function enableAdBlocker(session: Session, guard?: RequestGuard): Promise<void> {
   const blocker = await (blockerReady ??= loadBlocker())
-  if (!blocker || blockedSessions.has(session)) return
+  if (blockedSessions.has(session)) return
+
+  // A session has a single onBeforeRequest listener: the guard (phishing protection) runs first,
+  // even when the blocker could not load.
+  session.webRequest.onBeforeRequest({ urls: ['<all_urls>'] }, (details, cb) => {
+    if (guard?.(details)) cb({ cancel: true })
+    else if (blocker) blocker.onBeforeRequest(details, cb)
+    else cb({})
+  })
+  blockedSessions.add(session)
+  if (!blocker) return
 
   // Same wiring as Ghostery's BlockingContext, minus its page preload.
-  session.webRequest.onBeforeRequest({ urls: ['<all_urls>'] }, (details, cb) => blocker.onBeforeRequest(details, cb))
   session.webRequest.onHeadersReceived({ urls: ['<all_urls>'] }, (details, cb) => blocker.onHeadersReceived(details, cb))
 
   if (!cosmeticListening) {
@@ -37,8 +46,10 @@ export async function enableAdBlocker(session: Session): Promise<void> {
       if (blockedSessions.has(wc.session)) new CosmeticInjector(wc, blocker).attach()
     })
   }
-  blockedSessions.add(session)
 }
+
+/** Cancels a request before the blocker sees it when it returns true. */
+export type RequestGuard = (details: { url: string; resourceType: string }) => boolean
 
 let cosmeticListening = false
 

@@ -171,6 +171,8 @@ export interface GeneralSettings {
   theme: 'system' | 'light' | 'dark'
   /** Where downloads go (private windows too, like Chrome). */
   downloadDir: string
+  /** Warn before opening a known phishing or malware page (src/main/safety/). */
+  safeBrowsing: boolean
 }
 
 /** What zak://settings shows and edits. */

@@ -176,6 +176,15 @@ function SettingsPage(): JSX.Element {
         <ExcludedDomains domains={pip.excludedDomains} onChange={(excludedDomains) => savePip({ ...pip, excludedDomains })} />
       </Section>
 
+      <Section id="security" title="Sécurité">
+        <Row
+          title="Protection contre les sites dangereux"
+          detail="Avertit avant d'ouvrir un site d'hameçonnage ou de logiciels malveillants connu. Les listes (OpenPhish, PhishTank, URLhaus) sont vérifiées sur cet ordinateur : vos adresses ne sont envoyées à personne."
+        >
+          <Toggle label="Protection contre les sites dangereux" on={general.safeBrowsing} onChange={(safeBrowsing) => saveGeneral({ safeBrowsing })} />
+        </Row>
+      </Section>
+
       <Section id="permissions" title="Autorisations des sites" intro="Les réponses données aux demandes des sites, mémorisées par site.">
         {settings.permissions.length === 0 ? (
           <p className="m-0 border-t border-violet/10 py-3 text-[13px] text-sub">Aucune autorisation mémorisée.</p>

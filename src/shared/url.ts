@@ -51,8 +51,9 @@ export function toUrl(input: string, engine: SearchEngine = 'google'): string {
 }
 
 /** zak://error for a page that failed to load (CLAUDE.md §6.7). */
-export function errorPageUrl(failedUrl: string, code: number, description: string): string {
+export function errorPageUrl(failedUrl: string, code: number, description: string, threat?: 'phishing' | 'malware'): string {
   const params = new URLSearchParams({ url: failedUrl, code: String(code), desc: description })
+  if (threat) params.set('threat', threat)
   return `${ERROR_PAGE_URL}?${params.toString()}`
 }
 

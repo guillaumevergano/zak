@@ -5,6 +5,7 @@ import { manageIdentity, trackIdentitySetup } from '../userAgent'
 import { NEW_TAB_URL, errorPageUrl, failedUrlOf, isNewTabUrl, toUrl, type SearchEngine } from '@shared/url'
 import { isInternalUrl } from '../internal/InternalProtocol'
 import { INTERNAL_FAVICON } from '../internal/favicon'
+import { blockedThreat } from '../safety/SafeBrowsing'
 
 const HIDE_DELAY_MS = 600
 /** The page sits in the cream panel with rounded corners (CLAUDE.md §7). */
@@ -485,7 +486,9 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     wc.on('did-fail-load', (_e, code, description, url, isMainFrame) => {
       if (!isMainFrame || code === -3 /* ABORTED: stopped, or replaced by another navigation */) return
       if (isInternalUrl(url) || url === 'about:blank') return
-      void wc.loadURL(errorPageUrl(url, code, description)).catch(() => {})
+      // ERR_BLOCKED_BY_CLIENT: the ad blocker, or the phishing protection (then: a warning).
+      const threat = code === -20 ? blockedThreat(url) : null
+      void wc.loadURL(errorPageUrl(url, code, description, threat ?? undefined)).catch(() => {})
     })
     wc.on('did-start-loading', changed)
     wc.on('did-stop-loading', changed)

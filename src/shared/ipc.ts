@@ -248,6 +248,10 @@ export interface InternalApiRoutes {
   'newtab/reopenSession': { body: null; result: null }
   /** The page's « Où voulez-vous aller ? » field: same suggestions as the omnibox. */
   'newtab/suggest': { body: { text: string }; result: OmniboxSuggestion[] }
+  /** Warning page of a dangerous site: « Continuer quand même » for this session. */
+  'error/proceed': { body: { url: string }; result: null }
+  /** « Retour en lieu sûr »: back to the last page before the dangerous one (`page` = the warning's URL). */
+  'error/leave': { body: { page: string }; result: null }
 }
 export type InternalApiRoute = keyof InternalApiRoutes
 
@@ -274,7 +278,9 @@ export const INTERNAL_API_ROUTES = [
   'history/clear',
   'newtab/state',
   'newtab/reopenSession',
-  'newtab/suggest'
+  'newtab/suggest',
+  'error/proceed',
+  'error/leave'
 ] as const satisfies readonly InternalApiRoute[]
 
 /** Internal pages: host → HTML entry of the renderer build (electron.vite.config.ts). */
