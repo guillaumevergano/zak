@@ -1,6 +1,6 @@
 {
-  "name": "ZAK",
-  "version": "1.0.0",
+  "name": "Zak",
+  "version": "2.0.0",
   "colorSpace": "sRGB",
   "palette": {
     "primary": {
@@ -78,10 +78,12 @@
   "fonts": {
     "ui": "DM Sans",
     "heading": "Fraunces",
-    "url": "JetBrains Mono"
+    "url": "JetBrains Mono",
+    "logo": "Lettrage sur mesure, fourni en tracés SVG"
   },
   "notes": {
     "themes": "Les couleurs de base sont celles du brief. Les valeurs secondaires manquantes du thème privé sont proposées pour compléter les tokens.",
-    "legacy-icon": "Archive de palette : ces couleurs ne sont pas utilisées dans le nouveau logo."
+    "legacy-icon": "Archive de palette : ces couleurs ne sont pas utilisées dans le nouveau logo.",
+    "logo": "Proposition 03, le k en réserve. Le logo ne dépend plus de Fraunces ; la police reste utilisée pour les titres."
   }
 }

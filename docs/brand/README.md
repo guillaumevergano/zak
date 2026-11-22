@@ -1,131 +1,131 @@
-> Extrait du kit de marque ZAK v1.0 versionné dans le dépôt : les logos SVG (`logos/`), la palette,
+> Extrait du kit de marque v2.0 versionné dans le dépôt : les logos SVG (`logos/`), la palette,
 > les jetons CSS et la charte PDF. Les icônes de l'app sont dans `build/` (icon.icns, icon.ico, icon.png),
-> celles du site dans `site/brand/`. Les autres chemins cités plus bas renvoient au kit complet.
+> celles du site dans `site/brand/`, le favicon des pages internes dans `src/renderer/public/zak.svg`.
+> Les autres chemins cités plus bas renvoient au kit complet.
 
-# ZAK - kit de marque v1.0
+# Zak - kit de marque final v2.0
 
-**Démarrer :** ouvrir `preview/index.html` pour voir les fichiers, puis
-`brand/charte-graphique-ZAK.pdf` pour les règles d’usage.
+**Logo retenu : proposition 03, « Le k en réserve ».**
+Version du 22 novembre 2026.
 
-Ce kit décline le **Z ailé, concept 04, avec le mot ZAK en capitales**.
-Les formes ont été reconstruites en courbes de Bézier à partir de la proposition
-validée. Les couleurs ont été remises exactement à celles du brief, en aplats.
-Le dessin source reste dans `sources/approved-concept.png` pour comparaison.
-Le lettrage est un dessin vectoriel : il n’a pas besoin de police et ne doit pas
-être recomposé en saisissant « ZAK » dans une police.
+## Commencer ici
 
-## Quel fichier utiliser ?
+- Voir `preview/index.html` pour le catalogue visuel.
+- Ouvrir `brand/charte-graphique-Zak.pdf` pour les règles d’usage.
+- Copier `web-ready/public/brand/` dans le dossier public du site.
+- Intégrer les balises de `web-ready/head.html`.
 
-| Besoin | Fichier / dossier |
+## Les fichiers utiles
+
+| Usage | Fichier |
 |---|---|
-| Logo principal sur fond clair | `logos/svg/zak-stacked-color.svg` |
-| Logo en en-tête | `logos/svg/zak-horizontal-color.svg` |
-| Logo sur fond prune / sombre | mêmes noms avec `reverse` |
-| Symbole seul | `logos/svg/zak-symbol-color.svg` |
-| Symbole à 16-32 px | `zak-symbol-micro-color.svg` ou `micro-reverse.svg` |
-| Une seule couleur / gravure | variantes `mono-ink`, `mono-black`, `mono-white`, `mono-cream` |
-| Teinte pilotée par CSS | `zak-symbol-currentcolor.svg`, à inclure **inline** |
-| PNG transparents | `logos/png/`, largeurs 512, 1024 et 2048 px |
-| Favicon / icônes web | `icons/web/` |
-| Application macOS | `icons/desktop/zak.icns` + source `zak.iconset/` |
-| Application Windows | `icons/desktop/zak.ico` |
-| Linux / icône de fenêtre | `icons/desktop/png/zak-{taille}.png` |
-| Icône carrée 1024 px | `icons/desktop/zak-app-1024.png` |
-| Impression / partage vectoriel | `print/`, PDF RGB et EPS |
-| Réseaux sociaux / Open Graph | `templates/zak-social-light.png` ou `dark.png`, 1200 x 630 |
-| Couleurs et thèmes | `brand/palette.json` et `brand/tokens.css` |
-| Polices locales | `fonts/` et `brand/fonts.css` |
-| Composant React facultatif | `templates/Logo.tsx` |
+| Logo principal sur fond clair | `logos/svg/zak-logo-color.svg` |
+| Logo sur fond sombre | `logos/svg/zak-logo-reverse.svg` |
+| Logo monochrome | variantes `mono-black`, `mono-white`, `mono-cream`, `mono-ink` |
+| Couleur pilotée par CSS | `zak-logo-currentcolor.svg`, à intégrer inline |
+| Symbole seul | `logos/svg/zak-symbol-color.svg` et ses variantes |
+| Symbole 16-32 px | `zak-symbol-micro-color.svg` / `micro-reverse.svg` |
+| Images transparentes | `logos/png/`, largeurs 512, 1024, 2048 et 4096 px |
+| Présentation avec fond | `zak-logo-on-cream.svg` / `on-plum.svg` et leurs PNG |
+| Favicons et Apple Touch | `icons/web/` |
+| Icônes PWA | `icon-192.png`, `icon-512.png`, variantes maskable |
+| Icône Windows | `icons/desktop/zak.ico` |
+| Icône macOS | `icons/desktop/zak.icns` et `zak.iconset/` |
+| Icônes PNG pour Linux / fenêtres | `icons/desktop/png/` |
+| Impression / partage vectoriel | `print/`, PDF et EPS |
+| Réseaux sociaux | `templates/zak-opengraph-*.png` 1200 × 630, `zak-square-*.png` 1080 × 1080 |
+| Palette et thèmes | `brand/palette.json`, `brand/tokens.css` |
+| Polices locales | `fonts/`, licences incluses, et `brand/fonts.css` |
+| Exemple React | `templates/Logo.tsx` |
 
-## Intégration web
+## Ce qui a été finalisé
 
-1. Copier **le contenu** de `icons/web/` dans `public/brand/`.
-2. Copier le contenu de `logos/svg/` dans `public/brand/logos/`.
-3. Insérer les balises de `templates/head.html` dans le `<head>` de l’application.
-4. Dans `site.webmanifest`, adapter `id`, `start_url` et `scope` si l’application
-   n’est pas servie à la racine. Les chemins d’icônes restent relatifs au manifeste.
-5. Si un manifeste existe déjà, fusionner les entrées `icons` et les couleurs :
-   ne pas remplacer les réglages de l’application. Le manifeste et les icônes
-   seuls ne constituent pas une PWA complète.
+Le grand logo de la proposition 03 a été converti en courbes de Bézier, avec
+conservation de sa silhouette, de ses liaisons et des ouvertures du a et du k.
+Les couleurs sont normalisées à la palette : prune #2E1F2D, crème #F3EDEA,
+violet #C67AFB et rose #FF0082. L’œil, la contreforme du a et l’ouverture du k
+sont de véritables espaces transparents.
+
+Les SVG de production contiennent uniquement des tracés et, pour les versions
+avec fond, des formes vectorielles. Aucun PNG n’est incorporé dans les SVG.
+Le logo est un dessin autonome : **ne pas le retaper dans Fraunces**.
+DM Sans, Fraunces et JetBrains Mono conservent leurs rôles dans l’interface.
+
+Le symbole utilisé dans les favicons reprend la tête, la huppe, l’aile et le bec
+de cette nouvelle version. Sa traverse basse est refermée pour qu’il fonctionne
+seul. L’œil est agrandi sur la variante micro ; le logo complet reste inchangé.
+Les anciennes propositions et les kits v1 restent dans leurs dossiers d’origine.
+
+## Intégrer sur le site
 
 ```html
-<img src="/brand/logos/zak-horizontal-color.svg"
-     alt="ZAK" width="208" height="80">
+<img src="/brand/logo.svg" alt="Zak" width="168" height="80">
 ```
 
-Adapter les chemins publics au routeur et au bundler du projet. Pour un déploiement
-dans un sous-dossier, adapter aussi les chemins absolus de `templates/head.html`.
-Pour Open Graph, l’URL de l’image publiée doit être absolue ; aucun domaine fictif
-n’est configuré dans ce kit. Si le logo est décoratif ou voisin du nom, utiliser `alt=""`.
+Sur fond prune, employer `logo-reverse.svg`. Pour une image décorative, ou lorsque
+le nom est déjà présent à côté, utiliser `alt=""`. Les noms de fichiers peuvent
+être changés ; adapter alors tous les chemins qui les référencent.
 
-Les SVG sont autonomes, sans police, image incorporée, script ni ressource externe.
-Les trous de l’œil et de la version monochrome sont transparents. Utiliser un fond
-uni et choisir la variante adaptée. `currentColor` ne suit la couleur du parent
-que si le SVG est inclus inline, pas via une balise `<img>`.
+Le dossier `web-ready/` est prêt à copier. Si votre projet possède déjà son
+manifeste, fusionner ses icônes et couleurs plutôt que remplacer son contenu.
+Les chemins des icônes sont relatifs au manifeste ; `id`, `start_url` et `scope`
+doivent correspondre au chemin réel de l’application. Le manifeste seul n’est
+pas une PWA complète. Pour Open Graph, utiliser l’URL absolue de l’image publiée.
 
-## Polices et thèmes
+Pour les polices, conserver les dossiers `brand/` et `fonts/` au même niveau et
+importer `brand/fonts.css`. Les polices WOFF2 sont locales, sans CDN.
+Importer `brand/tokens.css` pour les variables de couleur ; les thèmes sont
+activés via `data-theme="light"`, `"dark"` ou `"private"`.
+Un SVG `currentColor` doit être intégré **inline** pour recevoir la couleur du
+parent. Via `<img>`, utiliser une variante à couleur explicite.
 
-Conserver `brand/` et `fonts/` au même niveau, puis importer `brand/fonts.css` et
-`brand/tokens.css`. Les fichiers WOFF2 sont locaux ; aucun CDN n’est requis.
-Appliquer `data-theme="light"`, `"dark"` ou `"private"` au conteneur principal.
-Le kit fournit les tokens, sans imposer de CSS aux composants de votre application.
+## Règles d’usage
 
-DM Sans sert à l’interface, Fraunces aux titres, JetBrains Mono aux URL.
-Les originaux TTF variables, versions WOFF2 et licences SIL OFL sont inclus.
-`fonts/SOURCES.json` donne leur provenance et les empreintes des originaux.
-Les couleurs secondaires du thème privé absentes du brief sont des propositions.
+- Signature complète : largeur minimale conseillée 128 px. En dessous,
+  privilégier le symbole. Ces minima sont à vérifier dans le contexte réel.
+- Symbole standard : à partir de 32 px ; version micro : 16 à 32 px.
+- Réserver une zone libre égale à 1/8 de la hauteur visible du logo, tout autour.
+- Garder le rapport largeur/hauteur, les proportions et les ouvertures internes.
+- Utiliser un fond uni ; sélectionner la variante selon le contraste.
+- Aucun ajout d’ombre, de relief, de contour, de dégradé ou de rotation.
+- Le violet et le rose servent d’accents ; sur crème, l’encre reste la couleur
+  du texte courant. Les contrastes mesurés sont dans `brand/contrast.json`.
 
-## Règles rapides
+## Formats et transparence
 
-- Conserver les proportions, les trois accents du symbole et le mot **ZAK**.
-- Zone libre recommandée : 1/8 de la largeur visible du symbole, tout autour.
-- Symbole standard à partir de 32 px ; version micro à 16-32 px.
-- Logo horizontal : largeur minimale conseillée 120 px. Vertical : 96 px.
-  Logotype seul : 72 px. À confirmer dans le contexte d’affichage final.
-- Sur fond sombre, utiliser `reverse` ; pour une seule encre, une variante mono.
-- Pas d’ombre, relief, contour ajouté, étirement, dégradé ni rotation du logo.
-- Le violet et le rose sont des accents. Sur crème, utiliser l’encre pour les
-  petits textes : voir les rapports mesurés dans `brand/contrast.json`.
+Le ICO web contient 16/32/48/64 px ; le ICO Windows contient
+16/24/32/48/64/128/256 px. Le ICNS contient dix représentations 1x/2x jusqu’à
+1024 px. Les marges transparentes et les coins de l’icône macOS sont inclus.
+Les Apple Touch et PWA sont carrés et opaques : la plateforme applique le masque.
+Les variantes maskable placent le symbole dans le disque sûr central, de rayon
+40 % du côté. Ne pas pré-arrondir ces images. Safari reçoit un SVG monochrome.
 
-## Icônes et masques
-
-Le favicon est une tuile prune, avec un œil agrandi pour rester lisible à 16 px.
-Le ICO web contient 16/32/48/64 px. Le ICO Windows contient 16/24/32/48/64/128/256 px.
-Le ICNS contient dix représentations 1x/2x jusqu’à 1024 px.
-L’icône macOS inclut sa marge transparente et sa forme arrondie.
-Les Apple Touch et PWA sont **carrées et opaques** : la plateforme applique son masque.
-Les versions `maskable` ont une composition plus petite, comprise dans le disque
-central de sécurité de rayon 40 % de la largeur. Ne pas ajouter de coins arrondis.
-L’icône Safari épinglée est un vrai symbole monochrome.
-
-## Impression
-
-Les SVG, PDF et EPS sont vectoriels. Les couleurs sont en **RGB/sRGB** pour conserver
-l’identité numérique. Une conversion CMJN doit être faite avec le profil fourni
-par l’imprimeur : le rose vif et le violet peuvent varier à l’impression.
+Les PDF et EPS de `print/` sont vectoriels et en RGB. Pour l’impression CMJN,
+appliquer le profil fourni par l’imprimeur ; le rose vif et le violet peuvent
+changer de rendu selon le support. Les PNG sont destinés à l’écran.
 
 ## Sources et reconstruction
 
-Les chemins maîtres sont dans `sources/build_assets.py` (BODY, WING, BEAK, Z, A, K).
-Tous les fichiers sont déjà générés ; les scripts ne sont utiles que pour modifier
-la géométrie, changer les dimensions ou reproduire les exports.
+- `sources/paths.json` : les vrais tracés du logo complet.
+- `sources/build_assets.py` : dérivations du symbole et exports.
+- `sources/approved-concept.png` : proposition sélectionnée, pour comparaison.
+- `sources/vectorize.py` : conversion initiale en Bézier ; elle n’est pas
+  nécessaire pour utiliser ou régénérer les exports livrés.
+- `sources/selected-concept.json` : provenance et prompt de la proposition.
 
 ```sh
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r sources/requirements.txt
-# Installer aussi librsvg (rsvg-convert) et Poppler pour les aperçus PDF.
+# Installer aussi librsvg (rsvg-convert) et Poppler.
 python sources/build_assets.py
-python sources/build_brand.py
+python sources/build_documents.py
 python sources/build_guide.py
 python sources/validate_and_package.py
 ```
 
-`fetch_fonts.py` permet de télécharger de nouveau les polices originales ; il
-n’est pas nécessaire pour reconstruire le kit livré. Il consulte la version
-courante de Google Fonts, qui peut différer des originaux inclus et documentés.
-
-Le dossier courant ne contenant pas de code d’application, aucun écran ni fichier
-de configuration du navigateur n’a été modifié. Le kit est prêt à être intégré.
-L’inventaire des fichiers est dans `files-manifest.json`, le contrôle des formats
-dans `validation-report.json`. Version créée le 21 novembre 2026.
+Les scripts de reconstruction ne téléchargent rien. Les polices originales sont
+documentées dans `fonts/SOURCES.json` et couvertes par les licences SIL OFL
+présentes dans chaque famille. L’inventaire SHA-256 est dans `files-manifest.json` ;
+les contrôles de formats, de transparence et de fidélité sont dans
+`validation-report.json`. Aucun code d’application n’a été modifié.
