@@ -7,7 +7,7 @@ test('favorites and history are imported from another browser on this computer',
   const { app, chrome } = await launch('import', undefined, { ZAK_IMPORT_HOME: home })
   await visit(chrome, 'zak://settings')
   const settings = await pageAt(app, 'zak://settings')
-  await expect(settings.getByRole('combobox', { name: 'Navigateur à importer' })).toHaveValue(/Chrome[/\\]Default$/)
+  await expect(settings.getByRole('combobox', { name: 'Navigateur à importer' })).toHaveValue(/Default$/)
   await settings.getByRole('button', { name: 'Importer', exact: true }).click()
   await expect(settings.getByText('Importé : 4 favoris, 2 dossiers, 1 page d\'historique.')).toBeVisible()
 

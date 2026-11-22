@@ -34,7 +34,14 @@ const MIGRATIONS: string[] = [
    CREATE TABLE site_permissions (
      origin TEXT NOT NULL, permission TEXT NOT NULL, granted INTEGER NOT NULL,
      PRIMARY KEY (origin, permission)
-   );`
+   );`,
+  // 3 — saved passwords (encrypted with the OS keychain: safeStorage), and sites never to save for.
+  `CREATE TABLE passwords (
+     id TEXT PRIMARY KEY, origin TEXT NOT NULL, username TEXT NOT NULL, password BLOB NOT NULL,
+     created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, used_at INTEGER
+   );
+   CREATE UNIQUE INDEX passwords_login ON passwords(origin, username);
+   CREATE TABLE password_never (origin TEXT PRIMARY KEY);`
 ]
 
 export function openDatabase(dir: string): Db {

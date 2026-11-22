@@ -1,5 +1,5 @@
 import { app, BrowserWindow, Menu, type MenuItemConstructorOptions } from 'electron'
-import { EXTENSIONS_PAGE_URL, HISTORY_PAGE_URL, SETTINGS_PAGE_URL } from '@shared/ipc'
+import { EXTENSIONS_PAGE_URL, HISTORY_PAGE_URL, PASSWORDS_PAGE_URL, SETTINGS_PAGE_URL } from '@shared/ipc'
 import type { BrowserWindowHandle, WindowManager } from '../windows/WindowManager'
 import type { FindController } from '../find/FindController'
 import type { ZoomController } from '../tabs/zoom'
@@ -219,6 +219,7 @@ export function installAppMenu(windows: WindowManager, { find, zoom, session, up
         { role: 'zoom', label: 'Agrandir' },
         { type: 'separator' },
         { label: 'Extensions', click: () => windows.focusedNormal().tabs.create(EXTENSIONS_PAGE_URL) },
+        { label: 'Mots de passe', click: () => windows.focusedNormal().tabs.create(PASSWORDS_PAGE_URL) },
         { type: 'separator' },
         ...(isMac
           ? ([{ role: 'front', label: 'Tout ramener au premier plan' }] as MenuItemConstructorOptions[])

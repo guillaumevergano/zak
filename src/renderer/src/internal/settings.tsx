@@ -11,7 +11,7 @@ import type {
   PipSettings
 } from '@shared/types'
 import { orderExtensions } from '@shared/extensionBar'
-import { EXTENSIONS_PAGE_URL } from '@shared/ipc'
+import { EXTENSIONS_PAGE_URL, PASSWORDS_PAGE_URL } from '@shared/ipc'
 import { PERMISSION_LABELS } from '../lib/permissions'
 import { SEARCH_ENGINES, type SearchEngine } from '@shared/url'
 import { callInternal } from './api'
@@ -193,6 +193,17 @@ function SettingsPage(): JSX.Element {
           <Toggle label="Ignorer les vidéos muettes" on={pip.skipMuted} onChange={(skipMuted) => savePip({ ...pip, skipMuted })} />
         </Row>
         <ExcludedDomains domains={pip.excludedDomains} onChange={(excludedDomains) => savePip({ ...pip, excludedDomains })} />
+      </Section>
+
+      <Section id="passwords" title="Mots de passe">
+        <Row title="Proposer d'enregistrer les mots de passe" detail="Après une connexion. Chiffrés avec le trousseau de votre ordinateur.">
+          <Toggle label="Proposer d'enregistrer les mots de passe" on={general.savePasswords} onChange={(savePasswords) => saveGeneral({ savePasswords })} />
+        </Row>
+        <Row title="Mots de passe enregistrés" detail="Afficher, modifier, importer ou exporter (CSV de Chrome, Safari, Firefox, Bitwarden, 1Password…).">
+          <a href={PASSWORDS_PAGE_URL} className="rounded-[10px] border border-cream-edge bg-cream-2 px-3 py-1 text-[12.5px] font-semibold text-violet no-underline hover:border-violet/40">
+            Gérer
+          </a>
+        </Row>
       </Section>
 
       <Section id="security" title="Sécurité">
@@ -415,7 +426,7 @@ function ImportFromBrowser({ onError }: { onError: (err: unknown) => void }): JS
   return (
     <Row
       title="Importer depuis un autre navigateur"
-      detail={result ?? 'Lu directement sur cet ordinateur. Les mots de passe s\'importent depuis un fichier CSV (section Mots de passe).'}
+      detail={result ?? 'Lu directement sur cet ordinateur. Les mots de passe s\'importent depuis un fichier CSV (section Mots de passe ci-dessous).'}
     >
       <div className="flex flex-col items-end gap-2">
         <select aria-label="Navigateur à importer" className={selectClass} value={profile} onChange={(e) => setProfile(e.target.value)}>

@@ -1,5 +1,7 @@
 import type {
   ImportSource,
+  SavePasswordChoice,
+  SavedLogin,
   BrowserSettings,
   DownloadAction,
   DownloadInfo,
@@ -84,6 +86,8 @@ export interface InvokeChannels {
   'find:close': { args: []; result: void }
   /** Permission prompt answered (remembered for the site); null: dismissed, refused this time only. */
   'permission:answer': { args: [requestId: number, granted: boolean | null]; result: void }
+  /** « Enregistrer le mot de passe ? » answered. */
+  'passwords:answer': { args: [promptId: number, choice: SavePasswordChoice]; result: void }
   'downloads:getState': { args: []; result: DownloadInfo[] }
   'downloads:action': { args: [id: string, action: DownloadAction]; result: void }
   /** Toolbar zoom badge: back to 100 %. */
@@ -155,6 +159,7 @@ export const INVOKE_CHANNELS = [
   'find:query',
   'find:close',
   'permission:answer',
+  'passwords:answer',
   'downloads:getState',
   'downloads:action',
   'tabs:resetZoom'
@@ -256,6 +261,14 @@ export interface InternalApiRoutes {
   'newtab/reopenSession': { body: null; result: null }
   /** The page's « Où voulez-vous aller ? » field: same suggestions as the omnibox. */
   'newtab/suggest': { body: { text: string }; result: OmniboxSuggestion[] }
+  /** zak://passwords. `reveal` asks the system (Touch ID…) first, null when refused. */
+  'passwords/list': { body: null; result: SavedLogin[] }
+  'passwords/reveal': { body: { id: string }; result: string | null }
+  'passwords/add': { body: { url: string; username: string; password: string }; result: SavedLogin[] }
+  'passwords/update': { body: { id: string; username?: string; password?: string }; result: SavedLogin[] }
+  'passwords/remove': { body: { id: string }; result: SavedLogin[] }
+  'passwords/import': { body: null; result: { count: number } | null }
+  'passwords/export': { body: null; result: { count: number } | null }
   /** Warning page of a dangerous site: « Continuer quand même » for this session. */
   'error/proceed': { body: { url: string }; result: null }
   /** « Retour en lieu sûr »: back to the last page before the dangerous one (`page` = the warning's URL). */
@@ -289,6 +302,13 @@ export const INTERNAL_API_ROUTES = [
   'newtab/state',
   'newtab/reopenSession',
   'newtab/suggest',
+  'passwords/list',
+  'passwords/reveal',
+  'passwords/add',
+  'passwords/update',
+  'passwords/remove',
+  'passwords/import',
+  'passwords/export',
   'error/proceed',
   'error/leave'
 ] as const satisfies readonly InternalApiRoute[]
@@ -299,6 +319,7 @@ export const INTERNAL_PAGES = {
   extensions: 'extensions.html',
   settings: 'settings.html',
   history: 'history.html',
+  passwords: 'passwords.html',
   error: 'error.html'
 } as const
 export type InternalPage = keyof typeof INTERNAL_PAGES
@@ -306,4 +327,5 @@ export const NEWTAB_PAGE_URL = `${INTERNAL_SCHEME}://newtab/`
 export const EXTENSIONS_PAGE_URL = `${INTERNAL_SCHEME}://extensions/`
 export const SETTINGS_PAGE_URL = `${INTERNAL_SCHEME}://settings/`
 export const HISTORY_PAGE_URL = `${INTERNAL_SCHEME}://history/`
+export const PASSWORDS_PAGE_URL = `${INTERNAL_SCHEME}://passwords/`
 export const ERROR_PAGE_URL = `${INTERNAL_SCHEME}://error/`

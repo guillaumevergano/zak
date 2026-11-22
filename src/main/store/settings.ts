@@ -85,6 +85,7 @@ export function normalizeGeneral(raw: Partial<GeneralSettings>): GeneralSettings
     theme: pick(raw.theme, ['system', 'light', 'dark'] as const, 'light'),
     downloadDir: typeof raw.downloadDir === 'string' && raw.downloadDir !== '' ? raw.downloadDir : app.getPath('downloads'),
     safeBrowsing: raw.safeBrowsing !== false,
+    savePasswords: raw.savePasswords !== false,
     sleepTabsAfter: [0, 15, 30, 60, 120].includes(raw.sleepTabsAfter as number) ? (raw.sleepTabsAfter as number) : 0
   }
 }

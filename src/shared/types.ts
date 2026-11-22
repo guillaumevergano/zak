@@ -124,6 +124,7 @@ export type FramedOverlayRequest =
   | { kind: 'suggestions'; frame: Rect; tabId: TabId; items: OmniboxSuggestion[]; selected: number }
   | { kind: 'find'; frame: Rect; tabId: TabId; text: string }
   | { kind: 'permission'; frame: Rect; requestId: number; origin: string; permission: PermissionKind }
+  | { kind: 'save-password'; frame: Rect; promptId: number; origin: string; username: string; update: boolean }
 
 /** A row of the omnibox dropdown (CLAUDE.md §6.7). */
 export interface OmniboxSuggestion {
@@ -175,6 +176,8 @@ export interface GeneralSettings {
   downloadDir: string
   /** Warn before opening a known phishing or malware page (src/main/safety/). */
   safeBrowsing: boolean
+  /** Offer to save the passwords typed in login forms (src/main/passwords/). */
+  savePasswords: boolean
   /** Unload background tabs after this many minutes alone (CLAUDE.md §6.1), 0 = never. */
   sleepTabsAfter: number
 }
@@ -199,6 +202,19 @@ export interface SitePermission {
 
 /** Permissions that get a prompt under the omnibox. */
 export type PermissionKind = 'notifications' | 'camera' | 'microphone' | 'geolocation' | 'clipboard'
+
+/** A saved password, as listed (the password itself only on demand). */
+export interface SavedLogin {
+  id: string
+  /** https://site.example (scheme, host, port). */
+  origin: string
+  username: string
+  updatedAt: number
+  usedAt: number | null
+}
+
+/** « Enregistrer le mot de passe ? »: save, never for this site, or not now. */
+export type SavePasswordChoice = 'save' | 'never' | 'dismiss'
 
 /** Another browser to import from (zak://settings → Importer). */
 export interface ImportSource {

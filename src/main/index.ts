@@ -11,6 +11,9 @@ import { PipController } from './pip/PipController'
 import { enableAdBlocker } from './adblock/AdBlocker'
 import { SafeBrowsing, leaveDangerousPage } from './safety/SafeBrowsing'
 import { detectBrowsers, readChromiumBookmarks, readChromiumHistory } from './import/chromium'
+import { PasswordStore } from './passwords/PasswordStore'
+import { PasswordManager } from './passwords/PasswordManager'
+import { keychainCipher, passwordRoutes } from './passwords/routes'
 import type { ImportSource } from '@shared/types'
 
 /** Chromium browsers to import from (ZAK_IMPORT_HOME: a fake home folder for the e2e tests). */
@@ -93,9 +96,10 @@ interface Services {
   zoom: ZoomController
   permissions: PermissionsHandler
   downloads: DownloadsManager
+  passwords: PasswordManager
 }
 
-function registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads }: Services): void {
+function registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords }: Services): void {
   const windowOf = (event: IpcMainInvokeEvent | Electron.IpcMainEvent) => {
     const handle = windows.fromWebContents(event.sender)
     if (!handle) throw new Error('IPC from unknown window')
@@ -150,6 +154,7 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
   handle('find:query', (e, tabId, text, forward, findNext) => find.query(windowOf(e), tabId, text, forward, findNext))
   handle('find:close', (e) => windowOf(e).overlay.close())
   handle('permission:answer', (_e, requestId, granted) => permissions.answer(requestId, granted))
+  handle('passwords:answer', (_e, promptId, choice) => passwords.answer(promptId, choice))
   handle('downloads:getState', (e) => downloads.stateFor(windowOf(e).session))
   handle('downloads:action', (_e, id, action) => downloads.act(id, action))
   handle('tabs:resetZoom', (e, id) => {
@@ -198,7 +203,9 @@ app.whenReady().then(async () => {
   const downloads = new DownloadsManager(windows, () => settings.getGeneral().downloadDir)
   permissions.attach(browsingSession, false)
   downloads.attach(browsingSession)
-  registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads })
+  const passwordStore = new PasswordStore(db, keychainCipher)
+  const passwords = new PasswordManager(passwordStore, windows, () => settings.getGeneral().savePasswords)
+  registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords })
   installAppMenu(windows, { find, zoom, session, updater: new Updater() })
   installShortcuts(windows)
 
@@ -297,6 +304,7 @@ app.whenReady().then(async () => {
       session.reopenPrevious()
       return null
     },
+    ...passwordRoutes(passwordStore),
     'error/proceed': ({ url }) => {
       safeBrowsing.allow(url)
       return null

@@ -402,6 +402,11 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     return this.order.indexOf(id)
   }
 
+  /** The pages of every tab (asleep ones show about:blank). */
+  webContentsList(): WebContents[] {
+    return [...this.tabs.values()].map((t) => t.wc).filter((wc) => !wc.isDestroyed())
+  }
+
   count(): number {
     return this.order.length
   }
