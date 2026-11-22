@@ -28,6 +28,12 @@ interface BrowserStore {
   moveFavoriteLocally: (id: string, folderId: string | null, index: number) => void
   /** Local layout change; `persist` saves it (shared by all windows). */
   setSidebarLayout: (layout: SidebarLayout, persist: boolean) => void
+  /**
+   * While the sidebar folds or unfolds: the room kept for it on the right of the page, so the page
+   * is resized once (not on every frame) and never covers the sidebar. Null otherwise.
+   */
+  sidebarRoom: number | null
+  setSidebarRoom: (room: number | null) => void
   toggleSidebar: () => void
 }
 
@@ -81,6 +87,9 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
     set(({ sidebar }) => (sidebar ? { sidebar: { ...sidebar, layout } } : {}))
     if (persist) void api.invoke('sidebar:setLayout', layout)
   },
+
+  sidebarRoom: null,
+  setSidebarRoom: (sidebarRoom) => set({ sidebarRoom }),
 
   toggleSidebar: () => {
     const layout = get().sidebar?.layout

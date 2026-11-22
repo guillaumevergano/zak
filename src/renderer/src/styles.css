@@ -11,6 +11,14 @@
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   --font-emoji: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
 
+  /*
+   * Motion (CLAUDE.md §7): calm. Every transition eases out softly (fast start, long gentle
+   * landing) — the default of Tailwind's transition-* classes, and `ease-calm`.
+   */
+  --ease-calm: cubic-bezier(0.22, 1, 0.36, 1);
+  --default-transition-duration: 180ms;
+  --default-transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+
   /* Plum frame: tab strip, sidebar */
   --color-frame: #2e1f2d;
   --color-frame-2: #3e2f3e;
@@ -309,4 +317,15 @@ body.private {
   --color-cream-ink: #ffffff;
   --color-cream-sub: #c9bce8;
   --color-cream-dim: #8f7cc0;
+}
+
+/* The system asks for less motion: no transitions, no animations. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0s !important;
+    animation-duration: 0s !important;
+    animation-iteration-count: 1 !important;
+  }
 }

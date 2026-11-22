@@ -52,21 +52,32 @@ export function App(): JSX.Element {
   useLayoutEffect(() => {
     const el = contentRef.current
     if (!el) return
+    let last = ''
     const report = (): void => {
       const r = el.getBoundingClientRect()
-      api.send('layout:update', {
+      // The sidebar is folding or unfolding: keep the page where it will fit all along.
+      const room = useBrowserStore.getState().sidebarRoom
+      const insets = {
         left: Math.round(r.left),
         top: Math.round(r.top),
-        right: Math.round(window.innerWidth - r.right),
+        right: room ?? Math.round(window.innerWidth - r.right),
         bottom: Math.round(window.innerHeight - r.bottom)
-      })
+      }
+      const key = JSON.stringify(insets)
+      if (key === last) return
+      last = key
+      api.send('layout:update', insets)
     }
     const observer = new ResizeObserver(report)
     observer.observe(el)
     window.addEventListener('resize', report)
+    const unsubscribe = useBrowserStore.subscribe((s, prev) => {
+      if (s.sidebarRoom !== prev.sidebarRoom) report()
+    })
     report()
     return () => {
       observer.disconnect()
+      unsubscribe()
       window.removeEventListener('resize', report)
     }
   }, [])
