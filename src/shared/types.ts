@@ -235,6 +235,16 @@ export interface SavedLogin {
 /** « Enregistrer le mot de passe ? »: save, never for this site, or not now. */
 export type SavePasswordChoice = 'save' | 'never' | 'dismiss'
 
+/** The AI agents Zak connects to in one click (main/mcp/connect.ts). */
+export type AgentId = 'claude-code' | 'codex' | 'claude-desktop'
+
+export interface AgentStatus {
+  id: AgentId
+  installed: boolean
+  /** Already set up with Zak; null when it can't be told without asking the agent. */
+  connected: boolean | null
+}
+
 /** Zak's MCP server, as shown in the settings. */
 export interface McpState {
   enabled: boolean

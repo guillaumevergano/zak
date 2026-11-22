@@ -19,6 +19,13 @@ import { PasswordManager } from './passwords/PasswordManager'
 import { keychainCipher, passwordRoutes } from './passwords/routes'
 import type { ImportSource } from '@shared/types'
 
+/** Where the AI agents keep their configuration (ZAK_AGENTS_HOME: a fake home for the e2e tests). */
+function agentPaths(): AgentPaths {
+  const home = process.env['ZAK_AGENTS_HOME'] ?? app.getPath('home')
+  const appData = process.env['ZAK_AGENTS_HOME'] ? join(home, 'AppData') : app.getPath('appData')
+  return { home, platform: process.platform, appData }
+}
+
 /**
  * The welcome page opens once, at the first launch without a previous session. Not in the e2e
  * tests (they expect a new tab), unless ZAK_ONBOARDING asks for it.
@@ -57,6 +64,7 @@ import { handleInternalProtocol, registerInternalScheme, setNewtabOverride, type
 import { ModsManager } from './mods/ModsManager'
 import { ZakMcpServer } from './mcp/ZakMcpServer'
 import { zakControl } from './mcp/control'
+import { agentStatus, connectAgent, launcher, writeBridge, writeConnection, type AgentPaths } from './mcp/connect'
 import { randomBytes } from 'node:crypto'
 import { defaultBrowserStatus, LinkReceiver, makeDefaultBrowser } from './system/DefaultBrowser'
 
@@ -255,10 +263,15 @@ app.whenReady().then(async () => {
   const syncMcp = async (): Promise<void> => {
     const config = settings.getMcp()
     mcpError = null
-    if (!config.enabled) return zakMcp.stop()
+    if (!config.enabled) {
+      writeConnection(app.getPath('userData'), null)
+      return zakMcp.stop()
+    }
     try {
       const port = await zakMcp.start(config.port, config.token)
       if (port !== config.port) settings.setMcp({ ...config, port })
+      // For the bridge the agents launch (mcp/connect.ts): where Zak listens, with which token.
+      writeConnection(app.getPath('userData'), { port, token: config.token })
     } catch (err) {
       // The port is taken (another profile, another app): pick a free one next time.
       mcpError = String(err)
@@ -274,6 +287,7 @@ app.whenReady().then(async () => {
       error: mcpError
     }
   }
+  writeBridge(app.getPath('userData'))
   void syncMcp()
   // A new tab page changed: the new tabs open show it at once.
   mods.onChange(() => {
@@ -394,6 +408,17 @@ app.whenReady().then(async () => {
       settings.setMcp({ ...settings.getMcp(), token: randomBytes(24).toString('base64url') })
       await syncMcp()
       return mcpState()
+    },
+    'settings/agents': () => agentStatus(agentPaths()),
+    'settings/connectAgent': async ({ agent }) => {
+      // Connecting means wanting it on.
+      const current = settings.getMcp()
+      if (!current.enabled) {
+        settings.setMcp({ ...current, enabled: true, token: current.token || randomBytes(24).toString('base64url') })
+        await syncMcp()
+      }
+      await connectAgent(agent, agentPaths(), launcher(process.execPath, app.getPath('userData')))
+      return { agents: agentStatus(agentPaths()), mcp: mcpState() }
     },
     'settings/mods': () => ({ dir: mods.dir, mods: mods.list() }),
     'settings/selectMod': ({ kind, id }) => {

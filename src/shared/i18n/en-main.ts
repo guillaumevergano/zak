@@ -169,5 +169,9 @@ export const EN_MAIN: Record<string, string> = {
 
   // Unpacked extensions (index.ts, extensions/ExtensionsHost.ts)
   'Charger une extension non empaquetée': 'Load unpacked extension',
-  'Ce dossier ne contient pas de manifest.json.': 'This folder has no manifest.json.'
+  'Ce dossier ne contient pas de manifest.json.': 'This folder has no manifest.json.',
+
+  // One-click agent connection (mcp/connect.ts)
+  'Claude Desktop n’est pas installé.': 'Claude Desktop isn’t installed.',
+  'Claude Code n’est pas installé (commande « claude » introuvable).': 'Claude Code isn’t installed (no “claude” command found).'
 }

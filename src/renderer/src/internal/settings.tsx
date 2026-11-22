@@ -2,6 +2,8 @@ import '../lib/lang'
 import { StrictMode, useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import type {
+  AgentId,
+  AgentStatus,
   BrowserSettings,
   ClearPeriod,
   DefaultBrowserStatus,
@@ -561,10 +563,26 @@ function CustomizeSection({ onError }: { onError: (err: unknown) => void }): JSX
  */
 function McpBlock({ onError }: { onError: (err: unknown) => void }): JSX.Element {
   const [state, setState] = useState<McpState | null>(null)
+  const [agents, setAgents] = useState<AgentStatus[]>([])
+  const [busy, setBusy] = useState<AgentId | null>(null)
+  const [done, setDone] = useState<AgentId | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
   useEffect(() => {
     callInternal('settings/mcp', null).then(setState).catch(() => {})
+    callInternal('settings/agents', null).then(setAgents).catch(() => {})
   }, [])
+  const connect = (agent: AgentId): void => {
+    setBusy(agent)
+    callInternal('settings/connectAgent', { agent })
+      .then((r) => {
+        setAgents(r.agents)
+        setState(r.mcp)
+        setDone(agent)
+      })
+      .catch(onError)
+      .finally(() => setBusy(null))
+  }
+  const agentName: Record<AgentId, string> = { 'claude-code': 'Claude Code', codex: 'Codex', 'claude-desktop': 'Claude Desktop' }
   const copy = (key: string, text: string): void =>
     void navigator.clipboard.writeText(text).then(() => {
       setCopied(key)
@@ -593,8 +611,38 @@ export ZAK_MCP_TOKEN=${state.token}`
         />
       </Row>
       {state?.error && <p className="m-0 pb-2 text-[12.5px] text-pink-button">{t('Le serveur n’a pas pu démarrer : {error}', { error: state.error })}</p>}
+      <div className="flex flex-col gap-2 border-t border-violet/10 py-3" data-testid="agents">
+        <span className="text-[13px] font-semibold text-ink">{t('Connexion en un clic')}</span>
+        <div className="flex flex-wrap gap-2">
+          {agents.map((a) => (
+            <button
+              key={a.id}
+              type="button"
+              disabled={!a.installed || busy !== null}
+              onClick={() => connect(a.id)}
+              title={a.installed ? undefined : t('{name} n’est pas installé sur cet ordinateur.', { name: agentName[a.id] })}
+              className="cursor-pointer rounded-[10px] border border-cream-edge bg-cream-2 px-3 py-1.5 text-[12.5px] font-semibold text-violet hover:border-violet/40 disabled:cursor-default disabled:opacity-50"
+            >
+              {busy === a.id
+                ? t('Connexion…')
+                : a.connected || done === a.id
+                  ? t('✓ {name} connecté', { name: agentName[a.id] })
+                  : t('Connecter à {name}', { name: agentName[a.id] })}
+            </button>
+          ))}
+        </div>
+        {done && (
+          <p className="m-0 text-[12.5px] text-sub" role="status">
+            {done === 'claude-desktop'
+              ? t('C’est fait. Redémarrez Claude Desktop, puis demandez-lui par exemple : « Range mes onglets Zak par sujet ».')
+              : t('C’est fait. Dans {name}, demandez par exemple : « Range mes onglets Zak par sujet ».', { name: agentName[done] })}
+          </p>
+        )}
+      </div>
       {state?.enabled && state.url && (
-        <div className="flex flex-col gap-2 border-t border-violet/10 py-3" data-testid="mcp-setup">
+        <details className="border-t border-violet/10 py-3" data-testid="mcp-setup">
+          <summary className="cursor-pointer text-[13px] font-semibold text-ink">{t('Configuration manuelle')}</summary>
+          <div className="mt-2 flex flex-col gap-2">
           {[
             { key: 'claude', label: 'Claude Code', text: claude },
             { key: 'codex', label: 'Codex', text: codex }
@@ -613,7 +661,8 @@ export ZAK_MCP_TOKEN=${state.token}`
               {t('Nouveau jeton')}
             </SmallButton>
           </div>
-        </div>
+          </div>
+        </details>
       )}
     </>
   )

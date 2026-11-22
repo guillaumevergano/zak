@@ -381,5 +381,16 @@ export const EN_UI: Record<string, string> = {
     'Local MCP server: the agent can manage your tabs, groups, favorites, settings and mods. Never the content of pages, your history or your passwords.',
   'Le serveur n’a pas pu démarrer : {error}': 'The server couldn’t start: {error}',
   'Le jeton donne accès à Zak : ne le partagez pas.': 'The token gives access to Zak: don’t share it.',
-  'Nouveau jeton': 'New token'
+  'Nouveau jeton': 'New token',
+
+  // settings.tsx (one-click agent connection)
+  'Connexion en un clic': 'One-click connection',
+  '{name} n’est pas installé sur cet ordinateur.': '{name} isn’t installed on this computer.',
+  'Connexion…': 'Connecting…',
+  '✓ {name} connecté': '✓ {name} connected',
+  'Connecter à {name}': 'Connect to {name}',
+  'C’est fait. Redémarrez Claude Desktop, puis demandez-lui par exemple : « Range mes onglets Zak par sujet ».':
+    'Done. Restart Claude Desktop, then ask it for example: “Sort my Zak tabs by topic”.',
+  'C’est fait. Dans {name}, demandez par exemple : « Range mes onglets Zak par sujet ».': 'Done. In {name}, ask for example: “Sort my Zak tabs by topic”.',
+  'Configuration manuelle': 'Manual setup'
 }

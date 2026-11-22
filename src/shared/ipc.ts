@@ -1,4 +1,6 @@
 import type {
+  AgentId,
+  AgentStatus,
   ImportSource,
   McpState,
   ModInfo,
@@ -271,6 +273,9 @@ export interface InternalApiRoutes {
   'settings/mcp': { body: null; result: McpState }
   'settings/setMcp': { body: { enabled: boolean }; result: McpState }
   'settings/newMcpToken': { body: null; result: McpState }
+  /** One-click connection of Claude Code, Codex, Claude Desktop (turns the server on if needed). */
+  'settings/agents': { body: null; result: AgentStatus[] }
+  'settings/connectAgent': { body: { agent: AgentId }; result: { agents: AgentStatus[]; mcp: McpState } }
   /** Mods (src/main/mods/): what the mods folder holds, and which theme / new tab is in use. */
   'settings/mods': { body: null; result: { dir: string; mods: ModInfo[] } }
   'settings/selectMod': { body: { kind: 'theme' | 'newtab'; id: string | null }; result: { dir: string; mods: ModInfo[] } }
@@ -340,6 +345,8 @@ export const INTERNAL_API_ROUTES = [
   'settings/mcp',
   'settings/setMcp',
   'settings/newMcpToken',
+  'settings/agents',
+  'settings/connectAgent',
   'settings/mods',
   'settings/selectMod',
   'settings/openModsFolder',

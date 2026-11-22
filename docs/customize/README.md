@@ -123,8 +123,13 @@ Zak has a built-in [MCP](https://modelcontextprotocol.io) server, so an agent ca
 browser you have open: "group my tabs by project", "add these five sites to my sidebar in a
 Reading folder with emojis", "switch to the Nuit bleue theme".
 
-Turn it on in Settings → *Customize with Claude Code or Codex* → *Let Claude Code or Codex drive
-Zak*. Zak then shows what to paste:
+In Settings → *Customize with Claude Code or Codex*, click **Connect to Claude Code**, **Connect to
+Codex** or **Connect to Claude Desktop**: Zak adds itself to that app's configuration (and turns its
+server on). No terminal, and no secret in those files: the app starts a small bridge, run by Zak
+itself, which reads the current address and token from Zak. Restart Claude Desktop after connecting
+it.
+
+Prefer to do it by hand? *Manual setup* shows what to paste:
 
 ```
 claude mcp add --transport http zak http://127.0.0.1:<port>/mcp --header "Authorization: Bearer <token>"
