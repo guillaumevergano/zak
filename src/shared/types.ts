@@ -168,6 +168,8 @@ export interface ExtensionInfo {
   icon: string | null
   /** Options page, when the extension declares one. */
   hasOptions: boolean
+  /** Loaded from a folder (made by hand, by Claude Code or Codex…): its path, else null. */
+  unpackedPath: string | null
 }
 
 /** Automatic Picture-in-Picture (CLAUDE.md §6.4), set on zak://settings. */

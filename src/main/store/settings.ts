@@ -10,6 +10,8 @@ interface Settings {
   sidebar: SidebarLayout
   /** Ids of installed extensions the user switched off on zak://extensions. */
   disabledExtensions: string[]
+  /** Folders of extensions loaded unpacked (« Charger une extension non empaquetée »). */
+  unpackedExtensions: string[]
   pip: PipSettings
   general: Partial<GeneralSettings>
   /** Extension icons shown in the sidebar, and their order. */
@@ -18,14 +20,34 @@ interface Settings {
   onboarded: boolean
 }
 
+const SCHEMA_URL = 'https://raw.githubusercontent.com/guillaumevergano/zak/main/docs/customize/settings.schema.json'
+
 /** Same bounds as the renderer's Sidebar (5 tiles per row need some room). */
 export const SIDEBAR_MIN_WIDTH = 220
 export const SIDEBAR_MAX_WIDTH = 380
 
 export class SettingsStore {
   private store = new Store<Settings>({
-    defaults: { sidebar: { width: 300, collapsed: false }, disabledExtensions: [], pip: DEFAULT_PIP_SETTINGS, general: {}, extensionBar: DEFAULT_EXTENSION_BAR, onboarded: false }
+    // The file can be edited by hand or by an AI agent (docs/customize/): changes apply at once.
+    watch: true,
+    defaults: { sidebar: { width: 300, collapsed: false }, disabledExtensions: [], unpackedExtensions: [], pip: DEFAULT_PIP_SETTINGS, general: {}, extensionBar: DEFAULT_EXTENSION_BAR, onboarded: false }
   })
+
+  /** Where the settings live (config.json in the profile folder), for « Ouvrir le fichier de réglages ». */
+  get path(): string {
+    return this.store.path
+  }
+
+  /** Points editors and AI agents at the schema that documents every key. */
+  markSchema(): void {
+    const raw = this.store as unknown as Store<Record<string, unknown>>
+    if (raw.get('$schema') !== SCHEMA_URL) raw.set('$schema', SCHEMA_URL)
+  }
+
+  /** Any change, including one made to the file outside Zak. */
+  onChange(listener: () => void): void {
+    this.store.onDidAnyChange(listener)
+  }
 
   getSidebar(): SidebarLayout {
     return this.store.get('sidebar')
@@ -44,6 +66,14 @@ export class SettingsStore {
     const clean = normalizeExtensionBar(bar)
     this.store.set('extensionBar', clean)
     return clean
+  }
+
+  getUnpackedExtensions(): string[] {
+    return this.store.get('unpackedExtensions')
+  }
+
+  setUnpackedExtensions(paths: string[]): void {
+    this.store.set('unpackedExtensions', [...new Set(paths)])
   }
 
   getDisabledExtensions(): string[] {

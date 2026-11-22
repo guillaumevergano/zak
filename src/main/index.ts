@@ -1,6 +1,6 @@
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { app, BrowserWindow, components, dialog, ipcMain, nativeTheme, type IpcMainInvokeEvent } from 'electron'
+import { app, BrowserWindow, components, dialog, ipcMain, nativeTheme, shell, type IpcMainInvokeEvent } from 'electron'
 import { SETTINGS_PAGE_URL, WELCOME_PAGE_URL, type InvokeChannel, type InvokeChannels, type SendChannel, type SendChannels } from '@shared/ipc'
 import type { WidevineStatus } from '@shared/types'
 import { resolveLang, setLang, t, type LangSetting } from '@shared/i18n'
@@ -230,6 +230,12 @@ app.whenReady().then(async () => {
   nativeTheme.themeSource = settings.getGeneral().theme
   recordHistory(windows, history)
   const sidebar = new SidebarController(favorites, settings, windows)
+  // The settings file can be edited outside Zak (by hand, Claude Code, Codex): apply it at once.
+  settings.markSchema()
+  settings.onChange(() => {
+    nativeTheme.themeSource = settings.getGeneral().theme
+    sidebar.broadcast()
+  })
   const find = new FindController(windows)
   const zoom = new ZoomController(sites, windows)
   const permissions = new PermissionsHandler(sites, windows)
@@ -303,6 +309,14 @@ app.whenReady().then(async () => {
       extensions.openStore()
       return null
     },
+    'extensions/loadUnpacked': async () => {
+      const result = await dialog.showOpenDialog({ title: t('Charger une extension non empaquetée'), properties: ['openDirectory'] })
+      return result.canceled || !result.filePaths[0] ? null : extensions.loadUnpacked(result.filePaths[0])
+    },
+    'extensions/reload': async ({ id }) => {
+      await extensions.reload(id)
+      return null
+    },
     'settings/get': () => ({
       general: settings.getGeneral(),
       pip: settings.getPip(),
@@ -319,6 +333,12 @@ app.whenReady().then(async () => {
         filters: [{ name: t('Favoris (HTML)'), extensions: ['html', 'htm'] }]
       })
       return result.canceled || !result.filePaths[0] ? null : sidebar.importBookmarks(result.filePaths[0])
+    },
+    'settings/customizeInfo': () => ({ settingsPath: settings.path }),
+    'settings/openSettingsFile': async ({ reveal }) => {
+      if (reveal) shell.showItemInFolder(settings.path)
+      else await shell.openPath(settings.path)
+      return null
     },
     'settings/profiles': () => profileState(),
     'settings/createProfile': ({ name, emoji, open }) => {

@@ -17,6 +17,10 @@ The interface is in French for now.
 Get the latest version on the [releases page](../../releases/latest) (macOS Apple Silicon and
 Intel, Windows). Installed copies update themselves.
 
+## Make it yours
+
+Ask [Claude Code](https://claude.com/claude-code) or [Codex](https://openai.com/codex) to change your settings or to write you an extension, in plain words: Zak applies settings as soon as the file changes and reloads your home-made extensions on every edit. See [Customize Zak with Claude Code or Codex](docs/customize/README.md).
+
 ## Build from source
 
 Requirements: Node.js 22 (see `.nvmrc`), macOS or Windows (Linux is best effort).

@@ -10,6 +10,11 @@ Thanks for helping! Here is how to get going.
   scope is described in [`CLAUDE.md`](CLAUDE.md) (in French), section by section.
 - **Security issues:** please don't open a public issue, see [SECURITY.md](SECURITY.md).
 
+Working with an AI agent? Claude Code reads [CLAUDE.md](CLAUDE.md), Codex reads
+[AGENTS.md](AGENTS.md): both describe the architecture and the rules. Pull requests written with an
+agent are welcome, as long as you have read and tested them. To customize your own Zak without
+changing its code, see [docs/customize](docs/customize/README.md).
+
 ## Setup
 
 ```bash
@@ -35,7 +40,7 @@ Add or update tests with your change: a unit test for logic, a Playwright test f
 
 ## Conventions
 
-- Code, comments and commit messages in **English**; the interface text in **French**.
+- Code, comments and commit messages in **English**; interface texts through `t('…')`, French as the key and the English in `src/shared/i18n/`.
 - Small commits with imperative messages (`Add sidebar folder drag and drop`).
 - Every IPC channel and internal page route is declared in `src/shared/ipc.ts` with its types
   before it is used.

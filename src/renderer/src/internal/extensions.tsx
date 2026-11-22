@@ -48,13 +48,18 @@ function ExtensionsPage(): JSX.Element {
             {t('Installées depuis le Chrome Web Store, actives dans les fenêtres normales.')}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => run(callInternal('extensions/openStore', null))}
-          className="shrink-0 cursor-pointer rounded-[11px] border-0 bg-violet px-3.5 py-2 text-[13px] font-semibold text-white hover:bg-title"
-        >
-          {t('Ouvrir le Chrome Web Store')}
-        </button>
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <button
+            type="button"
+            onClick={() => run(callInternal('extensions/openStore', null))}
+            className="cursor-pointer rounded-[11px] border-0 bg-violet px-3.5 py-2 text-[13px] font-semibold text-white hover:bg-title"
+          >
+            {t('Ouvrir le Chrome Web Store')}
+          </button>
+          <SmallButton onClick={() => run(callInternal('extensions/loadUnpacked', null))}>
+            {t('Charger une extension non empaquetée…')}
+          </SmallButton>
+        </div>
       </header>
 
       {error && (
@@ -104,13 +109,22 @@ function ExtensionCard({ ext, run }: { ext: ExtensionInfo; run: (action: Promise
         </div>
         {ext.description && <p className="m-0 line-clamp-2 text-[13px] text-sub">{ext.description}</p>}
         <p className="m-0 font-mono text-[10.5px] text-sub/70 select-all">{ext.id}</p>
+        {ext.unpackedPath && (
+          <p className="m-0 truncate font-mono text-[10.5px] text-sub" title={ext.unpackedPath} data-testid="unpacked-path">
+            {t('Dossier : {path} — rechargée à chaque modification', { path: ext.unpackedPath })}
+          </p>
+        )}
 
         <div className="mt-2 flex items-center gap-2">
           {confirming ? (
             <>
-              <span className="text-[13px] font-semibold text-ink">{t('Désinstaller « {name} » ?', { name: ext.name })}</span>
+              <span className="text-[13px] font-semibold text-ink">
+                {ext.unpackedPath
+                  ? t('Retirer « {name} » de Zak ? Son dossier reste en place.', { name: ext.name })
+                  : t('Désinstaller « {name} » ?', { name: ext.name })}
+              </span>
               <SmallButton danger onClick={() => run(callInternal('extensions/uninstall', { id: ext.id }))}>
-                {t('Désinstaller')}
+                {ext.unpackedPath ? t('Retirer') : t('Désinstaller')}
               </SmallButton>
               <SmallButton onClick={() => setConfirming(false)}>{t('Annuler')}</SmallButton>
             </>
@@ -121,7 +135,10 @@ function ExtensionCard({ ext, run }: { ext: ExtensionInfo; run: (action: Promise
                   {t('Options')}
                 </SmallButton>
               )}
-              <SmallButton onClick={() => setConfirming(true)}>{t('Désinstaller')}</SmallButton>
+              {ext.unpackedPath && ext.enabled && (
+                <SmallButton onClick={() => run(callInternal('extensions/reload', { id: ext.id }))}>{t('Recharger')}</SmallButton>
+              )}
+              <SmallButton onClick={() => setConfirming(true)}>{ext.unpackedPath ? t('Retirer') : t('Désinstaller')}</SmallButton>
             </>
           )}
         </div>

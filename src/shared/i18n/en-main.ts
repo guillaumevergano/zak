@@ -165,5 +165,9 @@ export const EN_MAIN: Record<string, string> = {
   'Gérer les profils…': 'Manage profiles…',
   Perso: 'Personal',
   Profil: 'Profile',
-  'Ce profil ne peut pas être supprimé': 'This profile can’t be deleted'
+  'Ce profil ne peut pas être supprimé': 'This profile can’t be deleted',
+
+  // Unpacked extensions (index.ts, extensions/ExtensionsHost.ts)
+  'Charger une extension non empaquetée': 'Load unpacked extension',
+  'Ce dossier ne contient pas de manifest.json.': 'This folder has no manifest.json.'
 }

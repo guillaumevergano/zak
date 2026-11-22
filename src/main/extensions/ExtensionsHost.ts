@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync, watch, type FSWatcher } from 'node:fs'
+import { t } from '@shared/i18n'
 import { join } from 'node:path'
 import { app, session, type Session } from 'electron'
 import { ElectronChromeExtensions } from 'electron-chrome-extensions'
@@ -89,6 +90,51 @@ export class ExtensionsHost {
     })
 
     this.unloadDisabled()
+    for (const path of this.settings.getUnpackedExtensions()) {
+      if (existsSync(join(path, 'manifest.json'))) await this.loadFolder(path).catch((err) => console.warn('[extensions]', path, err))
+    }
+  }
+
+  // ── Unpacked extensions: a folder with a manifest.json, written by hand or by an AI agent ──
+
+  /** id → folder of the extensions loaded unpacked. */
+  private readonly unpacked = new Map<string, string>()
+  private readonly watchers = new Map<string, FSWatcher>()
+
+  /** « Charger une extension non empaquetée… ». Returns the extension's id. */
+  async loadUnpacked(path: string): Promise<string> {
+    if (!existsSync(join(path, 'manifest.json'))) throw new Error(t('Ce dossier ne contient pas de manifest.json.'))
+    const id = await this.loadFolder(path)
+    this.settings.setUnpackedExtensions([...this.settings.getUnpackedExtensions(), path])
+    return id
+  }
+
+  /** Loads the folder again (after a change). */
+  async reload(id: string): Promise<void> {
+    const path = this.unpacked.get(id)
+    if (!path) return
+    this.browsingSession.extensions.removeExtension(id)
+    await this.browsingSession.extensions.loadExtension(path, { allowFileAccess: true })
+  }
+
+  private async loadFolder(path: string): Promise<string> {
+    const ext = await this.browsingSession.extensions.loadExtension(path, { allowFileAccess: true })
+    this.unpacked.set(ext.id, path)
+    // Reloaded as soon as a file changes: edit it (or let Claude Code / Codex edit it) and see it.
+    this.watchers.get(ext.id)?.close()
+    let timer: NodeJS.Timeout | null = null
+    try {
+      const watcher = watch(path, { recursive: true }, () => {
+        if (timer) clearTimeout(timer)
+        timer = setTimeout(() => {
+          if (!this.disabled.has(ext.id)) void this.reload(ext.id).catch((err) => console.warn('[extensions] reload', err))
+        }, 400)
+      })
+      this.watchers.set(ext.id, watcher)
+    } catch {
+      /* not watchable (network drive…): « Recharger » on zak://extensions still works */
+    }
+    return ext.id
   }
 
   // ── zak://extensions ─────────────────────────────────────────────────────────
@@ -119,6 +165,16 @@ export class ExtensionsHost {
 
   async uninstall(id: string): Promise<void> {
     if (this.disabled.delete(id)) this.saveDisabled()
+    // Unpacked: only forgotten, never deleted (the folder is the user's).
+    const folder = this.unpacked.get(id)
+    if (folder) {
+      this.unpacked.delete(id)
+      this.watchers.get(id)?.close()
+      this.watchers.delete(id)
+      this.settings.setUnpackedExtensions(this.settings.getUnpackedExtensions().filter((p) => p !== folder))
+      if (this.browsingSession.extensions.getExtension(id)) this.browsingSession.extensions.removeExtension(id)
+      return
+    }
     await uninstallExtension(id, { session: this.browsingSession, extensionsPath: this.extensionsPath })
   }
 
@@ -163,7 +219,8 @@ export class ExtensionsHost {
       enabled,
       manifestVersion: manifest.manifest_version ?? 2,
       icon: iconDataUrl(path, manifest),
-      hasOptions: optionsPage(manifest) !== null
+      hasOptions: optionsPage(manifest) !== null,
+      unpackedPath: this.unpacked.get(id) ?? null
     }
   }
 }

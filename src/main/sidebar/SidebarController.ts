@@ -137,7 +137,8 @@ export class SidebarController {
     ]).popup({ window: handle.window })
   }
 
-  private broadcast(): void {
+  /** Pushes the sidebar state (favorites, layout, extension bar) to every window. */
+  broadcast(): void {
     this.windows.broadcast('sidebar:state', this.state())
   }
 }

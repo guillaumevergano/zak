@@ -267,6 +267,7 @@ Chaque étape = une branche + une PR, avec un test Playwright sur le flux princi
 
 ## 11. Conventions pour Claude Code
 - Langue du code et des commits : anglais. Langue des docs : français. L'UI est écrite en français et traduite en anglais : tout texte affiché passe par `t('…')` (`src/shared/i18n.ts`, le français sert de clé), l'anglais va dans `src/shared/i18n/` ; `tests/unit/i18n.test.ts` vérifie qu'aucun texte n'est oublié. Langue choisie dans Réglages (système par défaut), appliquée au lancement ; les tests e2e tournent en français (`ZAK_LANG=fr`).
+- Personnalisation sans recompiler (`docs/customize/`, public, en anglais) : le fichier de réglages (`config.json` d'electron-store, surveillé : une modification extérieure s'applique tout de suite, schéma `docs/customize/settings.schema.json` à tenir à jour avec les réglages) et les extensions non empaquetées (rechargées à chaque modification de leur dossier). `AGENTS.md` résume ce document pour Codex : le tenir à jour aussi.
 - Projet open source (licence MIT) : les fichiers destinés au public (`README.md`, `CONTRIBUTING.md`, `SECURITY.md`, modèles `.github/`) sont en anglais ; ce document et `docs/` restent en français. Le site de téléchargement est dans `site/` (GitHub Pages).
 - Avant d'implémenter une feature, relire la section correspondante de ce document et ne pas en élargir le périmètre.
 - Ne jamais introduire `<webview>`, `BrowserView`, `nodeIntegration: true` ni `remote`.

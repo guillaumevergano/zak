@@ -338,5 +338,29 @@ export const EN_UI: Record<string, string> = {
   'Nom du nouveau profil': 'New profile name',
   'Nouveau profil (Travail, Famille…)': 'New profile (Work, Family…)',
   'Créer et ouvrir': 'Create and open',
-  'Profil : {name}': 'Profile: {name}'
+  'Profil : {name}': 'Profile: {name}',
+
+  // settings.tsx (customize with Claude Code or Codex)
+  'Dans {path}, passe le moteur de recherche sur DuckDuckGo, le thème en sombre et la mise en veille des onglets à 30 minutes. Le schéma des réglages est indiqué dans le fichier ($schema).':
+    'In {path}, switch the search engine to DuckDuckGo, the theme to dark and tab sleep to 30 minutes. The settings schema is linked in the file ($schema).',
+  'Crée dans ~/Zak/extensions/mode-lecture une extension Chrome (Manifest V3) qui ajoute un bouton pour afficher la page en mode lecture, sans publicité ni menus. Je la chargerai dans Zak avec « Charger une extension non empaquetée ».':
+    'Create in ~/Zak/extensions/reader-mode a Chrome extension (Manifest V3) that adds a button to show the page in reader mode, without ads or menus. I will load it in Zak with “Load unpacked extension”.',
+  'Personnaliser avec Claude Code ou Codex': 'Customize with Claude Code or Codex',
+  'Zak se configure aussi en langage naturel : demandez à Claude Code ou à Codex de modifier vos réglages ou de vous écrire une extension.':
+    'Zak can also be set up in plain words: ask Claude Code or Codex to change your settings or to write you an extension.',
+  'Fichier de réglages': 'Settings file',
+  'Afficher le dossier': 'Show folder',
+  'Extensions maison': 'Home-made extensions',
+  'Une extension écrite par l’IA se charge dans Extensions et se recharge à chaque modification.':
+    'An extension written by an AI loads in Extensions and reloads whenever it changes.',
+  'Exemples à copier': 'Examples to copy',
+  Copié: 'Copied',
+  Copier: 'Copy',
+  'Lire le guide complet': 'Read the full guide',
+
+  // extensions.tsx (unpacked extensions)
+  'Charger une extension non empaquetée…': 'Load unpacked extension…',
+  'Dossier : {path} — rechargée à chaque modification': 'Folder: {path} — reloads whenever it changes',
+  Retirer: 'Remove',
+  'Retirer « {name} » de Zak ? Son dossier reste en place.': 'Remove “{name}” from Zak? Its folder stays where it is.'
 }

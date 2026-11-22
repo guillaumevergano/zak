@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/guillaumevergano/zak/main/docs/customize/settings.schema.json",
+  "title": "Zak settings",
+  "description": "Zak's settings file (config.json in Zak's profile folder; Settings → Customize → Open the settings file). Zak applies changes as soon as the file is saved. Unknown or invalid values fall back to their default.",
+  "type": "object",
+  "properties": {
+    "general": {
+      "type": "object",
+      "properties": {
+        "language": { "enum": ["system", "fr", "en"], "default": "system", "description": "Interface language; applied at the next launch." },
+        "searchEngine": { "enum": ["google", "duckduckgo", "brave", "bing", "qwant", "ecosia"], "default": "google" },
+        "startup": { "enum": ["restore", "newtab"], "default": "restore", "description": "Reopen the last session's tabs, or start on a new tab." },
+        "theme": { "enum": ["system", "light", "dark"], "default": "light" },
+        "downloadDir": { "type": "string", "description": "Absolute path of the downloads folder. Defaults to the system's Downloads folder." },
+        "safeBrowsing": { "type": "boolean", "default": true, "description": "Warn before opening known phishing or malware pages." },
+        "savePasswords": { "type": "boolean", "default": true, "description": "Offer to save passwords after a sign-in." },
+        "sleepTabsAfter": { "enum": [0, 15, 30, 60, 120], "default": 0, "description": "Minutes before a background tab is unloaded; 0 = never." }
+      },
+      "additionalProperties": false
+    },
+    "pip": {
+      "type": "object",
+      "description": "Automatic picture-in-picture when leaving a tab that plays a video.",
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "closeOnReturn": { "type": "boolean", "default": true },
+        "skipMuted": { "type": "boolean", "default": false },
+        "excludedDomains": { "type": "array", "items": { "type": "string" }, "description": "Domains (subdomains included) where it never triggers, e.g. \"youtube.com\"." }
+      }
+    },
+    "sidebar": {
+      "type": "object",
+      "properties": {
+        "width": { "type": "number", "minimum": 220, "maximum": 380, "default": 300 },
+        "collapsed": { "type": "boolean", "default": false, "description": "Icons-only sidebar (⌘B)." }
+      }
+    },
+    "extensionBar": {
+      "type": "object",
+      "description": "Extension icons shown at the top of the sidebar.",
+      "properties": {
+        "order": { "type": "array", "items": { "type": "string" }, "description": "Extension ids, left to right." },
+        "hidden": { "type": "array", "items": { "type": "string" }, "description": "Extension ids kept out of the sidebar." }
+      }
+    },
+    "unpackedExtensions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Absolute paths of folders loaded as unpacked Chrome extensions (each with a manifest.json). Zak reloads them when their files change."
+    },
+    "disabledExtensions": { "type": "array", "items": { "type": "string" }, "description": "Ids of extensions switched off." },
+    "onboarded": { "type": "boolean", "description": "The welcome page has been shown." }
+  }
+}

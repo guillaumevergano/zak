@@ -243,6 +243,9 @@ export interface InternalApiRoutes {
   'extensions/openOptions': { body: { id: string }; result: null }
   /** Opens the Chrome Web Store in a new tab. */
   'extensions/openStore': { body: null; result: null }
+  /** « Charger une extension non empaquetée… » (folder picker); null when cancelled. */
+  'extensions/loadUnpacked': { body: null; result: string | null }
+  'extensions/reload': { body: { id: string }; result: null }
   'settings/get': { body: null; result: BrowserSettings }
   /** Saves the PiP section; returns it normalized (cleaned-up domains). */
   'settings/setPip': { body: PipSettings; result: PipSettings }
@@ -259,6 +262,9 @@ export interface InternalApiRoutes {
   'settings/setExtensionBar': { body: ExtensionBarSettings; result: ExtensionBarSettings }
   /** Picks a bookmarks HTML file and imports it; null when cancelled. */
   'settings/importBookmarks': { body: null; result: { favorites: number; folders: number } | null }
+  /** « Personnaliser avec Claude Code ou Codex »: where the settings file is, open or show it. */
+  'settings/customizeInfo': { body: null; result: { settingsPath: string } }
+  'settings/openSettingsFile': { body: { reveal: boolean }; result: null }
   /** Profiles (src/main/profiles/): the list, and the one of this window. */
   'settings/profiles': { body: null; result: { current: string; list: ProfileInfo[] } }
   'settings/createProfile': { body: { name: string; emoji: string; open: boolean }; result: { current: string; list: ProfileInfo[] } }
@@ -309,6 +315,8 @@ export const INTERNAL_API_ROUTES = [
   'extensions/uninstall',
   'extensions/openOptions',
   'extensions/openStore',
+  'extensions/loadUnpacked',
+  'extensions/reload',
   'settings/get',
   'settings/setPip',
   'settings/setGeneral',
@@ -319,6 +327,8 @@ export const INTERNAL_API_ROUTES = [
   'settings/listExtensions',
   'settings/setExtensionBar',
   'settings/importBookmarks',
+  'settings/customizeInfo',
+  'settings/openSettingsFile',
   'settings/profiles',
   'settings/createProfile',
   'settings/updateProfile',

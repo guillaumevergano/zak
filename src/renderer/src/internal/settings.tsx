@@ -216,6 +216,8 @@ function SettingsPage(): JSX.Element {
 
       <ProfilesSection onError={fail} />
 
+      <CustomizeSection onError={fail} />
+
       <Section id="passwords" title={t('Mots de passe')}>
         <Row title={t("Proposer d'enregistrer les mots de passe")} detail={t('Après une connexion. Chiffrés avec le trousseau de votre ordinateur.')}>
           <Toggle label={t("Proposer d'enregistrer les mots de passe")} on={general.savePasswords} onChange={(savePasswords) => saveGeneral({ savePasswords })} />
@@ -482,6 +484,70 @@ function ImportFromBrowser({ onError }: { onError: (err: unknown) => void }): JS
         </div>
       </div>
     </Row>
+  )
+}
+
+const GUIDE_URL = 'https://github.com/guillaumevergano/zak/blob/main/docs/customize/README.md'
+
+/** Prompts to copy into Claude Code or Codex (run in a terminal, anywhere). */
+const customizePrompts = (path: string): string[] => [
+  t('Dans {path}, passe le moteur de recherche sur DuckDuckGo, le thème en sombre et la mise en veille des onglets à 30 minutes. Le schéma des réglages est indiqué dans le fichier ($schema).', { path }),
+  t('Crée dans ~/Zak/extensions/mode-lecture une extension Chrome (Manifest V3) qui ajoute un bouton pour afficher la page en mode lecture, sans publicité ni menus. Je la chargerai dans Zak avec « Charger une extension non empaquetée ».')
+]
+
+/**
+ * « Personnaliser avec Claude Code ou Codex » (docs/customize/): the settings file AI agents
+ * can edit (applied at once) and home-made extensions, with prompts to start from.
+ */
+function CustomizeSection({ onError }: { onError: (err: unknown) => void }): JSX.Element {
+  const [path, setPath] = useState<string | null>(null)
+  const [copied, setCopied] = useState<number | null>(null)
+  useEffect(() => {
+    callInternal('settings/customizeInfo', null)
+      .then((info) => setPath(info.settingsPath))
+      .catch(() => {})
+  }, [])
+  return (
+    <Section
+      id="customize"
+      title={t('Personnaliser avec Claude Code ou Codex')}
+      intro={t('Zak se configure aussi en langage naturel : demandez à Claude Code ou à Codex de modifier vos réglages ou de vous écrire une extension.')}
+    >
+      <Row title={t('Fichier de réglages')} detail={path ?? ''}>
+        <div className="flex gap-2">
+          <SmallButton onClick={() => void callInternal('settings/openSettingsFile', { reveal: false }).catch(onError)}>{t('Ouvrir')}</SmallButton>
+          <SmallButton onClick={() => void callInternal('settings/openSettingsFile', { reveal: true }).catch(onError)}>{t('Afficher le dossier')}</SmallButton>
+        </div>
+      </Row>
+      <Row title={t('Extensions maison')} detail={t('Une extension écrite par l’IA se charge dans Extensions et se recharge à chaque modification.')}>
+        <a href={EXTENSIONS_PAGE_URL} className="rounded-[10px] border border-cream-edge bg-cream-2 px-3 py-1 text-[12.5px] font-semibold text-violet no-underline hover:border-violet/40">
+          {t('Extensions')}
+        </a>
+      </Row>
+      {path && (
+        <div className="flex flex-col gap-2 border-t border-violet/10 py-3">
+          <span className="text-[13px] font-semibold text-ink">{t('Exemples à copier')}</span>
+          {customizePrompts(path).map((prompt, i) => (
+            <div key={i} className="flex items-start gap-3 rounded-[12px] bg-cream-2 px-3 py-2">
+              <p className="m-0 flex-1 text-[12.5px] text-sub">{prompt}</p>
+              <SmallButton
+                onClick={() =>
+                  void navigator.clipboard.writeText(prompt).then(() => {
+                    setCopied(i)
+                    setTimeout(() => setCopied(null), 1500)
+                  })
+                }
+              >
+                {copied === i ? t('Copié') : t('Copier')}
+              </SmallButton>
+            </div>
+          ))}
+          <a href={GUIDE_URL} target="_blank" rel="noreferrer" className="text-[12.5px] font-semibold text-violet">
+            {t('Lire le guide complet')}
+          </a>
+        </div>
+      )}
+    </Section>
   )
 }
 
