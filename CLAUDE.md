@@ -227,7 +227,7 @@ Maquette de référence : **`docs/design/maquette-v2.png`**. Jetons dans `src/re
 - Fenêtre : `titleBarStyle: 'hiddenInset'` sur macOS (feux tricolores dans la barre d'onglets), `titleBarOverlay` sur Windows.
 - Navigation privée : même structure, cadre `#150C2B` et panneau violet nuit `#2A1850` (jetons remappés par `body.private`), page Nouvel onglet sombre, badge « Privé ».
 - Barre de défilement des pages : fine, mauve, fond transparent (CSS injecté en origine « user » : les sites qui stylent la leur la gardent).
-- Un navigateur calme : animations douces, jamais de saut. Une seule courbe (`--ease-calm`, départ vif et longue arrivée en douceur, défaut des classes `transition-*`) ; 150–200 ms pour les survols et couleurs, ~300 ms pour un déplacement (pli de la barre latérale : le contenu s'efface, la largeur glisse, le contenu revient ; la page n'est redimensionnée qu'une fois). `prefers-reduced-motion` coupe tout. Tout doit rester fluide avec 50 onglets ouverts.
+- Un navigateur calme : animations douces, jamais de saut. Une seule courbe (`--ease-calm`, départ vif et longue arrivée en douceur, défaut des classes `transition-*`) ; 150–200 ms pour les survols et couleurs, ~300 ms pour un déplacement (pli de la barre latérale : le contenu s'efface, la largeur glisse, le contenu revient ; la page suit le bord de la barre image par image, sans trou). `prefers-reduced-motion` coupe tout. Tout doit rester fluide avec 50 onglets ouverts.
 
 ## 8. Build & distribution
 - `npm run dev` → electron-vite avec HMR sur le renderer.

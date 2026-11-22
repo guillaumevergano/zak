@@ -19,22 +19,18 @@ const MAX_WIDTH = 380
 const COLUMNS = 5
 
 /**
- * Folding / unfolding, calmly: the content fades out, the width glides (the page is resized once,
- * see sidebarRoom), the content comes back in its new layout. No jump of the mosaic mid-way.
+ * Folding / unfolding, calmly: the content fades out, the width glides (the page follows its edge
+ * frame by frame, App reports the layout), the content comes back in its new layout. No jump of
+ * the mosaic mid-way.
  */
 const FADE_OUT_MS = 110
 const GLIDE_MS = 300
 const FADE_IN_MS = 200
 
 /** The layout shown (wide or folded) and how far the fold animation is, following `collapsed`. */
-function useFoldAnimation(
-  collapsed: boolean | null,
-  width: number,
-  aside: React.RefObject<HTMLElement | null>
-): { shown: boolean; phase: 'idle' | 'out' | 'in'; gliding: boolean } {
+function useFoldAnimation(collapsed: boolean | null): { shown: boolean; phase: 'idle' | 'out' | 'in'; gliding: boolean } {
   const [shown, setShown] = useState(collapsed ?? false)
   const [phase, setPhase] = useState<'idle' | 'out' | 'in'>('idle')
-  const setRoom = useBrowserStore((s) => s.setSidebarRoom)
   const loaded = useRef(collapsed !== null)
   useEffect(() => {
     if (collapsed === null) return
@@ -45,17 +41,12 @@ function useFoldAnimation(
       return
     }
     if (collapsed === shown && phase === 'idle') return
-    const target = collapsed ? SIDEBAR_COLLAPSED_WIDTH : width
-    setRoom(Math.max(aside.current?.offsetWidth ?? target, target))
     setPhase('out')
     const timers = [
       setTimeout(() => setShown(collapsed), FADE_OUT_MS),
       // The content comes back while the width lands.
       setTimeout(() => setPhase('in'), GLIDE_MS - 80),
-      setTimeout(() => {
-        setPhase('idle')
-        setRoom(null)
-      }, GLIDE_MS)
+      setTimeout(() => setPhase('idle'), GLIDE_MS)
     ]
     return () => timers.forEach(clearTimeout)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -73,7 +64,7 @@ export function Sidebar(): JSX.Element {
   const sidebar = useBrowserStore((s) => s.sidebar)
   const activeTab = useBrowserStore(selectActiveTab)
   const asideRef = useRef<HTMLElement>(null)
-  const { shown: collapsed, phase, gliding } = useFoldAnimation(sidebar?.layout.collapsed ?? null, sidebar?.layout.width ?? SIDEBAR_DEFAULT_WIDTH, asideRef)
+  const { shown: collapsed, phase, gliding } = useFoldAnimation(sidebar?.layout.collapsed ?? null)
   if (!sidebar) return <aside className="no-drag w-[300px] shrink-0" />
 
   const { folders, favorites, layout } = sidebar

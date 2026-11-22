@@ -52,15 +52,14 @@ export function App(): JSX.Element {
   useLayoutEffect(() => {
     const el = contentRef.current
     if (!el) return
+    // Once per frame while the sidebar glides: the page follows its edge.
     let last = ''
     const report = (): void => {
       const r = el.getBoundingClientRect()
-      // The sidebar is folding or unfolding: keep the page where it will fit all along.
-      const room = useBrowserStore.getState().sidebarRoom
       const insets = {
         left: Math.round(r.left),
         top: Math.round(r.top),
-        right: room ?? Math.round(window.innerWidth - r.right),
+        right: Math.round(window.innerWidth - r.right),
         bottom: Math.round(window.innerHeight - r.bottom)
       }
       const key = JSON.stringify(insets)
@@ -71,13 +70,9 @@ export function App(): JSX.Element {
     const observer = new ResizeObserver(report)
     observer.observe(el)
     window.addEventListener('resize', report)
-    const unsubscribe = useBrowserStore.subscribe((s, prev) => {
-      if (s.sidebarRoom !== prev.sidebarRoom) report()
-    })
     report()
     return () => {
       observer.disconnect()
-      unsubscribe()
       window.removeEventListener('resize', report)
     }
   }, [])
