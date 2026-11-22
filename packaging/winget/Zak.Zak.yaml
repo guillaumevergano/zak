@@ -1,0 +1,8 @@
+# winget manifest (version file). Submitted to github.com/microsoft/winget-pkgs under
+# manifests/z/Zak/Zak/<version>/ with the two files next to it; scripts/update-packaging.mjs
+# fills in the version and checksum after each release.
+PackageIdentifier: Zak.Zak
+PackageVersion: 0.0.0
+DefaultLocale: en-US
+ManifestType: version
+ManifestVersion: 1.9.0

@@ -96,6 +96,22 @@ casserait la lecture DRM.
 conditions d'une signature VMP de production pour une app distribuée au public (Google peut exiger
 un accord de licence Widevine). C'est ce qui conditionne la lecture sur Netflix & co.
 
+## Homebrew et winget (après une version)
+
+Pour que `brew install --cask guillaumevergano/tap/zak` (macOS) et `winget install Zak.Zak`
+(Windows) installent Zak :
+
+1. Une fois la version publiée, `node scripts/update-packaging.mjs` remplit
+   `packaging/homebrew/zak.rb` et `packaging/winget/*.yaml` (version, SHA-256 des fichiers).
+2. **Homebrew** : créer une fois le dépôt public `guillaumevergano/homebrew-tap`, y copier
+   `packaging/homebrew/zak.rb` dans `Casks/zak.rb`, puis le mettre à jour à chaque version.
+   L'entrée dans le Homebrew officiel (`brew install --cask zak` tout court) demande un projet
+   déjà connu (étoiles, utilisateurs) : à proposer plus tard.
+3. **winget** : forker `microsoft/winget-pkgs`, copier les trois fichiers dans
+   `manifests/z/Zak/Zak/<version>/`, vérifier avec `winget validate` puis ouvrir une PR. Les
+   versions suivantes peuvent passer par `wingetcreate update Zak.Zak` (outil Microsoft).
+   L'installateur doit être signé, sinon SmartScreen avertit les utilisateurs.
+
 ## En cas d'échec
 
 - **M7121-1331 / « navigateur non pris en charge »** : la signature VMP manque ou a été cassée par une

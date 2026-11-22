@@ -1,0 +1,19 @@
+PackageIdentifier: Zak.Zak
+PackageVersion: 0.0.0
+PackageLocale: en-US
+Publisher: The Zak authors
+PublisherUrl: https://github.com/guillaumevergano/zak
+PublisherSupportUrl: https://github.com/guillaumevergano/zak/issues
+PrivacyUrl: https://github.com/guillaumevergano/zak/blob/main/PRIVACY.md
+PackageName: Zak
+PackageUrl: https://guillaumevergano.github.io/zak/
+License: MIT
+LicenseUrl: https://github.com/guillaumevergano/zak/blob/main/LICENSE
+ShortDescription: A calm desktop browser built on Chromium.
+Description: Zak is a calm desktop browser built on Chromium, with Chrome extensions, streaming services, an emoji favorites sidebar and automatic picture-in-picture.
+Tags:
+  - browser
+  - chromium
+  - web-browser
+ManifestType: defaultLocale
+ManifestVersion: 1.9.0
