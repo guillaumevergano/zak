@@ -40,6 +40,7 @@ export default defineConfig({
           settings: resolve(__dirname, 'src/renderer/settings.html'),
           history: resolve(__dirname, 'src/renderer/history.html'),
           passwords: resolve(__dirname, 'src/renderer/passwords.html'),
+          welcome: resolve(__dirname, 'src/renderer/welcome.html'),
           error: resolve(__dirname, 'src/renderer/error.html')
         }
       }

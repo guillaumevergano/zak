@@ -5,6 +5,7 @@ import { useBrowserStore } from '../store/useBrowserStore'
 import { dndId } from '../lib/dnd'
 import { BroomIcon, CloseIcon, GlobeIcon, PlusIcon, SparkleIcon, SpeakerIcon } from './Icons'
 import { isPrivateWindow } from '../lib/env'
+import { t } from '@shared/i18n'
 
 const api = window.zak
 const isMac = navigator.userAgent.includes('Mac')
@@ -24,7 +25,7 @@ export function TabStrip(): JSX.Element {
       {/* The DndContext lives in App: tabs can also be dropped into the sidebar. */}
       {pinned.length > 0 && (
         <SortableContext items={pinned.map((t) => dndId('tab', t.id))} strategy={horizontalListSortingStrategy}>
-          <div role="tablist" aria-label="Onglets épinglés" data-testid="pinned-tabs" className="mb-1.5 flex shrink-0 items-center gap-1.5">
+          <div role="tablist" aria-label={t('Onglets épinglés')} data-testid="pinned-tabs" className="mb-1.5 flex shrink-0 items-center gap-1.5">
             {pinned.map((tab) => (
               <TabItem key={tab.id} tab={tab} active={tab.id === activeId} />
             ))}
@@ -41,7 +42,7 @@ export function TabStrip(): JSX.Element {
       </SortableContext>
       <button
         data-testid="new-tab"
-        title="Nouvel onglet (⌘T)"
+        title={t('Nouvel onglet (⌘T)')}
         className="no-drag mb-1.5 grid h-8 w-8 shrink-0 place-items-center rounded-[10px] text-frame-text hover:bg-frame-3"
         onClick={() => void api.invoke('tabs:create')}
       >
@@ -78,7 +79,7 @@ function TabItem({ tab, active }: { tab: TabInfo; active: boolean }): JSX.Elemen
       data-testid="tab"
       data-pinned={tab.pinned || undefined}
       data-asleep={tab.asleep || undefined}
-      title={tab.asleep ? `${tab.title} (en veille)` : tab.title}
+      title={tab.asleep ? t('{title} (en veille)', { title: tab.title }) : tab.title}
       style={{ transform: CSS.Translate.toString(transform && { ...transform, y: 0 }), transition }}
       onPointerDown={(e) => {
         if (e.button === 0) void api.invoke('tabs:activate', tab.id)
@@ -108,7 +109,7 @@ function TabItem({ tab, active }: { tab: TabInfo; active: boolean }): JSX.Elemen
       )}
       {(tab.audible || tab.muted) && (
         <button
-          title={tab.muted ? 'Réactiver le son' : 'Couper le son'}
+          title={tab.muted ? t('Réactiver le son') : t('Couper le son')}
           className={`grid shrink-0 place-items-center rounded-md ${
             tab.pinned ? 'absolute -top-1 -right-1 h-4 w-4 bg-frame' : 'h-5 w-5 hover:bg-black/10'
           } ${tab.muted ? 'opacity-50' : 'text-pink'}`}
@@ -120,7 +121,7 @@ function TabItem({ tab, active }: { tab: TabInfo; active: boolean }): JSX.Elemen
       )}
       {!tab.pinned && (
         <button
-          title="Fermer l'onglet (⌘W)"
+          title={t("Fermer l'onglet (⌘W)")}
           data-testid="tab-close"
           className={`grid h-5 w-5 shrink-0 place-items-center rounded-md ${
             active ? 'text-cream-sub hover:bg-black/8 hover:text-cream-ink' : 'text-frame-sub opacity-0 group-hover:opacity-100 hover:bg-white/10 hover:text-frame-text'
@@ -140,11 +141,13 @@ function PrivateBadge(): JSX.Element {
   return (
     <span
       data-testid="private-badge"
-      title="Navigation privée : ni historique, ni cookies, ni données de site gardés après la fermeture de la fenêtre. Extensions désactivées."
+      title={t(
+        'Navigation privée : ni historique, ni cookies, ni données de site gardés après la fermeture de la fenêtre. Extensions désactivées.'
+      )}
       className="mb-[11px] flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-pink/40 bg-pink/12 px-2.5 text-[11.5px] font-bold text-pink-soft"
     >
       <MaskIcon />
-      Privé
+      {t('Privé')}
     </span>
   )
 }
@@ -181,7 +184,7 @@ function CloseAllButton({ closable }: { closable: number }): JSX.Element {
   return (
     <button
       data-testid="close-all"
-      title="Fermer tous les onglets sauf l'onglet actif (⇧⌘W)"
+      title={t("Fermer tous les onglets sauf l'onglet actif (⇧⌘W)")}
       disabled={closable === 0}
       className="no-drag mb-1.5 grid h-8 w-8 shrink-0 place-items-center rounded-[10px] text-frame-sub enabled:hover:bg-frame-3 enabled:hover:text-frame-text disabled:opacity-40"
       onClick={() => void useBrowserStore.getState().closeAll()}

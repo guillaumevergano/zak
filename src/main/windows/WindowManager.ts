@@ -1,3 +1,4 @@
+import { getLang, t } from '@shared/i18n'
 import { EventEmitter } from 'node:events'
 import { join } from 'node:path'
 import { BrowserWindow, nativeTheme, type BaseWindow, type Menu, type Session, type WebContents } from 'electron'
@@ -77,6 +78,7 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
       webPreferences: {
         // The chrome UI lives in the default session; tabs live in `persist:main`.
         preload: join(__dirname, '../preload/chrome.js'),
+        additionalArguments: [`--zak-lang=${getLang()}`],
         sandbox: true,
         contextIsolation: true,
         nodeIntegration: false
@@ -99,7 +101,7 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
       const state = tabs.getState()
       this.sendTo(window, 'tabs:state', state)
       const active = state.tabs.find((t) => t.id === state.activeId)
-      const app = isPrivate ? 'Zak (navigation privée)' : 'Zak'
+      const app = isPrivate ? t('Zak (navigation privée)') : 'Zak'
       window.setTitle(active ? `${active.title} — ${app}` : app)
       this.emit('tabs-changed', handle)
     }

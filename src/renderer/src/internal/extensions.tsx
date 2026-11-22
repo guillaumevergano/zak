@@ -1,9 +1,11 @@
+import '../lib/lang'
 import { StrictMode, useCallback, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { ExtensionInfo } from '@shared/types'
 import { callInternal } from './api'
 import { SmallButton, Toggle } from './ui'
 import '../styles.css'
+import { t } from '@shared/i18n'
 
 /** zak://extensions (CLAUDE.md §6.5): installed extensions, on/off, options, uninstall. */
 function ExtensionsPage(): JSX.Element {
@@ -41,9 +43,9 @@ function ExtensionsPage(): JSX.Element {
     <main className="mx-auto flex max-w-[760px] flex-col gap-6 px-6 py-10">
       <header className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="m-0 text-[26px] font-bold text-title">Extensions</h1>
+          <h1 className="m-0 text-[26px] font-bold text-title">{t('Extensions')}</h1>
           <p className="m-0 mt-1 text-[13px] text-sub">
-            Installées depuis le Chrome Web Store, actives dans les fenêtres normales.
+            {t('Installées depuis le Chrome Web Store, actives dans les fenêtres normales.')}
           </p>
         </div>
         <button
@@ -51,7 +53,7 @@ function ExtensionsPage(): JSX.Element {
           onClick={() => run(callInternal('extensions/openStore', null))}
           className="shrink-0 cursor-pointer rounded-[11px] border-0 bg-violet px-3.5 py-2 text-[13px] font-semibold text-white hover:bg-title"
         >
-          Ouvrir le Chrome Web Store
+          {t('Ouvrir le Chrome Web Store')}
         </button>
       </header>
 
@@ -63,11 +65,11 @@ function ExtensionsPage(): JSX.Element {
 
       {extensions?.length === 0 && (
         <div className="glass-card rounded-[18px] px-6 py-10 text-center text-sub">
-          Aucune extension installée. Ouvrez le Chrome Web Store et cliquez sur « Ajouter à Chrome ».
+          {t('Aucune extension installée. Ouvrez le Chrome Web Store et cliquez sur « Ajouter à Chrome ».')}
         </div>
       )}
 
-      <ul className="m-0 flex list-none flex-col gap-3 p-0" aria-label="Extensions installées">
+      <ul className="m-0 flex list-none flex-col gap-3 p-0" aria-label={t('Extensions installées')}>
         {extensions?.map((ext) => (
           <ExtensionCard key={ext.id} ext={ext} run={run} />
         ))}
@@ -106,33 +108,35 @@ function ExtensionCard({ ext, run }: { ext: ExtensionInfo; run: (action: Promise
         <div className="mt-2 flex items-center gap-2">
           {confirming ? (
             <>
-              <span className="text-[13px] font-semibold text-ink">Désinstaller « {ext.name} » ?</span>
+              <span className="text-[13px] font-semibold text-ink">{t('Désinstaller « {name} » ?', { name: ext.name })}</span>
               <SmallButton danger onClick={() => run(callInternal('extensions/uninstall', { id: ext.id }))}>
-                Désinstaller
+                {t('Désinstaller')}
               </SmallButton>
-              <SmallButton onClick={() => setConfirming(false)}>Annuler</SmallButton>
+              <SmallButton onClick={() => setConfirming(false)}>{t('Annuler')}</SmallButton>
             </>
           ) : (
             <>
               {ext.enabled && ext.hasOptions && (
                 <SmallButton onClick={() => run(callInternal('extensions/openOptions', { id: ext.id }))}>
-                  Options
+                  {t('Options')}
                 </SmallButton>
               )}
-              <SmallButton onClick={() => setConfirming(true)}>Désinstaller</SmallButton>
+              <SmallButton onClick={() => setConfirming(true)}>{t('Désinstaller')}</SmallButton>
             </>
           )}
         </div>
       </div>
 
       <Toggle
-        label={ext.enabled ? `Désactiver ${ext.name}` : `Activer ${ext.name}`}
+        label={ext.enabled ? t('Désactiver {name}', { name: ext.name }) : t('Activer {name}', { name: ext.name })}
         on={ext.enabled}
         onChange={(enabled) => run(callInternal('extensions/setEnabled', { id: ext.id, enabled }))}
       />
     </li>
   )
 }
+
+document.title = t('Extensions')
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

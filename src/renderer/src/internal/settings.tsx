@@ -1,3 +1,4 @@
+import '../lib/lang'
 import { StrictMode, useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import type {
@@ -12,11 +13,12 @@ import type {
 } from '@shared/types'
 import { orderExtensions } from '@shared/extensionBar'
 import { EXTENSIONS_PAGE_URL, PASSWORDS_PAGE_URL } from '@shared/ipc'
-import { PERMISSION_LABELS } from '../lib/permissions'
+import { permissionLabel } from '../lib/permissions'
 import { SEARCH_ENGINES, type SearchEngine } from '@shared/url'
 import { callInternal } from './api'
 import { SmallButton, Toggle } from './ui'
 import '../styles.css'
+import { plural, t } from '@shared/i18n'
 
 /** zak://settings (CLAUDE.md §6.7). Every change is saved at once (no save button). */
 function SettingsPage(): JSX.Element {
@@ -62,7 +64,7 @@ function SettingsPage(): JSX.Element {
   return (
     <main className="mx-auto flex max-w-[760px] flex-col gap-6 px-6 py-10">
       <header>
-        <h1 className="m-0 font-serif text-[34px] font-semibold text-cream-ink">Réglages</h1>
+        <h1 className="m-0 font-serif text-[34px] font-semibold text-cream-ink">{t('Réglages')}</h1>
       </header>
 
       {error && (
@@ -71,11 +73,11 @@ function SettingsPage(): JSX.Element {
         </p>
       )}
 
-      <Section id="general" title="Général">
+      <Section id="general" title={t('Général')}>
         <DefaultBrowser onError={fail} />
-        <Row title="Moteur de recherche" detail="Utilisé par la barre d'adresse et la page Nouvel onglet.">
+        <Row title={t('Moteur de recherche')} detail={t("Utilisé par la barre d'adresse et la page Nouvel onglet.")}>
           <select
-            aria-label="Moteur de recherche"
+            aria-label={t('Moteur de recherche')}
             value={general.searchEngine}
             onChange={(e) => saveGeneral({ searchEngine: e.target.value as SearchEngine })}
             className={selectClass}
@@ -87,24 +89,36 @@ function SettingsPage(): JSX.Element {
             ))}
           </select>
         </Row>
-        <Row title="Au démarrage">
+        <Row title={t('Langue')} detail={t('Appliquée au prochain lancement de Zak.')}>
           <select
-            aria-label="Au démarrage"
+            aria-label={t('Langue')}
+            value={general.language}
+            onChange={(e) => saveGeneral({ language: e.target.value as GeneralSettings['language'] })}
+            className={selectClass}
+          >
+            <option value="system">{t('Langue du système')}</option>
+            <option value="fr">Français</option>
+            <option value="en">English</option>
+          </select>
+        </Row>
+        <Row title={t('Au démarrage')}>
+          <select
+            aria-label={t('Au démarrage')}
             value={general.startup}
             onChange={(e) => saveGeneral({ startup: e.target.value as GeneralSettings['startup'] })}
             className={selectClass}
           >
-            <option value="restore">Rouvrir les onglets de la dernière session</option>
-            <option value="newtab">Ouvrir un nouvel onglet</option>
+            <option value="restore">{t('Rouvrir les onglets de la dernière session')}</option>
+            <option value="newtab">{t('Ouvrir un nouvel onglet')}</option>
           </select>
         </Row>
-        <Row title="Thème" detail="« Système » suit le mode clair ou sombre de l'ordinateur.">
-          <div role="radiogroup" aria-label="Thème" className="flex rounded-[10px] border border-cream-edge bg-cream-2 p-0.5">
+        <Row title={t('Thème')} detail={t("« Système » suit le mode clair ou sombre de l'ordinateur.")}>
+          <div role="radiogroup" aria-label={t('Thème')} className="flex rounded-[10px] border border-cream-edge bg-cream-2 p-0.5">
             {(
               [
-                ['light', 'Clair'],
-                ['dark', 'Sombre'],
-                ['system', 'Système']
+                ['light', t('Clair')],
+                ['dark', t('Sombre')],
+                ['system', t('Système')]
               ] as const
             ).map(([value, label]) => (
               <button
@@ -125,25 +139,27 @@ function SettingsPage(): JSX.Element {
         <ImportFromBrowser onError={fail} />
         <ImportBookmarks onError={fail} />
         <Row
-          title="Mettre en veille les onglets inactifs"
-          detail="Libère la mémoire des onglets restés en arrière-plan. Ils se rechargent quand vous y revenez ; ceux qui jouent du son ou ont un formulaire en cours ne sont pas mis en veille."
+          title={t('Mettre en veille les onglets inactifs')}
+          detail={t(
+            'Libère la mémoire des onglets restés en arrière-plan. Ils se rechargent quand vous y revenez ; ceux qui jouent du son ou ont un formulaire en cours ne sont pas mis en veille.'
+          )}
         >
           <select
-            aria-label="Mettre en veille les onglets inactifs"
+            aria-label={t('Mettre en veille les onglets inactifs')}
             className={selectClass}
             value={general.sleepTabsAfter}
             onChange={(e) => saveGeneral({ sleepTabsAfter: Number(e.target.value) })}
           >
-            <option value={0}>Jamais</option>
-            <option value={15}>Après 15 minutes</option>
-            <option value={30}>Après 30 minutes</option>
-            <option value={60}>Après 1 heure</option>
-            <option value={120}>Après 2 heures</option>
+            <option value={0}>{t('Jamais')}</option>
+            <option value={15}>{t('Après {n} minutes', { n: 15 })}</option>
+            <option value={30}>{t('Après {n} minutes', { n: 30 })}</option>
+            <option value={60}>{t('Après 1 heure')}</option>
+            <option value={120}>{t('Après {n} heures', { n: 2 })}</option>
           </select>
         </Row>
-        <Row title="Barre latérale réduite" detail="Icônes seules (⌘B).">
+        <Row title={t('Barre latérale réduite')} detail={t('Icônes seules (⌘B).')}>
           <Toggle
-            label="Barre latérale réduite"
+            label={t('Barre latérale réduite')}
             on={settings.sidebarCollapsed}
             onChange={(collapsed) => {
               update({ sidebarCollapsed: collapsed })
@@ -164,8 +180,8 @@ function SettingsPage(): JSX.Element {
         onError={fail}
       />
 
-      <Section id="downloads" title="Téléchargements">
-        <Row title="Dossier de téléchargement" detail={general.downloadDir}>
+      <Section id="downloads" title={t('Téléchargements')}>
+        <Row title={t('Dossier de téléchargement')} detail={general.downloadDir}>
           <SmallButton
             onClick={() =>
               callInternal('settings/chooseDownloadDir', null)
@@ -173,59 +189,66 @@ function SettingsPage(): JSX.Element {
                 .catch(fail)
             }
           >
-            Modifier…
+            {t('Modifier…')}
           </SmallButton>
         </Row>
       </Section>
 
       <Section
         id="pip"
-        title="Lecteur vidéo flottant"
-        intro="Quand vous quittez un onglet où une vidéo est en lecture, elle continue dans une petite fenêtre flottante, toujours au premier plan."
+        title={t('Lecteur vidéo flottant')}
+        intro={t(
+          'Quand vous quittez un onglet où une vidéo est en lecture, elle continue dans une petite fenêtre flottante, toujours au premier plan.'
+        )}
       >
-        <Row title="Passer automatiquement en lecteur flottant" detail="Au changement d'onglet ou quand la fenêtre est réduite.">
-          <Toggle label="Lecteur flottant automatique" on={pip.enabled} onChange={(enabled) => savePip({ ...pip, enabled })} />
+        <Row title={t('Passer automatiquement en lecteur flottant')} detail={t("Au changement d'onglet ou quand la fenêtre est réduite.")}>
+          <Toggle label={t('Lecteur flottant automatique')} on={pip.enabled} onChange={(enabled) => savePip({ ...pip, enabled })} />
         </Row>
-        <Row title="Fermer le lecteur flottant au retour sur l'onglet">
-          <Toggle label="Fermer au retour" on={pip.closeOnReturn} onChange={(closeOnReturn) => savePip({ ...pip, closeOnReturn })} />
+        <Row title={t("Fermer le lecteur flottant au retour sur l'onglet")}>
+          <Toggle label={t('Fermer au retour')} on={pip.closeOnReturn} onChange={(closeOnReturn) => savePip({ ...pip, closeOnReturn })} />
         </Row>
-        <Row title="Ignorer les vidéos muettes" detail="Par défaut, une vidéo sans le son passe aussi en lecteur flottant.">
-          <Toggle label="Ignorer les vidéos muettes" on={pip.skipMuted} onChange={(skipMuted) => savePip({ ...pip, skipMuted })} />
+        <Row title={t('Ignorer les vidéos muettes')} detail={t('Par défaut, une vidéo sans le son passe aussi en lecteur flottant.')}>
+          <Toggle label={t('Ignorer les vidéos muettes')} on={pip.skipMuted} onChange={(skipMuted) => savePip({ ...pip, skipMuted })} />
         </Row>
         <ExcludedDomains domains={pip.excludedDomains} onChange={(excludedDomains) => savePip({ ...pip, excludedDomains })} />
       </Section>
 
-      <Section id="passwords" title="Mots de passe">
-        <Row title="Proposer d'enregistrer les mots de passe" detail="Après une connexion. Chiffrés avec le trousseau de votre ordinateur.">
-          <Toggle label="Proposer d'enregistrer les mots de passe" on={general.savePasswords} onChange={(savePasswords) => saveGeneral({ savePasswords })} />
+      <Section id="passwords" title={t('Mots de passe')}>
+        <Row title={t("Proposer d'enregistrer les mots de passe")} detail={t('Après une connexion. Chiffrés avec le trousseau de votre ordinateur.')}>
+          <Toggle label={t("Proposer d'enregistrer les mots de passe")} on={general.savePasswords} onChange={(savePasswords) => saveGeneral({ savePasswords })} />
         </Row>
-        <Row title="Mots de passe enregistrés" detail="Afficher, modifier, importer ou exporter (CSV de Chrome, Safari, Firefox, Bitwarden, 1Password…).">
+        <Row
+          title={t('Mots de passe enregistrés')}
+          detail={t('Afficher, modifier, importer ou exporter (CSV de Chrome, Safari, Firefox, Bitwarden, 1Password…).')}
+        >
           <a href={PASSWORDS_PAGE_URL} className="rounded-[10px] border border-cream-edge bg-cream-2 px-3 py-1 text-[12.5px] font-semibold text-violet no-underline hover:border-violet/40">
-            Gérer
+            {t('Gérer')}
           </a>
         </Row>
       </Section>
 
-      <Section id="security" title="Sécurité">
+      <Section id="security" title={t('Sécurité')}>
         <Row
-          title="Protection contre les sites dangereux"
-          detail="Avertit avant d'ouvrir un site d'hameçonnage ou de logiciels malveillants connu. Les listes (OpenPhish, PhishTank, URLhaus) sont vérifiées sur cet ordinateur : vos adresses ne sont envoyées à personne."
+          title={t('Protection contre les sites dangereux')}
+          detail={t(
+            "Avertit avant d'ouvrir un site d'hameçonnage ou de logiciels malveillants connu. Les listes (OpenPhish, PhishTank, URLhaus) sont vérifiées sur cet ordinateur : vos adresses ne sont envoyées à personne."
+          )}
         >
-          <Toggle label="Protection contre les sites dangereux" on={general.safeBrowsing} onChange={(safeBrowsing) => saveGeneral({ safeBrowsing })} />
+          <Toggle label={t('Protection contre les sites dangereux')} on={general.safeBrowsing} onChange={(safeBrowsing) => saveGeneral({ safeBrowsing })} />
         </Row>
       </Section>
 
-      <Section id="permissions" title="Autorisations des sites" intro="Les réponses données aux demandes des sites, mémorisées par site.">
+      <Section id="permissions" title={t('Autorisations des sites')} intro={t('Les réponses données aux demandes des sites, mémorisées par site.')}>
         {settings.permissions.length === 0 ? (
-          <p className="m-0 border-t border-violet/10 py-3 text-[13px] text-sub">Aucune autorisation mémorisée.</p>
+          <p className="m-0 border-t border-violet/10 py-3 text-[13px] text-sub">{t('Aucune autorisation mémorisée.')}</p>
         ) : (
-          <ul aria-label="Autorisations mémorisées" className="m-0 list-none p-0">
+          <ul aria-label={t('Autorisations mémorisées')} className="m-0 list-none p-0">
             {settings.permissions.map((p) => (
               <li key={`${p.origin} ${p.permission}`} className="flex items-center gap-3 border-t border-violet/10 py-2">
                 <span className="min-w-0 flex-1 truncate font-mono text-[12.5px] text-ink">{p.origin}</span>
-                <span className="text-[13px] text-sub">{PERMISSION_LABELS[p.permission]}</span>
+                <span className="text-[13px] text-sub">{permissionLabel(p.permission)}</span>
                 <span className={`w-[70px] text-[12.5px] font-semibold ${p.granted ? 'text-violet' : 'text-pink-button'}`}>
-                  {p.granted ? 'Autorisé' : 'Bloqué'}
+                  {p.granted ? t('Autorisé') : t('Bloqué')}
                 </span>
                 <SmallButton
                   onClick={() =>
@@ -234,7 +257,7 @@ function SettingsPage(): JSX.Element {
                       .catch(fail)
                   }
                 >
-                  Oublier
+                  {t('Oublier')}
                 </SmallButton>
               </li>
             ))}
@@ -296,14 +319,14 @@ function ExtensionBar(props: {
   return (
     <Section
       id="extension-bar"
-      title="Extensions dans la barre latérale"
-      intro="Choisis les icônes d'extensions affichées en haut de la barre latérale, et leur ordre (de gauche à droite)."
+      title={t('Extensions dans la barre latérale')}
+      intro={t("Choisis les icônes d'extensions affichées en haut de la barre latérale, et leur ordre (de gauche à droite).")}
     >
       {extensions && extensions.length === 0 && (
         <p className="m-0 border-t border-violet/10 py-3 text-[13px] text-sub">
-          Aucune extension active.{' '}
+          {t('Aucune extension active.')}{' '}
           <a href={EXTENSIONS_PAGE_URL} className="font-semibold text-violet">
-            Gérer les extensions
+            {t('Gérer les extensions')}
           </a>
         </p>
       )}
@@ -326,18 +349,18 @@ function ExtensionBar(props: {
                 {ext.name}
               </span>
               <div className="flex shrink-0 gap-1">
-                <ArrowButton label={`Monter ${ext.name}`} disabled={index === 0} onClick={() => move(index, -1)}>
+                <ArrowButton label={t('Monter {name}', { name: ext.name })} disabled={index === 0} onClick={() => move(index, -1)}>
                   ↑
                 </ArrowButton>
                 <ArrowButton
-                  label={`Descendre ${ext.name}`}
+                  label={t('Descendre {name}', { name: ext.name })}
                   disabled={index === ordered.length - 1}
                   onClick={() => move(index, 1)}
                 >
                   ↓
                 </ArrowButton>
               </div>
-              <Toggle label={`Afficher ${ext.name} dans la barre latérale`} on={shown} onChange={(on) => setShown(ext.id, on)} />
+              <Toggle label={t('Afficher {name} dans la barre latérale', { name: ext.name })} on={shown} onChange={(on) => setShown(ext.id, on)} />
             </li>
           )
         })}
@@ -370,24 +393,26 @@ function ImportBookmarks({ onError }: { onError: (err: unknown) => void }): JSX.
         if (r)
           setResult(
             r.favorites === 0
-              ? 'Rien de nouveau à importer.'
-              : `${r.favorites} favori${r.favorites > 1 ? 's' : ''} importé${r.favorites > 1 ? 's' : ''}` +
-                  (r.folders > 0 ? `, ${r.folders} dossier${r.folders > 1 ? 's' : ''}.` : '.')
+              ? t('Rien de nouveau à importer.')
+              : r.folders > 0
+                ? t('{favorites}, {folders}.', {
+                    favorites: plural(r.favorites, '{n} favori importé', '{n} favoris importés'),
+                    folders: plural(r.folders, '{n} dossier', '{n} dossiers')
+                  })
+                : `${plural(r.favorites, '{n} favori importé', '{n} favoris importés')}.`
           )
       })
       .catch(onError)
   }
   return (
     <Row
-      title="Importer des favoris"
-      detail={result ?? 'Depuis le fichier HTML exporté par Chrome, Arc, Firefox ou Safari.'}
+      title={t('Importer des favoris')}
+      detail={result ?? t('Depuis le fichier HTML exporté par Chrome, Arc, Firefox ou Safari.')}
     >
-      <SmallButton onClick={run}>Choisir le fichier…</SmallButton>
+      <SmallButton onClick={run}>{t('Choisir le fichier…')}</SmallButton>
     </Row>
   )
 }
-
-const plural = (n: number, word: string): string => `${n} ${word}${n > 1 ? 's' : ''}`
 
 /** Favorites and history of Chrome, Edge, Brave, Arc… read from their profile on this computer. */
 function ImportFromBrowser({ onError }: { onError: (err: unknown) => void }): JSX.Element | null {
@@ -414,22 +439,25 @@ function ImportFromBrowser({ onError }: { onError: (err: unknown) => void }): JS
     callInternal('settings/importFrom', { profile, bookmarks, history: withHistory })
       .then((r) => {
         const parts = [
-          bookmarks && plural(r.favorites, 'favori'),
-          bookmarks && r.folders > 0 && plural(r.folders, 'dossier'),
-          withHistory && `${plural(r.pages, 'page')} d'historique`
+          bookmarks && plural(r.favorites, '{n} favori', '{n} favoris'),
+          bookmarks && r.folders > 0 && plural(r.folders, '{n} dossier', '{n} dossiers'),
+          withHistory && plural(r.pages, "{n} page d'historique", "{n} pages d'historique")
         ].filter(Boolean)
-        setResult(`Importé : ${parts.join(', ')}.`)
+        setResult(t('Importé : {items}.', { items: parts.join(', ') }))
       })
       .catch(onError)
       .finally(() => setBusy(false))
   }
   return (
     <Row
-      title="Importer depuis un autre navigateur"
-      detail={result ?? 'Lu directement sur cet ordinateur. Les mots de passe s\'importent depuis un fichier CSV (section Mots de passe ci-dessous).'}
+      title={t('Importer depuis un autre navigateur')}
+      detail={
+        result ??
+        t("Lu directement sur cet ordinateur. Les mots de passe s'importent depuis un fichier CSV (section Mots de passe ci-dessous).")
+      }
     >
       <div className="flex flex-col items-end gap-2">
-        <select aria-label="Navigateur à importer" className={selectClass} value={profile} onChange={(e) => setProfile(e.target.value)}>
+        <select aria-label={t('Navigateur à importer')} className={selectClass} value={profile} onChange={(e) => setProfile(e.target.value)}>
           {sources.map((s) =>
             s.profiles.map((p) => (
               <option key={p.path} value={p.path}>
@@ -440,13 +468,13 @@ function ImportFromBrowser({ onError }: { onError: (err: unknown) => void }): JS
         </select>
         <div className="flex items-center gap-3 text-[13px] text-ink">
           <label className="flex items-center gap-1.5">
-            <input type="checkbox" checked={bookmarks} onChange={(e) => setBookmarks(e.target.checked)} /> Favoris
+            <input type="checkbox" checked={bookmarks} onChange={(e) => setBookmarks(e.target.checked)} /> {t('Favoris')}
           </label>
           <label className="flex items-center gap-1.5">
-            <input type="checkbox" checked={withHistory} onChange={(e) => setWithHistory(e.target.checked)} /> Historique
+            <input type="checkbox" checked={withHistory} onChange={(e) => setWithHistory(e.target.checked)} /> {t('Historique')}
           </label>
           <SmallButton onClick={run} disabled={busy || (!bookmarks && !withHistory)}>
-            {busy ? 'Import…' : 'Importer'}
+            {busy ? t('Import…') : t('Importer')}
           </SmallButton>
         </div>
       </div>
@@ -469,19 +497,19 @@ function DefaultBrowser({ onError }: { onError: (err: unknown) => void }): JSX.E
 
   const detail =
     status === 'default'
-      ? 'Les liens ouverts depuis les autres applications arrivent dans Zak.'
+      ? t('Les liens ouverts depuis les autres applications arrivent dans Zak.')
       : status === 'unavailable'
-        ? "Disponible dans l'application installée, pas en mode développement."
-        : 'Ouvrir dans Zak les liens cliqués dans les autres applications.'
+        ? t("Disponible dans l'application installée, pas en mode développement.")
+        : t('Ouvrir dans Zak les liens cliqués dans les autres applications.')
 
   return (
-    <Row title="Navigateur par défaut" detail={detail}>
+    <Row title={t('Navigateur par défaut')} detail={detail}>
       {status === 'other' && (
         <SmallButton onClick={() => void callInternal('settings/makeDefaultBrowser', null).then(setStatus).catch(onError)}>
-          Définir par défaut
+          {t('Définir par défaut')}
         </SmallButton>
       )}
-      {status === 'default' && <span className="text-[12.5px] font-semibold text-violet">✓ Par défaut</span>}
+      {status === 'default' && <span className="text-[12.5px] font-semibold text-violet">{t('✓ Par défaut')}</span>}
     </Row>
   )
 }
@@ -509,26 +537,26 @@ function ClearData({ onError }: { onError: (err: unknown) => void }): JSX.Elemen
   )
 
   return (
-    <Section id="clear" title="Effacer les données de navigation">
+    <Section id="clear" title={t('Effacer les données de navigation')}>
       <form onSubmit={submit} className="flex flex-col gap-3 border-t border-violet/10 pt-3">
         <label className="flex items-center gap-3 text-[13.5px] font-semibold text-ink">
-          Période
+          {t('Période')}
           <select value={period} onChange={(e) => setPeriod(e.target.value as ClearPeriod)} className={selectClass}>
-            <option value="hour">Dernière heure</option>
-            <option value="day">Dernières 24 heures</option>
-            <option value="week">7 derniers jours</option>
-            <option value="month">4 dernières semaines</option>
-            <option value="all">Toutes les périodes</option>
+            <option value="hour">{t('Dernière heure')}</option>
+            <option value="day">{t('Dernières 24 heures')}</option>
+            <option value="week">{t('7 derniers jours')}</option>
+            <option value="month">{t('4 dernières semaines')}</option>
+            <option value="all">{t('Toutes les périodes')}</option>
           </select>
         </label>
-        {check('Historique de navigation', history, setHistory)}
-        {check('Cookies et données de sites (toutes périodes, vous serez déconnecté)', siteData, setSiteData)}
-        {check('Images et fichiers en cache (toutes périodes)', cache, setCache)}
+        {check(t('Historique de navigation'), history, setHistory)}
+        {check(t('Cookies et données de sites (toutes périodes, vous serez déconnecté)'), siteData, setSiteData)}
+        {check(t('Images et fichiers en cache (toutes périodes)'), cache, setCache)}
         <div className="flex items-center gap-3">
           <SmallButton danger submit>
-            Effacer les données
+            {t('Effacer les données')}
           </SmallButton>
-          {done && <span className="text-[13px] text-sub">Données effacées.</span>}
+          {done && <span className="text-[13px] text-sub">{t('Données effacées.')}</span>}
         </div>
       </form>
     </Section>
@@ -561,11 +589,11 @@ function ExcludedDomains(props: { domains: string[]; onChange: (domains: string[
   return (
     <div className="flex flex-col gap-2 border-t border-violet/10 pt-3">
       <div>
-        <div className="text-[13.5px] font-semibold text-ink">Sites exclus</div>
-        <div className="text-[12.5px] text-sub">Jamais de lecteur flottant sur ces sites (sous-domaines compris).</div>
+        <div className="text-[13.5px] font-semibold text-ink">{t('Sites exclus')}</div>
+        <div className="text-[12.5px] text-sub">{t('Jamais de lecteur flottant sur ces sites (sous-domaines compris).')}</div>
       </div>
       {props.domains.length > 0 && (
-        <ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Sites exclus">
+        <ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label={t('Sites exclus')}>
           {props.domains.map((domain) => (
             <li
               key={domain}
@@ -574,7 +602,7 @@ function ExcludedDomains(props: { domains: string[]; onChange: (domains: string[
               {domain}
               <button
                 type="button"
-                aria-label={`Retirer ${domain}`}
+                aria-label={t('Retirer {domain}', { domain })}
                 onClick={() => props.onChange(props.domains.filter((d) => d !== domain))}
                 className="grid size-5 cursor-pointer place-items-center rounded-full border-0 bg-transparent text-sub hover:bg-violet/10 hover:text-ink"
               >
@@ -588,15 +616,17 @@ function ExcludedDomains(props: { domains: string[]; onChange: (domains: string[
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="exemple.com"
-          aria-label="Site à exclure"
+          placeholder={t('exemple.com')}
+          aria-label={t('Site à exclure')}
           className="min-w-0 flex-1 rounded-[10px] border border-cream-edge bg-cream-2 px-3 py-1.5 font-mono text-[12.5px] text-ink outline-none focus:border-pink"
         />
-        <SmallButton submit>Ajouter</SmallButton>
+        <SmallButton submit>{t('Ajouter')}</SmallButton>
       </form>
     </div>
   )
 }
+
+document.title = t('Réglages')
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

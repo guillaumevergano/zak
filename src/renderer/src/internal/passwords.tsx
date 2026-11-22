@@ -1,9 +1,11 @@
+import '../lib/lang'
 import { StrictMode, useEffect, useState, type FormEvent } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { SavedLogin } from '@shared/types'
 import { callInternal } from './api'
 import { SmallButton } from './ui'
 import '../styles.css'
+import { plural, t } from '@shared/i18n'
 
 const hostOf = (origin: string): string => origin.replace(/^https?:\/\//, '').replace(/^www\./, '')
 
@@ -31,7 +33,7 @@ function PasswordsPage(): JSX.Element {
   const reveal = async (id: string): Promise<string | null> => {
     if (shown[id] !== undefined) return shown[id]!
     const password = await callInternal('passwords/reveal', { id })
-    if (password === null) setNotice('Déverrouillage refusé.')
+    if (password === null) setNotice(t('Déverrouillage refusé.'))
     return password
   }
   const toggle = (id: string): void => {
@@ -48,7 +50,7 @@ function PasswordsPage(): JSX.Element {
       .then(async (password) => {
         if (password === null) return
         await navigator.clipboard.writeText(password)
-        setNotice('Mot de passe copié.')
+        setNotice(t('Mot de passe copié.'))
       })
       .catch(fail)
   }
@@ -56,7 +58,7 @@ function PasswordsPage(): JSX.Element {
     callInternal('passwords/remove', { id: login.id })
       .then((list) => {
         setLogins(list)
-        setNotice(`Mot de passe de ${hostOf(login.origin)} supprimé.`)
+        setNotice(t('Mot de passe de {host} supprimé.', { host: hostOf(login.origin) }))
       })
       .catch(fail)
   }
@@ -67,13 +69,13 @@ function PasswordsPage(): JSX.Element {
   return (
     <main className="mx-auto flex max-w-[820px] flex-col gap-6 px-6 py-10">
       <header className="flex flex-wrap items-end justify-between gap-4">
-        <h1 className="m-0 font-serif text-[34px] font-semibold text-cream-ink">Mots de passe</h1>
+        <h1 className="m-0 font-serif text-[34px] font-semibold text-cream-ink">{t('Mots de passe')}</h1>
         <input
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Rechercher un site ou un identifiant"
-          aria-label="Rechercher un mot de passe"
+          placeholder={t('Rechercher un site ou un identifiant')}
+          aria-label={t('Rechercher un mot de passe')}
           autoFocus
           className="h-10 w-[320px] max-w-full rounded-full border border-cream-edge bg-cream-2 px-4 text-[14px] text-cream-ink outline-none focus:border-pink"
         />
@@ -81,30 +83,32 @@ function PasswordsPage(): JSX.Element {
 
       <section className="glass-card flex flex-wrap items-center gap-3 rounded-[16px] px-5 py-3">
         <span className="min-w-[220px] flex-1 text-[13px] text-sub">
-          Chiffrés avec le trousseau de votre ordinateur. Zak les propose sous les champs de connexion des sites.
+          {t('Chiffrés avec le trousseau de votre ordinateur. Zak les propose sous les champs de connexion des sites.')}
         </span>
-        <SmallButton onClick={() => setAdding(true)}>Ajouter</SmallButton>
+        <SmallButton onClick={() => setAdding(true)}>{t('Ajouter')}</SmallButton>
         <SmallButton
           onClick={() =>
             callInternal('passwords/import', null)
               .then(async (r) => {
                 if (!r) return
                 setLogins(await callInternal('passwords/list', null))
-                setNotice(`${r.count} mot${r.count > 1 ? 's' : ''} de passe importé${r.count > 1 ? 's' : ''}.`)
+                setNotice(plural(r.count, '{n} mot de passe importé.', '{n} mots de passe importés.'))
               })
               .catch(fail)
           }
         >
-          Importer (CSV)
+          {t('Importer (CSV)')}
         </SmallButton>
         <SmallButton
           onClick={() =>
             callInternal('passwords/export', null)
-              .then((r) => r && setNotice(`${r.count} mot${r.count > 1 ? 's' : ''} de passe exporté${r.count > 1 ? 's' : ''}. Ce fichier n'est pas chiffré : supprimez-le après usage.`))
+              .then((r) => r && setNotice(
+                  `${plural(r.count, '{n} mot de passe exporté.', '{n} mots de passe exportés.')} ${t("Ce fichier n'est pas chiffré : supprimez-le après usage.")}`
+                ))
               .catch(fail)
           }
         >
-          Exporter
+          {t('Exporter')}
         </SmallButton>
       </section>
 
@@ -116,7 +120,7 @@ function PasswordsPage(): JSX.Element {
 
       {adding && (
         <LoginForm
-          title="Nouveau mot de passe"
+          title={t('Nouveau mot de passe')}
           onCancel={() => setAdding(false)}
           onSave={(url, username, password) =>
             callInternal('passwords/add', { url, username, password })
@@ -132,11 +136,13 @@ function PasswordsPage(): JSX.Element {
 
       {logins && visible.length === 0 && (
         <p className="m-0 py-10 text-center text-[14px] text-cream-sub">
-          {q ? 'Aucun résultat.' : 'Aucun mot de passe enregistré. Zak vous proposera de les enregistrer quand vous vous connecterez à un site.'}
+          {q
+            ? t('Aucun résultat.')
+            : t('Aucun mot de passe enregistré. Zak vous proposera de les enregistrer quand vous vous connecterez à un site.')}
         </p>
       )}
 
-      <ul className="m-0 flex list-none flex-col p-0" aria-label="Mots de passe enregistrés">
+      <ul className="m-0 flex list-none flex-col p-0" aria-label={t('Mots de passe enregistrés')}>
         {visible.map((login) =>
           editing === login.id ? (
             <li key={login.id}>
@@ -170,16 +176,16 @@ function PasswordsPage(): JSX.Element {
                 {shown[login.id] ?? '••••••••'}
               </span>
               <span className="flex shrink-0 gap-1">
-                <IconButton label={shown[login.id] !== undefined ? 'Masquer' : 'Afficher'} onClick={() => toggle(login.id)}>
+                <IconButton label={shown[login.id] !== undefined ? t('Masquer') : t('Afficher')} onClick={() => toggle(login.id)}>
                   {shown[login.id] !== undefined ? '🙈' : '👁'}
                 </IconButton>
-                <IconButton label="Copier le mot de passe" onClick={() => copy(login.id)}>
+                <IconButton label={t('Copier le mot de passe')} onClick={() => copy(login.id)}>
                   ⧉
                 </IconButton>
-                <IconButton label="Modifier" onClick={() => setEditing(login.id)}>
+                <IconButton label={t('Modifier')} onClick={() => setEditing(login.id)}>
                   ✎
                 </IconButton>
-                <IconButton label="Supprimer" onClick={() => remove(login)}>
+                <IconButton label={t('Supprimer')} onClick={() => remove(login)}>
                   ✕
                 </IconButton>
               </span>
@@ -224,12 +230,12 @@ function LoginForm(props: {
       <strong className="text-[14px] text-ink">{props.title}</strong>
       <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-2">
         {!props.fixedUrl && (
-          <input required aria-label="Site" placeholder="Site (exemple.com)" value={url} onChange={(e) => setUrl(e.target.value)} className={inputClass} />
+          <input required aria-label={t('Site')} placeholder={t('Site (exemple.com)')} value={url} onChange={(e) => setUrl(e.target.value)} className={inputClass} />
         )}
-        <input aria-label="Identifiant" placeholder="Identifiant" value={username} onChange={(e) => setUsername(e.target.value)} className={inputClass} />
+        <input aria-label={t('Identifiant')} placeholder={t('Identifiant')} value={username} onChange={(e) => setUsername(e.target.value)} className={inputClass} />
         <input
-          aria-label="Mot de passe"
-          placeholder={props.fixedUrl ? 'Nouveau mot de passe (facultatif)' : 'Mot de passe'}
+          aria-label={t('Mot de passe')}
+          placeholder={props.fixedUrl ? t('Nouveau mot de passe (facultatif)') : t('Mot de passe')}
           type="password"
           required={!props.fixedUrl}
           value={password}
@@ -238,14 +244,16 @@ function LoginForm(props: {
         />
       </div>
       <div className="flex justify-end gap-2">
-        <SmallButton onClick={props.onCancel}>Annuler</SmallButton>
+        <SmallButton onClick={props.onCancel}>{t('Annuler')}</SmallButton>
         <SmallButton submit danger>
-          Enregistrer
+          {t('Enregistrer')}
         </SmallButton>
       </div>
     </form>
   )
 }
+
+document.title = t('Mots de passe')
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

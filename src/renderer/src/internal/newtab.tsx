@@ -1,3 +1,4 @@
+import '../lib/lang'
 import { StrictMode, useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { toUrl, type SearchEngine } from '@shared/url'
@@ -7,6 +8,7 @@ import { GlobeIcon, SearchIcon, SparkleIcon } from '../components/Icons'
 import logo from '../assets/brand/zak-logo-color.svg'
 import logoReverse from '../assets/brand/zak-logo-reverse.svg'
 import '../styles.css'
+import { t } from '@shared/i18n'
 
 /** Private windows open it with `?private=1`: same dark theme as their chrome UI (CLAUDE.md §6.3). */
 const isPrivate = new URLSearchParams(location.search).get('private') === '1'
@@ -79,9 +81,9 @@ function NewTabPage(): JSX.Element {
     <main className="flex min-h-full flex-col items-center justify-center px-6 pt-[6vh] pb-[10vh] text-cream-ink">
       <Logo />
       <h1 className="m-0 mt-4 text-center font-serif text-[clamp(44px,7vw,84px)] leading-[1.05] font-semibold tracking-[-0.02em]">
-        Un peu d’espace.
+        {t('Un peu d’espace.')}
       </h1>
-      <p className="m-0 mt-2 text-center text-[clamp(18px,2.2vw,26px)] text-blush">Pour vos prochaines idées.</p>
+      <p className="m-0 mt-2 text-center text-[clamp(18px,2.2vw,26px)] text-blush">{t('Pour vos prochaines idées.')}</p>
 
       <div className="relative mt-10 w-full max-w-[680px]">
       <form
@@ -116,8 +118,8 @@ function NewTabPage(): JSX.Element {
           onBlur={() => setTimeout(() => setItems([]), 150)}
           role="combobox"
           aria-expanded={items.length > 0}
-          aria-label="Où voulez-vous aller ?"
-          placeholder="Où voulez-vous aller ?"
+          aria-label={t('Où voulez-vous aller ?')}
+          placeholder={t('Où voulez-vous aller ?')}
           spellCheck={false}
           autoComplete="off"
           className="h-full min-w-0 flex-1 bg-transparent text-[19px] text-cream-ink outline-none placeholder:text-cream-sub"
@@ -139,14 +141,14 @@ function NewTabPage(): JSX.Element {
           className="mt-8 flex cursor-pointer items-center gap-2 rounded-full border-0 bg-transparent px-3 py-1.5 text-[16px] text-cream-ink hover:bg-cream-2"
         >
           <ClockIcon />
-          Reprendre la navigation
+          {t('Reprendre la navigation')}
         </button>
       )}
 
       {recent.length > 0 && (
         <section aria-labelledby="recent-title" className="mt-14 w-full max-w-[1000px]">
           <h2 id="recent-title" className="m-0 mb-4 font-serif text-[24px] font-semibold">
-            Récemment
+            {t('Récemment')}
           </h2>
           <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4 p-0">
             {recent.map((entry) => (
@@ -189,7 +191,7 @@ function SuggestionList({
   return (
     <div
       role="listbox"
-      aria-label="Suggestions"
+      aria-label={t('Suggestions')}
       data-testid="newtab-suggestions"
       className="absolute inset-x-0 top-[70px] z-10 flex flex-col rounded-[22px] border border-cream-edge bg-cream py-2 text-left shadow-[0_8px_28px_rgb(42_26_38/0.14)]"
     >
@@ -222,7 +224,7 @@ function SuggestionList({
           <span className="min-w-0 truncate text-[15px]">
             {item.kind === 'search' ? (
               <>
-                {item.title} <span className="text-cream-sub">— Rechercher</span>
+                {item.title} <span className="text-cream-sub">{t('— Rechercher')}</span>
               </>
             ) : (
               item.title
@@ -233,7 +235,7 @@ function SuggestionList({
               {item.url.replace(/^https?:\/\/(www\.)?/, '')}
             </span>
           )}
-          {item.kind === 'favorite' && <span className="shrink-0 text-[12px] font-semibold text-iris">Favori</span>}
+          {item.kind === 'favorite' && <span className="shrink-0 text-[12px] font-semibold text-iris">{t('Favori')}</span>}
         </div>
       ))}
     </div>
@@ -277,6 +279,8 @@ function Logo(): JSX.Element {
     </picture>
   )
 }
+
+document.title = t('Nouvel onglet')
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -3,6 +3,7 @@ import type { OmniboxSuggestion, TabInfo } from '@shared/types'
 import { useBrowserStore } from '../store/useBrowserStore'
 import { exactFavorite, rectOf } from '../lib/favorites'
 import { LockIcon, SearchIcon, StarIcon } from './Icons'
+import { t } from '@shared/i18n'
 
 const api = window.zak
 
@@ -108,18 +109,18 @@ export function Omnibox({ tab }: { tab: TabInfo | undefined }): JSX.Element {
     >
       <span
         className="shrink-0 text-cream-sub"
-        title={secure ? 'La connexion est sécurisée' : insecure ? "La connexion n'est pas sécurisée" : undefined}
+        title={secure ? t('La connexion est sécurisée') : insecure ? t("La connexion n'est pas sécurisée") : undefined}
       >
         {secure ? <LockIcon /> : <SearchIcon />}
       </span>
-      {insecure && !editing && <span className="shrink-0 text-xs font-medium text-pink-button">Non sécurisé</span>}
+      {insecure && !editing && <span className="shrink-0 text-xs font-medium text-pink-button">{t('Non sécurisé')}</span>}
       <div className="relative flex h-full min-w-0 flex-1 items-center">
       {!editing && text !== '' && <StyledUrl url={text} />}
       <input
         ref={inputRef}
         data-testid="omnibox"
         value={text}
-        placeholder="Rechercher ou saisir une adresse"
+        placeholder={t('Rechercher ou saisir une adresse')}
         onChange={(e) => {
           setEditing(true)
           setText(e.target.value)
@@ -166,11 +167,11 @@ export function Omnibox({ tab }: { tab: TabInfo | undefined }): JSX.Element {
         <button
           type="button"
           data-testid="zoom-badge"
-          title="Revenir à 100 % (⌘0)"
+          title={t('Revenir à 100 % (⌘0)')}
           onClick={() => void api.invoke('tabs:resetZoom', tab.id)}
           className="shrink-0 rounded-full bg-black/6 px-2 py-0.5 text-[11.5px] font-semibold text-cream-sub hover:bg-black/10 hover:text-cream-ink"
         >
-          {tab.zoom} %
+          {t('{n} %', { n: tab.zoom })}
         </button>
       )}
       {tab && /^https?:/.test(url) && <FavoriteStar tab={tab} />}
@@ -186,7 +187,7 @@ function FavoriteStar({ tab }: { tab: TabInfo }): JSX.Element {
     <button
       type="button"
       data-testid="favorite-star"
-      title={saved ? 'Modifier le favori' : 'Ajouter aux favoris de la barre latérale'}
+      title={saved ? t('Modifier le favori') : t('Ajouter aux favoris de la barre latérale')}
       className={`-mr-1.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg hover:bg-black/6 ${
         saved ? 'text-pink' : 'text-cream-sub hover:text-cream-ink'
       }`}

@@ -1,6 +1,7 @@
 import { BrowserWindow } from 'electron'
+import { getLang, t } from '@shared/i18n'
 
-const HTML = `<!doctype html><html lang="fr"><meta charset="utf-8"><title>Zak</title>
+const html = (): string => `<!doctype html><html lang="${getLang()}"><meta charset="utf-8"><title>Zak</title>
 <style>
   html,body{margin:0;height:100%;background:#2e1f2d;color:#f3ebf1;font:15px -apple-system,system-ui,sans-serif;-webkit-user-select:none;-webkit-app-region:drag}
   body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
@@ -8,7 +9,7 @@ const HTML = `<!doctype html><html lang="fr"><meta charset="utf-8"><title>Zak</t
   @keyframes s{to{transform:rotate(360deg)}}
   small{color:#a8929f;font-size:12.5px}
 </style>
-<div class="ring"></div><div>Préparation du lecteur vidéo…</div><small>Premier lancement : téléchargement du module Widevine</small></html>`
+<div class="ring"></div><div>${t('Préparation du lecteur vidéo…')}</div><small>${t('Premier lancement : téléchargement du module Widevine')}</small></html>`
 
 /**
  * « Préparation du lecteur vidéo… » (CLAUDE.md §6.6): shown while castLabs downloads and
@@ -28,6 +29,6 @@ export function showSplash(): BrowserWindow {
     webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false }
   })
   win.once('ready-to-show', () => win.show())
-  void win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(HTML)}`)
+  void win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html())}`)
   return win
 }

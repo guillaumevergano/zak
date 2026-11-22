@@ -22,7 +22,7 @@ const check = (ok, what) => {
 ;(async () => {
   const app = await _electron.launch({
     executablePath: join(__dirname, '../..', exe),
-    env: { ...process.env, ZAK_USER_DATA: mkdtempSync(join(tmpdir(), 'zak-packaged-')) }
+    env: { ...process.env, ZAK_USER_DATA: mkdtempSync(join(tmpdir(), 'zak-packaged-')), ZAK_LANG: 'fr', ZAK_E2E: '1' }
   })
   const isChrome = (p) => /\/index\.html(\?|$)/.test(p.url()) && !p.url().includes('#overlay')
   for (let i = 0; i < 100 && !app.windows().some(isChrome); i++) await new Promise((r) => setTimeout(r, 200))

@@ -7,6 +7,7 @@ import { FindBar } from './FindBar'
 import { PermissionPrompt } from './PermissionPrompt'
 import { SavePasswordPrompt } from './SavePasswordPrompt'
 import { DownloadsPanel } from './DownloadsPanel'
+import { t } from '@shared/i18n'
 
 const api = window.zak
 
@@ -96,9 +97,9 @@ function FavoriteEditor(props: {
   return (
     <Popover anchor={anchor}>
       <form className="flex flex-col gap-3" onSubmit={submit} data-testid="favorite-editor">
-        <span className="text-[15px] font-bold text-title">{favoriteId ? 'Modifier le favori' : 'Ajouter aux favoris'}</span>
+        <span className="text-[15px] font-bold text-title">{favoriteId ? t('Modifier le favori') : t('Ajouter aux favoris')}</span>
         <EmojiField emoji={emoji} favicon={draft.favicon} allowNone onChange={setEmoji} />
-        <Field label="Titre">
+        <Field label={t('Titre')}>
           <input
             autoFocus
             data-testid="favorite-title"
@@ -108,23 +109,23 @@ function FavoriteEditor(props: {
             onFocus={(e) => e.target.select()}
           />
         </Field>
-        <Field label="Adresse">
+        <Field label={t('Adresse')}>
           <input
             data-testid="favorite-url"
             className={`${inputClass} font-mono text-[12px]`}
             value={url}
-            placeholder="exemple.com"
+            placeholder={t('exemple.com')}
             onChange={(e) => setUrl(e.target.value)}
             spellCheck={false}
           />
         </Field>
-        <Field label="Dossier">
+        <Field label={t('Dossier')}>
           <select
             className={inputClass}
             value={folderId ?? ''}
             onChange={(e) => setFolderId(e.target.value === '' ? null : e.target.value)}
           >
-            <option value="">Aucun (racine)</option>
+            <option value="">{t('Aucun (racine)')}</option>
             {props.folders.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.emoji ? `${f.emoji} ` : ''}
@@ -134,7 +135,7 @@ function FavoriteEditor(props: {
           </select>
         </Field>
         <Actions
-          submitLabel={favoriteId ? 'Enregistrer' : 'Ajouter'}
+          submitLabel={favoriteId ? t('Enregistrer') : t('Ajouter')}
           onCancel={props.onDone}
           onDelete={favoriteId ? () => void api.invoke('favorites:remove', favoriteId).then(props.onDone) : undefined}
         />
@@ -158,19 +159,19 @@ function FolderEditor(props: { request: Extract<OverlayRequest, { kind: 'folder-
   return (
     <Popover anchor={anchor}>
       <form className="flex flex-col gap-3" onSubmit={submit} data-testid="folder-editor">
-        <span className="text-[15px] font-bold text-title">{folderId ? 'Renommer le dossier' : 'Nouveau dossier'}</span>
+        <span className="text-[15px] font-bold text-title">{folderId ? t('Renommer le dossier') : t('Nouveau dossier')}</span>
         <EmojiField emoji={emoji} allowNone={false} onChange={setEmoji} />
-        <Field label="Nom">
+        <Field label={t('Nom')}>
           <input
             autoFocus
             data-testid="folder-name"
             className={inputClass}
             value={name}
-            placeholder="Travail, À lire…"
+            placeholder={t('Travail, À lire…')}
             onChange={(e) => setName(e.target.value)}
           />
         </Field>
-        <Actions submitLabel={folderId ? 'Enregistrer' : 'Créer'} onCancel={props.onDone} />
+        <Actions submitLabel={folderId ? t('Enregistrer') : t('Créer')} onCancel={props.onDone} />
       </form>
     </Popover>
   )

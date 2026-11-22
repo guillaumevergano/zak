@@ -16,7 +16,7 @@ test.beforeAll(async () => {
   app = await electron.launch({
     executablePath: electronPath,
     args: [root],
-    env: { ...process.env, ZAK_USER_DATA: profile }
+    env: { ...process.env, ZAK_USER_DATA: profile, ZAK_LANG: 'fr', ZAK_E2E: '1' }
   })
   chrome = await firstChrome(app)
   await expect(chrome.getByTestId('tab')).toHaveCount(1)

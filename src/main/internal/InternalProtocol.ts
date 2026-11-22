@@ -1,3 +1,4 @@
+import { getLang } from '@shared/i18n'
 import { join, normalize, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { net, protocol, type Session } from 'electron'
@@ -42,7 +43,13 @@ export function handleInternalProtocol(ses: Session, api: InternalApiHandlers): 
 
     if (url.pathname.startsWith('/api/')) return callApi(api, `${page}/${url.pathname.slice(5)}`, request)
 
-    const response = await serveAsset(page, url.pathname, url.search)
+    let response = await serveAsset(page, url.pathname, url.search)
+    // The page reads its language from <html lang> (no preload in tabs, CLAUDE.md §3).
+    const isHtml = (response.headers.get('Content-Type') ?? '').includes('text/html') || url.pathname === '/'
+    if (response.ok && isHtml) {
+      const html = (await response.text()).replace(/<html lang="[a-z]+"/, `<html lang="${getLang()}"`)
+      response = new Response(html, { status: response.status, headers: { 'Content-Type': 'text/html; charset=utf-8' } })
+    }
     const headers = new Headers(response.headers)
     headers.set('Content-Security-Policy', "frame-ancestors 'none'")
     headers.set('X-Frame-Options', 'DENY')

@@ -1,3 +1,4 @@
+import { t } from '@shared/i18n'
 import { EventEmitter } from 'node:events'
 import { WebContentsView, type BaseWindow, type Session, type WebContents } from 'electron'
 import type { LayoutInsets, TabId, TabInfo, TabsState } from '@shared/types'
@@ -493,7 +494,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     return {
       id: tab.id,
       // about:blank reports "about:blank" as its title.
-      title: isNewTabUrl(url) ? 'Nouvel onglet' : failed ? hostOrUrl(failed) : wc.getTitle() || url,
+      title: isNewTabUrl(url) ? t('Nouvel onglet') : failed ? hostOrUrl(failed) : wc.getTitle() || url,
       url: isNewTabUrl(url) ? '' : url,
       favicon: tab.favicon,
       audible: wc.isCurrentlyAudible(),

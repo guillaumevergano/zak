@@ -17,7 +17,9 @@ test.beforeAll(async () => {
     env: {
       ...process.env,
       // Kept between runs: the Widevine CDM and the ad-block lists are downloaded only once.
-      ZAK_USER_DATA: join(tmpdir(), 'zak-e2e')
+      ZAK_USER_DATA: join(tmpdir(), 'zak-e2e'),
+      ZAK_LANG: 'fr',
+      ZAK_E2E: '1'
     }
   })
   chrome = await firstChrome(app)

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import type { WidevineStatus } from '@shared/types'
+import { t } from '@shared/i18n'
 import { selectActiveTab, useBrowserStore } from '../store/useBrowserStore'
 import { isPrivateWindow } from '../lib/env'
 import { BackIcon, ForwardIcon, ReloadIcon, StopIcon } from './Icons'
@@ -24,22 +25,22 @@ export function Toolbar({ widevine }: { widevine: WidevineStatus | null }): JSX.
       className="no-drag relative mx-2 flex h-[52px] shrink-0 items-center rounded-t-[14px] rounded-br-[14px] bg-cream text-cream-ink"
     >
       <div className="flex min-w-0 flex-1 items-center gap-1 pr-3 pl-2.5">
-        <ToolButton title="Page précédente (⌘[)" disabled={!tab?.canGoBack} onClick={() => tab && api.invoke('tabs:back', tab.id)}>
+        <ToolButton title={t('Page précédente (⌘[)')} disabled={!tab?.canGoBack} onClick={() => tab && api.invoke('tabs:back', tab.id)}>
           <BackIcon />
         </ToolButton>
         <ToolButton
-          title="Page suivante (⌘])"
+          title={t('Page suivante (⌘])')}
           disabled={!tab?.canGoForward}
           onClick={() => tab && api.invoke('tabs:forward', tab.id)}
         >
           <ForwardIcon />
         </ToolButton>
         {tab?.loading ? (
-          <ToolButton title="Arrêter le chargement" onClick={() => api.invoke('tabs:stop', tab.id)}>
+          <ToolButton title={t('Arrêter le chargement')} onClick={() => api.invoke('tabs:stop', tab.id)}>
             <StopIcon />
           </ToolButton>
         ) : (
-          <ToolButton title="Recharger (⌘R)" disabled={!tab} onClick={() => tab && api.invoke('tabs:reload', tab.id)}>
+          <ToolButton title={t('Recharger (⌘R)')} disabled={!tab} onClick={() => tab && api.invoke('tabs:reload', tab.id)}>
             <ReloadIcon />
           </ToolButton>
         )}
@@ -49,7 +50,7 @@ export function Toolbar({ widevine }: { widevine: WidevineStatus | null }): JSX.
             title={widevine.detail}
             className="shrink-0 rounded-full bg-pink/10 px-3 py-1 text-xs font-semibold whitespace-nowrap text-pink-button"
           >
-            Lecteur vidéo DRM indisponible
+            {t('Lecteur vidéo DRM indisponible')}
           </span>
         )}
       </div>

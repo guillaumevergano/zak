@@ -1,4 +1,5 @@
 import type { OmniboxSuggestion, OverlayRequest } from '@shared/types'
+import { t } from '@shared/i18n'
 import { GlobeIcon, SearchIcon } from '../components/Icons'
 
 const api = window.zak
@@ -13,7 +14,7 @@ export function Suggestions({ request }: { request: Extract<OverlayRequest, { ki
   return (
     <div
       role="listbox"
-      aria-label="Suggestions"
+      aria-label={t('Suggestions')}
       data-testid="suggestions"
       className="fixed inset-x-1 top-0 bottom-1.5 flex flex-col overflow-hidden rounded-[16px] border border-cream-edge bg-cream py-1.5 text-cream-ink shadow-[0_2px_6px_rgb(0_0_0/0.14)]"
     >
@@ -46,7 +47,7 @@ export function Suggestions({ request }: { request: Extract<OverlayRequest, { ki
           <span className="min-w-0 truncate text-[13.5px]">
             {item.kind === 'search' ? (
               <>
-                {item.title} <span className="text-cream-sub">— Rechercher</span>
+                {item.title} <span className="text-cream-sub">{t('— Rechercher')}</span>
               </>
             ) : (
               item.title
@@ -57,7 +58,7 @@ export function Suggestions({ request }: { request: Extract<OverlayRequest, { ki
               {item.url.replace(/^https?:\/\/(www\.)?/, '')}
             </span>
           )}
-          {item.kind === 'favorite' && <span className="shrink-0 text-[11px] font-semibold text-iris">Favori</span>}
+          {item.kind === 'favorite' && <span className="shrink-0 text-[11px] font-semibold text-iris">{t('Favori')}</span>}
         </div>
       ))}
     </div>

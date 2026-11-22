@@ -2,22 +2,23 @@ import { useEffect, useState } from 'react'
 import type { DownloadAction, DownloadInfo, OverlayRequest } from '@shared/types'
 import { formatBytes } from '../lib/format'
 import { Popover } from './Popover'
+import { t } from '@shared/i18n'
 
 const api = window.zak
 
 const statusOf = (d: DownloadInfo): string => {
-  const size = d.totalBytes > 0 ? `${formatBytes(d.receivedBytes)} sur ${formatBytes(d.totalBytes)}` : formatBytes(d.receivedBytes)
+  const size = d.totalBytes > 0 ? t('{received} sur {total}', { received: formatBytes(d.receivedBytes), total: formatBytes(d.totalBytes) }) : formatBytes(d.receivedBytes)
   switch (d.state) {
     case 'progressing':
       return size
     case 'paused':
-      return `En pause — ${size}`
+      return t('En pause — {size}', { size })
     case 'completed':
       return formatBytes(d.totalBytes || d.receivedBytes)
     case 'cancelled':
-      return 'Annulé'
+      return t('Annulé')
     case 'interrupted':
-      return 'Échec du téléchargement'
+      return t('Échec du téléchargement')
   }
 }
 
@@ -35,8 +36,8 @@ export function DownloadsPanel({ request }: { request: Extract<OverlayRequest, {
   return (
     <Popover anchor={request.anchor}>
       <div data-testid="downloads-panel" className="flex flex-col gap-2">
-        <span className="text-[15px] font-bold text-title">Téléchargements</span>
-        {downloads.length === 0 && <p className="m-0 py-3 text-[13px] text-sub">Aucun téléchargement.</p>}
+        <span className="text-[15px] font-bold text-title">{t('Téléchargements')}</span>
+        {downloads.length === 0 && <p className="m-0 py-3 text-[13px] text-sub">{t('Aucun téléchargement.')}</p>}
         <ul className="m-0 flex max-h-[360px] list-none flex-col gap-1 overflow-y-auto p-0">
           {downloads.map((d) => {
             const active = d.state === 'progressing' || d.state === 'paused'
@@ -48,19 +49,19 @@ export function DownloadsPanel({ request }: { request: Extract<OverlayRequest, {
                     type="button"
                     disabled={d.state !== 'completed'}
                     onClick={() => act(d.id, 'open')}
-                    title={d.state === 'completed' ? 'Ouvrir' : undefined}
+                    title={d.state === 'completed' ? t('Ouvrir') : undefined}
                     className={`min-w-0 flex-1 truncate text-left text-[13.5px] font-semibold ${
                       d.state === 'completed' ? 'text-ink hover:underline' : d.state === 'progressing' || d.state === 'paused' ? 'text-ink' : 'text-sub line-through'
                     }`}
                   >
                     {d.filename}
                   </button>
-                  {d.state === 'progressing' && <PanelButton onClick={() => act(d.id, 'pause')}>Pause</PanelButton>}
-                  {d.state === 'paused' && <PanelButton onClick={() => act(d.id, 'resume')}>Reprendre</PanelButton>}
-                  {active && <PanelButton onClick={() => act(d.id, 'cancel')}>Annuler</PanelButton>}
-                  {d.state === 'completed' && <PanelButton onClick={() => act(d.id, 'show')}>Afficher dans le dossier</PanelButton>}
+                  {d.state === 'progressing' && <PanelButton onClick={() => act(d.id, 'pause')}>{t('Pause')}</PanelButton>}
+                  {d.state === 'paused' && <PanelButton onClick={() => act(d.id, 'resume')}>{t('Reprendre')}</PanelButton>}
+                  {active && <PanelButton onClick={() => act(d.id, 'cancel')}>{t('Annuler')}</PanelButton>}
+                  {d.state === 'completed' && <PanelButton onClick={() => act(d.id, 'show')}>{t('Afficher dans le dossier')}</PanelButton>}
                   {!active && (
-                    <PanelButton label={`Retirer ${d.filename} de la liste`} onClick={() => act(d.id, 'remove')}>
+                    <PanelButton label={t('Retirer {name} de la liste', { name: d.filename })} onClick={() => act(d.id, 'remove')}>
                       ×
                     </PanelButton>
                   )}

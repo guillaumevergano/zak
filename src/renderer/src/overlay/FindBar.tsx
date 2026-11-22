@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FindResult, OverlayRequest } from '@shared/types'
 import { BackIcon, CloseIcon, ForwardIcon } from '../components/Icons'
+import { t } from '@shared/i18n'
 
 const api = window.zak
 
@@ -32,8 +33,8 @@ export function FindBar({ request }: { request: Extract<OverlayRequest, { kind: 
         ref={inputRef}
         autoFocus
         value={text}
-        aria-label="Rechercher dans la page"
-        placeholder="Rechercher dans la page"
+        aria-label={t('Rechercher dans la page')}
+        placeholder={t('Rechercher dans la page')}
         spellCheck={false}
         onChange={(e) => {
           setText(e.target.value)
@@ -51,17 +52,17 @@ export function FindBar({ request }: { request: Extract<OverlayRequest, { kind: 
         {text && result ? `${result.matches === 0 ? 0 : result.activeMatch}/${result.matches}` : ''}
       </span>
       <span className="mx-1 h-5 w-px bg-cream-edge" />
-      <FindButton title="Précédent (⇧⌘G)" onClick={() => query(text, false, true)}>
+      <FindButton title={t('Précédent (⇧⌘G)')} onClick={() => query(text, false, true)}>
         <span className="block rotate-90">
           <BackIcon />
         </span>
       </FindButton>
-      <FindButton title="Suivant (⌘G)" onClick={() => query(text, true, true)}>
+      <FindButton title={t('Suivant (⌘G)')} onClick={() => query(text, true, true)}>
         <span className="block rotate-90">
           <ForwardIcon />
         </span>
       </FindButton>
-      <FindButton title="Fermer (Échap)" onClick={() => void api.invoke('find:close')}>
+      <FindButton title={t('Fermer (Échap)')} onClick={() => void api.invoke('find:close')}>
         <CloseIcon />
       </FindButton>
     </form>

@@ -8,7 +8,12 @@ injectBrowserAction()
 const allowed = <T extends string>(list: readonly T[], channel: string): channel is T =>
   (list as readonly string[]).includes(channel)
 
+// Interface language, chosen by main (`additionalArguments`).
+const langArg = process.argv.find((arg) => arg.startsWith('--zak-lang='))
+const lang = langArg?.slice('--zak-lang='.length) === 'en' ? 'en' : 'fr'
+
 const api: ZakApi = {
+  lang,
   invoke(channel, ...args) {
     if (!allowed(INVOKE_CHANNELS, channel)) throw new Error(`Unknown channel ${channel}`)
     return ipcRenderer.invoke(channel, ...args)

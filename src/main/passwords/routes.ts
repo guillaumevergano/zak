@@ -1,3 +1,4 @@
+import { t } from '@shared/i18n'
 import { readFile, writeFile } from 'node:fs/promises'
 import { dialog, safeStorage, systemPreferences } from 'electron'
 import type { InternalApiRoutes } from '@shared/ipc'
@@ -39,10 +40,10 @@ type Routes = {
 export function passwordRoutes(store: PasswordStore): Routes {
   return {
     'passwords/list': () => store.list(),
-    'passwords/reveal': async ({ id }) => ((await unlock('afficher un mot de passe enregistré')) ? store.password(id) : null),
+    'passwords/reveal': async ({ id }) => ((await unlock(t('afficher un mot de passe enregistré'))) ? store.password(id) : null),
     'passwords/add': ({ url, username, password }) => {
       const origin = loginOrigin(/^https?:\/\//i.test(url) ? url : `https://${url}`)
-      if (!origin || password === '') throw new Error('Adresse ou mot de passe manquant')
+      if (!origin || password === '') throw new Error(t('Adresse ou mot de passe manquant'))
       store.save(origin, username.trim(), password)
       return store.list()
     },
@@ -56,18 +57,18 @@ export function passwordRoutes(store: PasswordStore): Routes {
     },
     'passwords/import': async () => {
       const result = await dialog.showOpenDialog({
-        title: 'Importer des mots de passe',
+        title: t('Importer des mots de passe'),
         properties: ['openFile'],
-        filters: [{ name: 'Mots de passe (CSV)', extensions: ['csv'] }]
+        filters: [{ name: t('Mots de passe (CSV)'), extensions: ['csv'] }]
       })
       if (result.canceled || !result.filePaths[0]) return null
       return { count: store.importLogins(parseLoginsCsv(await readFile(result.filePaths[0], 'utf8'))) }
     },
     'passwords/export': async () => {
-      if (!(await unlock('exporter vos mots de passe'))) return null
+      if (!(await unlock(t('exporter vos mots de passe')))) return null
       const result = await dialog.showSaveDialog({
-        title: 'Exporter les mots de passe',
-        defaultPath: 'Mots de passe Zak.csv',
+        title: t('Exporter les mots de passe'),
+        defaultPath: t('Mots de passe Zak.csv'),
         filters: [{ name: 'CSV', extensions: ['csv'] }]
       })
       if (result.canceled || !result.filePath) return null

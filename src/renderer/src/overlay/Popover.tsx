@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { Rect } from '@shared/types'
+import { t } from '@shared/i18n'
 
 const WIDTH = 320
 const MARGIN = 12
@@ -57,12 +58,12 @@ export function Actions(props: { onCancel: () => void; onDelete?: () => void; su
     <div className="mt-1 flex items-center gap-2">
       {props.onDelete && (
         <button type="button" onClick={props.onDelete} className="h-9 rounded-xl px-3 font-semibold text-[#A3004F] hover:bg-pink/8">
-          Supprimer
+          {t('Supprimer')}
         </button>
       )}
       <span className="flex-1" />
       <button type="button" onClick={props.onCancel} className="h-9 rounded-xl px-3 font-semibold text-sub hover:bg-violet/8">
-        Annuler
+        {t('Annuler')}
       </button>
       <button
         type="submit"

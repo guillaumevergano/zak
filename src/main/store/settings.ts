@@ -14,6 +14,8 @@ interface Settings {
   general: Partial<GeneralSettings>
   /** Extension icons shown in the sidebar, and their order. */
   extensionBar: ExtensionBarSettings
+  /** The welcome page (zak://welcome) has been shown once. */
+  onboarded: boolean
 }
 
 /** Same bounds as the renderer's Sidebar (5 tiles per row need some room). */
@@ -22,7 +24,7 @@ export const SIDEBAR_MAX_WIDTH = 380
 
 export class SettingsStore {
   private store = new Store<Settings>({
-    defaults: { sidebar: { width: 300, collapsed: false }, disabledExtensions: [], pip: DEFAULT_PIP_SETTINGS, general: {}, extensionBar: DEFAULT_EXTENSION_BAR }
+    defaults: { sidebar: { width: 300, collapsed: false }, disabledExtensions: [], pip: DEFAULT_PIP_SETTINGS, general: {}, extensionBar: DEFAULT_EXTENSION_BAR, onboarded: false }
   })
 
   getSidebar(): SidebarLayout {
@@ -63,6 +65,14 @@ export class SettingsStore {
     return clean
   }
 
+  isOnboarded(): boolean {
+    return this.store.get('onboarded')
+  }
+
+  setOnboarded(): void {
+    this.store.set('onboarded', true)
+  }
+
   getGeneral(): GeneralSettings {
     return normalizeGeneral(this.store.get('general'))
   }
@@ -80,6 +90,7 @@ export function normalizeGeneral(raw: Partial<GeneralSettings>): GeneralSettings
   const pick = <T extends string>(value: unknown, allowed: readonly T[], fallback: T): T =>
     allowed.includes(value as T) ? (value as T) : fallback
   return {
+    language: pick(raw.language, ['system', 'fr', 'en'] as const, 'system'),
     searchEngine: pick(raw.searchEngine, Object.keys(SEARCH_ENGINES) as (keyof typeof SEARCH_ENGINES)[], 'google'),
     startup: pick(raw.startup, ['restore', 'newtab'] as const, 'restore'),
     theme: pick(raw.theme, ['system', 'light', 'dark'] as const, 'light'),

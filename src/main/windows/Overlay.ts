@@ -1,3 +1,4 @@
+import { getLang } from '@shared/i18n'
 import { join } from 'node:path'
 import { WebContentsView, type BrowserWindow, type WebContents } from 'electron'
 import type { EventChannel, EventChannels } from '@shared/ipc'
@@ -94,6 +95,7 @@ export class Overlay {
     const view = new WebContentsView({
       webPreferences: {
         preload: join(__dirname, '../preload/chrome.js'),
+        additionalArguments: [`--zak-lang=${getLang()}`],
         sandbox: true,
         contextIsolation: true,
         nodeIntegration: false

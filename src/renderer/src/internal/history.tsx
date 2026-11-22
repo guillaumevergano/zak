@@ -1,16 +1,18 @@
+import '../lib/lang'
 import { StrictMode, useCallback, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { ClearPeriod, HistoryEntry } from '@shared/types'
 import { callInternal } from './api'
 import { SmallButton } from './ui'
 import '../styles.css'
+import { locale, t } from '@shared/i18n'
 
-const PERIODS: { value: ClearPeriod; label: string }[] = [
-  { value: 'hour', label: 'Dernière heure' },
-  { value: 'day', label: 'Dernières 24 heures' },
-  { value: 'week', label: '7 derniers jours' },
-  { value: 'month', label: '4 dernières semaines' },
-  { value: 'all', label: 'Toutes les périodes' }
+const periods = (): { value: ClearPeriod; label: string }[] => [
+  { value: 'hour', label: t('Dernière heure') },
+  { value: 'day', label: t('Dernières 24 heures') },
+  { value: 'week', label: t('7 derniers jours') },
+  { value: 'month', label: t('4 dernières semaines') },
+  { value: 'all', label: t('Toutes les périodes') }
 ]
 
 const dayLabel = (time: number): string => {
@@ -18,9 +20,9 @@ const dayLabel = (time: number): string => {
   const today = new Date()
   const yesterday = new Date(today.getTime() - 86_400_000)
   const same = (a: Date, b: Date): boolean => a.toDateString() === b.toDateString()
-  if (same(day, today)) return "Aujourd'hui"
-  if (same(day, yesterday)) return 'Hier'
-  return day.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  if (same(day, today)) return t("Aujourd'hui")
+  if (same(day, yesterday)) return t('Hier')
+  return day.toLocaleDateString(locale(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 const hostOf = (url: string): string => {
@@ -76,37 +78,37 @@ function HistoryPage(): JSX.Element {
   return (
     <main className="mx-auto flex max-w-[820px] flex-col gap-6 px-6 py-10">
       <header className="flex flex-wrap items-end justify-between gap-4">
-        <h1 className="m-0 font-serif text-[34px] font-semibold text-cream-ink">Historique</h1>
+        <h1 className="m-0 font-serif text-[34px] font-semibold text-cream-ink">{t('Historique')}</h1>
         <input
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Rechercher dans l'historique"
-          aria-label="Rechercher dans l'historique"
+          placeholder={t("Rechercher dans l'historique")}
+          aria-label={t("Rechercher dans l'historique")}
           autoFocus
           className="h-10 w-[320px] max-w-full rounded-full border border-cream-edge bg-cream-2 px-4 text-[14px] text-cream-ink outline-none focus:border-pink"
         />
       </header>
 
       <section
-        aria-label="Effacer les données de navigation"
+        aria-label={t('Effacer les données de navigation')}
         className="glass-card flex flex-wrap items-center gap-3 rounded-[16px] px-5 py-3"
       >
-        <span className="flex-1 text-[13.5px] font-semibold text-ink">Effacer l'historique</span>
+        <span className="flex-1 text-[13.5px] font-semibold text-ink">{t("Effacer l'historique")}</span>
         <select
           value={period}
           onChange={(e) => setPeriod(e.target.value as ClearPeriod)}
-          aria-label="Période"
+          aria-label={t('Période')}
           className="rounded-[10px] border border-cream-edge bg-cream-2 px-2 py-1.5 text-[13px] text-cream-ink"
         >
-          {PERIODS.map((p) => (
+          {periods().map((p) => (
             <option key={p.value} value={p.value}>
               {p.label}
             </option>
           ))}
         </select>
         <SmallButton danger onClick={clear}>
-          Effacer
+          {t('Effacer')}
         </SmallButton>
       </section>
 
@@ -118,7 +120,7 @@ function HistoryPage(): JSX.Element {
 
       {entries && entries.length === 0 && (
         <p className="m-0 py-10 text-center text-[14px] text-cream-sub">
-          {query ? 'Aucun résultat.' : "L'historique est vide."}
+          {query ? t('Aucun résultat.') : t("L'historique est vide.")}
         </p>
       )}
 
@@ -135,7 +137,7 @@ function HistoryPage(): JSX.Element {
                 className="group flex items-center gap-3 rounded-[10px] px-2 py-1.5 hover:bg-cream-2"
               >
                 <span className="w-12 shrink-0 text-[12px] text-cream-dim tabular-nums">
-                  {new Date(entry.visitedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(entry.visitedAt).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })}
                 </span>
                 {entry.favicon ? (
                   <img src={entry.favicon} alt="" className="size-4 shrink-0 rounded" />
@@ -152,7 +154,7 @@ function HistoryPage(): JSX.Element {
                 <span className="max-w-[200px] shrink-0 truncate text-[12px] text-cream-sub">{hostOf(entry.url)}</span>
                 <button
                   type="button"
-                  aria-label={`Supprimer ${entry.title} de l'historique`}
+                  aria-label={t("Supprimer {title} de l'historique", { title: entry.title })}
                   onClick={() => remove(entry.id)}
                   className="grid size-6 shrink-0 cursor-pointer place-items-center rounded-md border-0 bg-transparent text-cream-sub opacity-0 group-hover:opacity-100 hover:bg-black/8 focus:opacity-100"
                 >
@@ -166,12 +168,14 @@ function HistoryPage(): JSX.Element {
 
       {more && entries && (
         <div className="flex justify-center">
-          <SmallButton onClick={() => load(query, entries[entries.length - 1]!.visitedAt, true)}>Afficher plus</SmallButton>
+          <SmallButton onClick={() => load(query, entries[entries.length - 1]!.visitedAt, true)}>{t('Afficher plus')}</SmallButton>
         </div>
       )}
     </main>
   )
 }
+
+document.title = t('Historique')
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

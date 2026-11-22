@@ -1,3 +1,4 @@
+import { t } from '@shared/i18n'
 import { readFile } from 'node:fs/promises'
 import { clipboard, Menu } from 'electron'
 import { parseBookmarksHtml, type ImportedBookmarks } from './bookmarksHtml'
@@ -96,15 +97,15 @@ export class SidebarController {
     const favorite = this.favorites.favorite(id)
     if (!favorite) return
     const destinations: { id: string | null; label: string }[] = [
-      { id: null, label: 'Racine (hors dossier)' },
+      { id: null, label: t('Racine (hors dossier)') },
       ...this.favorites.folders().map((f) => ({ id: f.id, label: `${f.emoji ? `${f.emoji} ` : ''}${f.name}` }))
     ]
     Menu.buildFromTemplate([
-      { label: 'Ouvrir dans un nouvel onglet', click: () => this.open(handle, id, 'foreground-tab') },
+      { label: t('Ouvrir dans un nouvel onglet'), click: () => this.open(handle, id, 'foreground-tab') },
       { type: 'separator' },
-      { label: 'Modifier…', click: () => this.windows.send(handle, 'sidebar:edit', { kind: 'favorite', id }) },
+      { label: t('Modifier…'), click: () => this.windows.send(handle, 'sidebar:edit', { kind: 'favorite', id }) },
       {
-        label: 'Déplacer vers',
+        label: t('Déplacer vers'),
         submenu: destinations.map((d) => ({
           label: d.label,
           type: 'checkbox' as const,
@@ -113,9 +114,9 @@ export class SidebarController {
           click: () => this.change(() => this.favorites.moveFavorite(id, d.id, Number.MAX_SAFE_INTEGER))
         }))
       },
-      { label: "Copier l'adresse", click: () => clipboard.writeText(favorite.url) },
+      { label: t("Copier l'adresse"), click: () => clipboard.writeText(favorite.url) },
       { type: 'separator' },
-      { label: 'Supprimer', click: () => this.change(() => this.favorites.removeFavorite(id)) }
+      { label: t('Supprimer'), click: () => this.change(() => this.favorites.removeFavorite(id)) }
     ]).popup({ window: handle.window })
   }
 
@@ -123,14 +124,14 @@ export class SidebarController {
     const inside = this.favorites.favorites().filter((f) => f.folderId === id)
     Menu.buildFromTemplate([
       {
-        label: 'Ouvrir tous dans des onglets',
+        label: t('Ouvrir tous dans des onglets'),
         enabled: inside.length > 0,
         click: () => inside.forEach((f, i) => handle.tabs.create(f.url, { active: i === 0 }))
       },
       { type: 'separator' },
-      { label: 'Renommer…', click: () => this.windows.send(handle, 'sidebar:edit', { kind: 'folder', id }) },
+      { label: t('Renommer…'), click: () => this.windows.send(handle, 'sidebar:edit', { kind: 'folder', id }) },
       {
-        label: inside.length > 0 ? 'Supprimer le dossier (garder ses favoris)' : 'Supprimer le dossier',
+        label: inside.length > 0 ? t('Supprimer le dossier (garder ses favoris)') : t('Supprimer le dossier'),
         click: () => this.change(() => this.favorites.removeFolder(id))
       }
     ]).popup({ window: handle.window })

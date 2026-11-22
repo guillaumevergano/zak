@@ -179,6 +179,8 @@ export const EVENT_CHANNELS = [
 
 /** Shape of `window.zak` exposed by src/preload/chrome.ts. */
 export interface ZakApi {
+  /** Interface language (src/shared/i18n.ts). */
+  lang: 'fr' | 'en'
   invoke<C extends InvokeChannel>(
     channel: C,
     ...args: InvokeChannels[C]['args']
@@ -269,6 +271,11 @@ export interface InternalApiRoutes {
   'passwords/remove': { body: { id: string }; result: SavedLogin[] }
   'passwords/import': { body: null; result: { count: number } | null }
   'passwords/export': { body: null; result: { count: number } | null }
+  /** zak://welcome, shown at the first launch: same actions as the settings. */
+  'welcome/state': { body: null; result: { sources: ImportSource[]; defaultBrowser: DefaultBrowserStatus; language: GeneralSettings['language'] } }
+  'welcome/importFrom': { body: { profile: string }; result: { favorites: number; folders: number; pages: number } }
+  'welcome/makeDefaultBrowser': { body: null; result: DefaultBrowserStatus }
+  'welcome/setLanguage': { body: { language: GeneralSettings['language'] }; result: null }
   /** Warning page of a dangerous site: « Continuer quand même » for this session. */
   'error/proceed': { body: { url: string }; result: null }
   /** « Retour en lieu sûr »: back to the last page before the dangerous one (`page` = the warning's URL). */
@@ -309,6 +316,10 @@ export const INTERNAL_API_ROUTES = [
   'passwords/remove',
   'passwords/import',
   'passwords/export',
+  'welcome/state',
+  'welcome/importFrom',
+  'welcome/makeDefaultBrowser',
+  'welcome/setLanguage',
   'error/proceed',
   'error/leave'
 ] as const satisfies readonly InternalApiRoute[]
@@ -320,6 +331,7 @@ export const INTERNAL_PAGES = {
   settings: 'settings.html',
   history: 'history.html',
   passwords: 'passwords.html',
+  welcome: 'welcome.html',
   error: 'error.html'
 } as const
 export type InternalPage = keyof typeof INTERNAL_PAGES
@@ -328,4 +340,5 @@ export const EXTENSIONS_PAGE_URL = `${INTERNAL_SCHEME}://extensions/`
 export const SETTINGS_PAGE_URL = `${INTERNAL_SCHEME}://settings/`
 export const HISTORY_PAGE_URL = `${INTERNAL_SCHEME}://history/`
 export const PASSWORDS_PAGE_URL = `${INTERNAL_SCHEME}://passwords/`
+export const WELCOME_PAGE_URL = `${INTERNAL_SCHEME}://welcome/`
 export const ERROR_PAGE_URL = `${INTERNAL_SCHEME}://error/`

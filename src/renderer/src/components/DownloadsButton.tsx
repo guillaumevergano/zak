@@ -1,3 +1,4 @@
+import { t } from '@shared/i18n'
 import { useBrowserStore } from '../store/useBrowserStore'
 import { rectOf } from '../lib/favorites'
 import { DownloadIcon } from './Icons'
@@ -16,7 +17,7 @@ export function DownloadsButton(): JSX.Element | null {
   return (
     <button
       data-testid="downloads-button"
-      title="Téléchargements"
+      title={t('Téléchargements')}
       onClick={(e) => void api.invoke('overlay:open', { kind: 'downloads', anchor: rectOf(e.currentTarget) })}
       className="relative grid h-[34px] w-[34px] shrink-0 place-items-center rounded-[10px] text-cream-ink hover:bg-black/6"
     >

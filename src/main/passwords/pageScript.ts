@@ -19,6 +19,8 @@ export interface PageScriptConfig {
   logins: { id: string; username: string }[]
   /** False in private windows and on « Jamais pour ce site » sites. */
   canSave: boolean
+  /** Texts of the list, in the interface language. */
+  text: { title: string; noUsername: string }
 }
 
 export function pageScript(config: PageScriptConfig): string {
@@ -141,7 +143,7 @@ function install(config: PageScriptConfig): void {
     const box = document.createElement('div')
     box.setAttribute('role', 'listbox')
     const title = document.createElement('p')
-    title.textContent = 'Mots de passe enregistrés dans Zak'
+    title.textContent = state.config.text.title
     box.append(title)
     for (const login of logins) {
       const button = document.createElement('button')
@@ -152,7 +154,7 @@ function install(config: PageScriptConfig): void {
       key.className = 'k'
       key.textContent = '🔑'
       const name = document.createElement('span')
-      name.textContent = login.username || '(sans identifiant)'
+      name.textContent = login.username || state.config.text.noUsername
       const dots = document.createElement('span')
       dots.className = 'd'
       dots.textContent = '••••••'

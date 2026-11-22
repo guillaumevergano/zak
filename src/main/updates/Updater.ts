@@ -1,3 +1,4 @@
+import { t } from '@shared/i18n'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { app, dialog } from 'electron'
@@ -31,10 +32,10 @@ export class Updater {
     if (!this.enabled) {
       await dialog.showMessageBox({
         type: 'info',
-        message: 'Mises à jour automatiques indisponibles',
+        message: t('Mises à jour automatiques indisponibles'),
         detail: app.isPackaged
-          ? "Cette version n'a pas été publiée sur GitHub Releases (voir docs/RELEASE.md)."
-          : 'Les mises à jour ne concernent que l’application installée, pas le mode développement.'
+          ? t("Cette version n'a pas été publiée sur GitHub Releases (voir docs/RELEASE.md).")
+          : t('Les mises à jour ne concernent que l’application installée, pas le mode développement.')
       })
       return
     }
@@ -42,16 +43,16 @@ export class Updater {
       const result = await autoUpdater.checkForUpdates()
       const latest = result?.updateInfo.version
       if (!latest || latest === app.getVersion()) {
-        await dialog.showMessageBox({ type: 'info', message: 'Zak est à jour', detail: `Version ${app.getVersion()}.` })
+        await dialog.showMessageBox({ type: 'info', message: t('Zak est à jour'), detail: t('Version {version}.', { version: app.getVersion() }) })
       } else {
         await dialog.showMessageBox({
           type: 'info',
           message: `La version ${latest} se télécharge`,
-          detail: 'Vous pourrez redémarrer Zak une fois le téléchargement terminé.'
+          detail: t('Vous pourrez redémarrer Zak une fois le téléchargement terminé.')
         })
       }
     } catch (err) {
-      await dialog.showMessageBox({ type: 'error', message: 'Impossible de vérifier les mises à jour', detail: String(err) })
+      await dialog.showMessageBox({ type: 'error', message: t('Impossible de vérifier les mises à jour'), detail: String(err) })
     }
   }
 
@@ -68,11 +69,11 @@ export class Updater {
     this.offered = true
     const { response } = await dialog.showMessageBox({
       type: 'info',
-      buttons: ['Redémarrer maintenant', 'Plus tard'],
+      buttons: [t('Redémarrer maintenant'), t('Plus tard')],
       defaultId: 0,
       cancelId: 1,
-      message: `Zak ${version} est prêt`,
-      detail: 'Redémarrez pour l’installer. Sinon, elle s’installera à la prochaine fermeture.'
+      message: t('Zak {version} est prêt', { version }),
+      detail: t('Redémarrez pour l’installer. Sinon, elle s’installera à la prochaine fermeture.')
     })
     if (response === 0) autoUpdater.quitAndInstall()
   }

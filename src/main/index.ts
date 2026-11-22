@@ -1,8 +1,9 @@
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { app, BrowserWindow, components, dialog, ipcMain, nativeTheme, type IpcMainInvokeEvent } from 'electron'
-import type { InvokeChannel, InvokeChannels, SendChannel, SendChannels } from '@shared/ipc'
+import { WELCOME_PAGE_URL, type InvokeChannel, type InvokeChannels, type SendChannel, type SendChannels } from '@shared/ipc'
 import type { WidevineStatus } from '@shared/types'
+import { resolveLang, setLang, t, type LangSetting } from '@shared/i18n'
 import { chromeUserAgent, identitySettled } from './userAgent'
 import { SessionManager } from './sessions/SessionManager'
 import { WindowManager } from './windows/WindowManager'
@@ -12,9 +13,19 @@ import { enableAdBlocker } from './adblock/AdBlocker'
 import { SafeBrowsing, leaveDangerousPage } from './safety/SafeBrowsing'
 import { detectBrowsers, readChromiumBookmarks, readChromiumHistory } from './import/chromium'
 import { PasswordStore } from './passwords/PasswordStore'
+import { startCrashReporter } from './support/report'
 import { PasswordManager } from './passwords/PasswordManager'
 import { keychainCipher, passwordRoutes } from './passwords/routes'
 import type { ImportSource } from '@shared/types'
+
+/**
+ * The welcome page opens once, at the first launch without a previous session. Not in the e2e
+ * tests (they expect a new tab), unless ZAK_ONBOARDING asks for it.
+ */
+function shouldWelcome(settings: SettingsStore): boolean {
+  if (process.env['ZAK_E2E'] === '1' && process.env['ZAK_ONBOARDING'] !== '1') return false
+  return !settings.isOnboarded()
+}
 
 /** Chromium browsers to import from (ZAK_IMPORT_HOME: a fake home folder for the e2e tests). */
 function importSources(): ImportSource[] {
@@ -59,6 +70,8 @@ app.userAgentFallback = chromeUserAgent()
 registerInternalScheme()
 // Links from other apps once Zak is the default browser (they can arrive before ready).
 // One process per profile: a second launch hands its URLs to this one and quits.
+// Crashes are written locally, never uploaded (support/report.ts).
+startCrashReporter()
 const links = new LinkReceiver()
 const primaryInstance = links.install()
 
@@ -167,6 +180,9 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
 
 app.whenReady().then(async () => {
   if (!primaryInstance) return
+  const settings = new SettingsStore()
+  // Interface language (ZAK_LANG: forced by the e2e tests, whose selectors are in French).
+  setLang(resolveLang((process.env['ZAK_LANG'] as LangSetting | undefined) ?? settings.getGeneral().language, app.getLocale()))
   // Packaged builds get the icon from the bundle; in development, show it in the Dock too.
   if (!app.isPackaged && process.platform === 'darwin') app.dock?.setIcon(join(__dirname, '../../build/icon.png'))
   // Usually instant; on first launch the CDM download takes a few seconds: show why nothing opens.
@@ -177,7 +193,6 @@ app.whenReady().then(async () => {
 
   const sessions = new SessionManager()
   const browsingSession = sessions.getMain()
-  const settings = new SettingsStore()
   // Not awaited: the cached lists load in a moment, the first download must not delay the window.
   const safeBrowsing = new SafeBrowsing(() => settings.getGeneral().safeBrowsing)
   void safeBrowsing.start()
@@ -211,6 +226,14 @@ app.whenReady().then(async () => {
 
   const extensions = new ExtensionsHost(browsingSession, windows, settings)
   await extensions.init()
+  const importProfile = (profile: string, bookmarks: boolean, withHistory: boolean) => {
+    // Only a profile found by importSources: the page cannot make main read any folder.
+    if (!importSources().some((s) => s.profiles.some((p) => p.path === profile))) throw new Error(t('Profil inconnu'))
+    const parsed = bookmarks ? readChromiumBookmarks(profile) : null
+    const added = parsed ? sidebar.importParsed(parsed) : { favorites: 0, folders: 0 }
+    const pages = withHistory ? history.importVisits(readChromiumHistory(profile)) : 0
+    return { ...added, pages }
+  }
   const internalApi: InternalApiHandlers = {
     'extensions/list': () => extensions.list(),
     'extensions/setEnabled': async ({ id, enabled }) => {
@@ -240,20 +263,24 @@ app.whenReady().then(async () => {
     'settings/setExtensionBar': (bar) => sidebar.change(() => settings.setExtensionBar(bar)),
     'settings/importBookmarks': async () => {
       const result = await dialog.showOpenDialog({
-        title: 'Importer des favoris',
+        title: t('Importer des favoris'),
         properties: ['openFile'],
-        filters: [{ name: 'Favoris (HTML)', extensions: ['html', 'htm'] }]
+        filters: [{ name: t('Favoris (HTML)'), extensions: ['html', 'htm'] }]
       })
       return result.canceled || !result.filePaths[0] ? null : sidebar.importBookmarks(result.filePaths[0])
     },
     'settings/importSources': () => importSources(),
-    'settings/importFrom': ({ profile, bookmarks, history: withHistory }) => {
-      // Only a profile found by importSources: the page cannot make main read any folder.
-      if (!importSources().some((s) => s.profiles.some((p) => p.path === profile))) throw new Error('Profil inconnu')
-      const parsed = bookmarks ? readChromiumBookmarks(profile) : null
-      const added = parsed ? sidebar.importParsed(parsed) : { favorites: 0, folders: 0 }
-      const pages = withHistory ? history.importVisits(readChromiumHistory(profile)) : 0
-      return { ...added, pages }
+    'settings/importFrom': ({ profile, bookmarks, history: withHistory }) => importProfile(profile, bookmarks, withHistory),
+    'welcome/state': () => ({
+      sources: importSources(),
+      defaultBrowser: defaultBrowserStatus(),
+      language: settings.getGeneral().language
+    }),
+    'welcome/importFrom': ({ profile }) => importProfile(profile, true, true),
+    'welcome/makeDefaultBrowser': () => makeDefaultBrowser(),
+    'welcome/setLanguage': ({ language }) => {
+      settings.setGeneral({ language })
+      return null
     },
     'settings/setSidebarCollapsed': ({ collapsed }) => {
       sidebar.setLayout({ ...settings.getSidebar(), collapsed })
@@ -269,7 +296,7 @@ app.whenReady().then(async () => {
     'settings/chooseDownloadDir': async () => {
       const current = settings.getGeneral()
       const result = await dialog.showOpenDialog({
-        title: 'Dossier de téléchargement',
+        title: t('Dossier de téléchargement'),
         defaultPath: current.downloadDir,
         properties: ['openDirectory', 'createDirectory']
       })
@@ -335,6 +362,9 @@ app.whenReady().then(async () => {
       const kept = added.length > 0 ? tabs.map((tab) => ({ ...tab, active: false })) : tabs
       windows.create([], { tabs: [...kept, ...added] })
     })
+  } else if (launchUrls.length === 0 && shouldWelcome(settings)) {
+    settings.setOnboarded()
+    windows.create([WELCOME_PAGE_URL])
   } else windows.create(launchUrls)
   links.start((urls) => windows.openFromSystem(urls))
   // Closed only now: on Windows/Linux, no window at all would quit the app.

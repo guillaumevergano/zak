@@ -1,4 +1,5 @@
 import type { OverlayRequest, SavePasswordChoice } from '@shared/types'
+import { t } from '@shared/i18n'
 
 const api = window.zak
 
@@ -10,14 +11,14 @@ export function SavePasswordPrompt({ request }: { request: Extract<OverlayReques
   return (
     <div
       role="dialog"
-      aria-label={request.update ? 'Mettre à jour le mot de passe' : 'Enregistrer le mot de passe'}
+      aria-label={request.update ? t('Mettre à jour le mot de passe') : t('Enregistrer le mot de passe')}
       data-testid="save-password-prompt"
       onKeyDown={(e) => e.key === 'Escape' && answer('dismiss')}
       className="fixed inset-x-1 top-1 bottom-2 flex flex-col gap-2 rounded-[16px] border border-title/12 bg-white p-4 text-ink shadow-[0_2px_8px_rgb(0_0_0/0.16)]"
     >
       <p className="m-0 flex items-center gap-2 text-[14px] font-semibold">
         <span aria-hidden>🔑</span>
-        {request.update ? 'Mettre à jour le mot de passe ?' : 'Enregistrer le mot de passe ?'}
+        {request.update ? t('Mettre à jour le mot de passe ?') : t('Enregistrer le mot de passe ?')}
       </p>
       <p className="m-0 truncate text-[13px] text-sub">
         <span className="font-mono text-title">{host}</span>
@@ -26,7 +27,7 @@ export function SavePasswordPrompt({ request }: { request: Extract<OverlayReques
       <div className="mt-auto flex items-center justify-end gap-2">
         {!request.update && (
           <button type="button" onClick={() => answer('never')} className="mr-auto h-9 rounded-xl px-2 text-[12.5px] text-sub hover:bg-violet/8">
-            Jamais pour ce site
+            {t('Jamais pour ce site')}
           </button>
         )}
         <button
@@ -34,7 +35,7 @@ export function SavePasswordPrompt({ request }: { request: Extract<OverlayReques
           onClick={() => answer('dismiss')}
           className="h-9 rounded-xl border border-track px-3 font-semibold text-sub hover:bg-violet/8"
         >
-          Plus tard
+          {t('Plus tard')}
         </button>
         <button
           type="button"
@@ -42,7 +43,7 @@ export function SavePasswordPrompt({ request }: { request: Extract<OverlayReques
           onClick={() => answer('save')}
           className="h-9 rounded-xl bg-pink-button px-4 font-bold text-white hover:bg-pink"
         >
-          {request.update ? 'Mettre à jour' : 'Enregistrer'}
+          {request.update ? t('Mettre à jour') : t('Enregistrer')}
         </button>
       </div>
     </div>

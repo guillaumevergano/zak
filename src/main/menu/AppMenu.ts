@@ -1,3 +1,5 @@
+import { bugReportUrl, HELP_URLS } from '../support/report'
+import { t } from '@shared/i18n'
 import { app, BrowserWindow, Menu, type MenuItemConstructorOptions } from 'electron'
 import { EXTENSIONS_PAGE_URL, HISTORY_PAGE_URL, PASSWORDS_PAGE_URL, SETTINGS_PAGE_URL } from '@shared/ipc'
 import type { BrowserWindowHandle, WindowManager } from '../windows/WindowManager'
@@ -38,7 +40,7 @@ export function installAppMenu(windows: WindowManager, { find, zoom, session, up
   const openSettings = (): void => void windows.focusedNormal().tabs.create(SETTINGS_PAGE_URL)
 
   const tabNumbers: MenuItemConstructorOptions[] = Array.from({ length: 9 }, (_, i) => ({
-    label: i === 8 ? 'Dernier onglet' : `Onglet ${i + 1}`,
+    label: i === 8 ? t('Dernier onglet') : t('Onglet {n}', { n: i + 1 }),
     accelerator: `CmdOrCtrl+${i + 1}`,
     click: onWindow((h) => h.tabs.activateNumber(i + 1))
   }))
@@ -49,46 +51,46 @@ export function installAppMenu(windows: WindowManager, { find, zoom, session, up
           {
             label: app.name,
             submenu: [
-              { role: 'about', label: `À propos de ${app.name}` },
-              { label: 'Rechercher les mises à jour…', click: () => void updater.checkFromMenu() },
+              { role: 'about', label: t('À propos de {app}', { app: app.name }) },
+              { label: t('Rechercher les mises à jour…'), click: () => void updater.checkFromMenu() },
               { type: 'separator' },
-              { label: 'Réglages…', accelerator: 'Cmd+,', click: openSettings },
+              { label: t('Réglages…'), accelerator: 'Cmd+,', click: openSettings },
               { type: 'separator' },
-              { role: 'services', label: 'Services' },
+              { role: 'services', label: t('Services') },
               { type: 'separator' },
-              { role: 'hide', label: `Masquer ${app.name}` },
-              { role: 'hideOthers', label: 'Masquer les autres' },
-              { role: 'unhide', label: 'Tout afficher' },
+              { role: 'hide', label: t('Masquer {app}', { app: app.name }) },
+              { role: 'hideOthers', label: t('Masquer les autres') },
+              { role: 'unhide', label: t('Tout afficher') },
               { type: 'separator' },
-              { role: 'quit', label: `Quitter ${app.name}` }
+              { role: 'quit', label: t('Quitter {app}', { app: app.name }) }
             ]
           } satisfies MenuItemConstructorOptions
         ]
       : []),
     {
-      label: 'Fichier',
+      label: t('Fichier'),
       submenu: [
         {
-          label: 'Nouvel onglet',
+          label: t('Nouvel onglet'),
           accelerator: 'CmdOrCtrl+T',
           click: () => windows.newTab(windows.focusedOrFirst())
         },
-        { label: 'Nouvelle fenêtre', accelerator: 'CmdOrCtrl+N', click: () => windows.create() },
+        { label: t('Nouvelle fenêtre'), accelerator: 'CmdOrCtrl+N', click: () => windows.create() },
         {
-          label: 'Nouvelle fenêtre de navigation privée',
+          label: t('Nouvelle fenêtre de navigation privée'),
           accelerator: 'CmdOrCtrl+Shift+N',
           click: () => windows.create([], { private: true })
         },
         {
           id: 'reopen-tab',
-          label: "Rouvrir l'onglet fermé",
+          label: t("Rouvrir l'onglet fermé"),
           accelerator: 'CmdOrCtrl+Shift+T',
           click: onWindow((h) => h.tabs.reopenClosed())
         },
-        { label: 'Ouvrir la position…', accelerator: 'CmdOrCtrl+L', click: onWindow((h) => windows.focusOmnibox(h)) },
+        { label: t('Ouvrir la position…'), accelerator: 'CmdOrCtrl+L', click: onWindow((h) => windows.focusOmnibox(h)) },
         { type: 'separator' },
         {
-          label: "Fermer l'onglet",
+          label: t("Fermer l'onglet"),
           accelerator: 'CmdOrCtrl+W',
           click: () => {
             const handle = windows.focused()
@@ -100,108 +102,108 @@ export function installAppMenu(windows: WindowManager, { find, zoom, session, up
         },
         {
           id: 'close-all-tabs',
-          label: 'Fermer tous les onglets',
+          label: t('Fermer tous les onglets'),
           accelerator: 'CmdOrCtrl+Shift+W',
           click: onWindow((h) => h.tabs.closeAllButActive())
         },
         { type: 'separator' },
-        ...(isMac ? [] : ([{ label: 'Réglages', accelerator: 'Ctrl+,', click: openSettings }] as MenuItemConstructorOptions[])),
+        ...(isMac ? [] : ([{ label: t('Réglages'), accelerator: 'Ctrl+,', click: openSettings }] as MenuItemConstructorOptions[])),
         {
-          label: 'Imprimer…',
+          label: t('Imprimer…'),
           accelerator: 'CmdOrCtrl+P',
           click: onActiveTab((wc) => wc.print())
         }
       ]
     },
     {
-      label: 'Édition',
+      label: t('Édition'),
       submenu: [
-        { role: 'undo', label: 'Annuler' },
-        { role: 'redo', label: 'Rétablir' },
+        { role: 'undo', label: t('Annuler') },
+        { role: 'redo', label: t('Rétablir') },
         { type: 'separator' },
-        { role: 'cut', label: 'Couper' },
-        { role: 'copy', label: 'Copier' },
-        { role: 'paste', label: 'Coller' },
-        { role: 'pasteAndMatchStyle', label: 'Coller et adapter le style' },
-        { role: 'selectAll', label: 'Tout sélectionner' },
+        { role: 'cut', label: t('Couper') },
+        { role: 'copy', label: t('Copier') },
+        { role: 'paste', label: t('Coller') },
+        { role: 'pasteAndMatchStyle', label: t('Coller et adapter le style') },
+        { role: 'selectAll', label: t('Tout sélectionner') },
         { type: 'separator' },
-        { label: 'Rechercher dans la page…', accelerator: 'CmdOrCtrl+F', click: onWindow((h) => find.open(h)) },
-        { label: 'Occurrence suivante', accelerator: 'CmdOrCtrl+G', click: onWindow((h) => find.next(h, true)) },
-        { label: 'Occurrence précédente', accelerator: 'CmdOrCtrl+Shift+G', click: onWindow((h) => find.next(h, false)) }
+        { label: t('Rechercher dans la page…'), accelerator: 'CmdOrCtrl+F', click: onWindow((h) => find.open(h)) },
+        { label: t('Occurrence suivante'), accelerator: 'CmdOrCtrl+G', click: onWindow((h) => find.next(h, true)) },
+        { label: t('Occurrence précédente'), accelerator: 'CmdOrCtrl+Shift+G', click: onWindow((h) => find.next(h, false)) }
       ]
     },
     {
-      label: 'Présentation',
+      label: t('Présentation'),
       submenu: [
-        { label: 'Recharger la page', accelerator: 'CmdOrCtrl+R', click: onActiveTab(reloadPage) },
+        { label: t('Recharger la page'), accelerator: 'CmdOrCtrl+R', click: onActiveTab(reloadPage) },
         {
-          label: 'Forcer le rechargement',
+          label: t('Forcer le rechargement'),
           accelerator: 'CmdOrCtrl+Shift+R',
           click: onActiveTab((wc) => wc.reloadIgnoringCache())
         },
         { type: 'separator' },
         {
           id: 'toggle-sidebar',
-          label: 'Afficher / réduire la barre latérale',
+          label: t('Afficher / réduire la barre latérale'),
           accelerator: 'CmdOrCtrl+B',
           click: onWindow((h) => windows.send(h, 'sidebar:toggle', null))
         },
         { type: 'separator' },
-        { label: 'Taille réelle', accelerator: 'CmdOrCtrl+0', click: onActiveTab((wc) => zoom.change(wc, 0)) },
-        { label: 'Zoom avant', accelerator: 'CmdOrCtrl+Plus', click: onActiveTab((wc) => zoom.change(wc, 1)) },
+        { label: t('Taille réelle'), accelerator: 'CmdOrCtrl+0', click: onActiveTab((wc) => zoom.change(wc, 0)) },
+        { label: t('Zoom avant'), accelerator: 'CmdOrCtrl+Plus', click: onActiveTab((wc) => zoom.change(wc, 1)) },
         // Cmd/Ctrl+= too (no Shift needed on most layouts), hidden like in Chrome.
-        { label: 'Zoom avant ', accelerator: 'CmdOrCtrl+=', visible: false, click: onActiveTab((wc) => zoom.change(wc, 1)) },
-        { label: 'Zoom arrière', accelerator: 'CmdOrCtrl+-', click: onActiveTab((wc) => zoom.change(wc, -1)) },
+        { label: t('Zoom avant '), accelerator: 'CmdOrCtrl+=', visible: false, click: onActiveTab((wc) => zoom.change(wc, 1)) },
+        { label: t('Zoom arrière'), accelerator: 'CmdOrCtrl+-', click: onActiveTab((wc) => zoom.change(wc, -1)) },
         { type: 'separator' },
-        { role: 'togglefullscreen', label: 'Plein écran' },
+        { role: 'togglefullscreen', label: t('Plein écran') },
         { type: 'separator' },
         {
-          label: 'Outils de développement',
+          label: t('Outils de développement'),
           accelerator: isMac ? 'Alt+Cmd+I' : 'Ctrl+Shift+I',
           click: onActiveTab((wc) => wc.toggleDevTools())
         },
-        { label: 'Outils de développement ', accelerator: 'F12', visible: false, click: onActiveTab((wc) => wc.toggleDevTools()) }
+        { label: t('Outils de développement '), accelerator: 'F12', visible: false, click: onActiveTab((wc) => wc.toggleDevTools()) }
       ]
     },
     {
-      label: 'Navigation',
+      label: t('Navigation'),
       submenu: [
         {
-          label: 'Précédente',
+          label: t('Précédente'),
           accelerator: 'CmdOrCtrl+[',
           click: onActiveTab((wc) => wc.navigationHistory.goBack())
         },
         {
-          label: 'Suivante',
+          label: t('Suivante'),
           accelerator: 'CmdOrCtrl+]',
           click: onActiveTab((wc) => wc.navigationHistory.goForward())
         }
       ]
     },
     {
-      label: 'Historique',
+      label: t('Historique'),
       submenu: [
         {
-          label: "Afficher tout l'historique",
+          label: t("Afficher tout l'historique"),
           accelerator: 'CmdOrCtrl+Y',
           click: () => void windows.focusedNormal().tabs.create(HISTORY_PAGE_URL)
         },
         { type: 'separator' },
-        { label: 'Rouvrir la fenêtre fermée', accelerator: 'CmdOrCtrl+Alt+Shift+T', click: () => session.reopenClosedWindow() },
-        { label: 'Reprendre la session précédente', click: () => session.reopenPrevious() }
+        { label: t('Rouvrir la fenêtre fermée'), accelerator: 'CmdOrCtrl+Alt+Shift+T', click: () => session.reopenClosedWindow() },
+        { label: t('Reprendre la session précédente'), click: () => session.reopenPrevious() }
       ]
     },
     {
-      label: 'Onglets',
+      label: t('Onglets'),
       submenu: [
         {
-          label: 'Onglet suivant',
+          label: t('Onglet suivant'),
           accelerator: 'Ctrl+Tab',
           registerAccelerator: false,
           click: onWindow((h) => h.tabs.activateRelative(1))
         },
         {
-          label: 'Onglet précédent',
+          label: t('Onglet précédent'),
           accelerator: 'Ctrl+Shift+Tab',
           registerAccelerator: false,
           click: onWindow((h) => h.tabs.activateRelative(-1))
@@ -213,17 +215,26 @@ export function installAppMenu(windows: WindowManager, { find, zoom, session, up
     {
       // role 'window': macOS appends the list of open windows.
       role: 'window',
-      label: 'Fenêtre',
+      label: t('Fenêtre'),
       submenu: [
-        { role: 'minimize', label: 'Réduire' },
-        { role: 'zoom', label: 'Agrandir' },
+        { role: 'minimize', label: t('Réduire') },
+        { role: 'zoom', label: t('Agrandir') },
         { type: 'separator' },
-        { label: 'Extensions', click: () => windows.focusedNormal().tabs.create(EXTENSIONS_PAGE_URL) },
-        { label: 'Mots de passe', click: () => windows.focusedNormal().tabs.create(PASSWORDS_PAGE_URL) },
+        { label: t('Extensions'), click: () => windows.focusedNormal().tabs.create(EXTENSIONS_PAGE_URL) },
+        { label: t('Mots de passe'), click: () => windows.focusedNormal().tabs.create(PASSWORDS_PAGE_URL) },
         { type: 'separator' },
         ...(isMac
-          ? ([{ role: 'front', label: 'Tout ramener au premier plan' }] as MenuItemConstructorOptions[])
-          : ([{ label: 'Rechercher les mises à jour…', click: () => void updater.checkFromMenu() }] as MenuItemConstructorOptions[]))
+          ? ([{ role: 'front', label: t('Tout ramener au premier plan') }] as MenuItemConstructorOptions[])
+          : ([{ label: t('Rechercher les mises à jour…'), click: () => void updater.checkFromMenu() }] as MenuItemConstructorOptions[]))
+      ]
+    },
+    {
+      role: 'help',
+      label: t('Aide'),
+      submenu: [
+        { label: t('Site de Zak'), click: () => windows.focusedNormal().tabs.create(HELP_URLS.site) },
+        { label: t('Signaler un problème…'), click: () => windows.focusedNormal().tabs.create(bugReportUrl()) },
+        { label: t('Confidentialité'), click: () => windows.focusedNormal().tabs.create(HELP_URLS.privacy) }
       ]
     }
   ]

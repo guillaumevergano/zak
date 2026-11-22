@@ -1,3 +1,4 @@
+import { t } from '@shared/i18n'
 import { randomBytes } from 'node:crypto'
 import type { WebContents } from 'electron'
 import type { SavePasswordChoice } from '@shared/types'
@@ -111,7 +112,8 @@ export class PasswordManager {
     const logins = this.store.forOrigin(origin).map((l) => ({ id: l.id, username: l.username }))
     const canSave = this.canSave(state, origin)
     if (logins.length === 0 && !canSave) return
-    const code = pageScript({ nonce: state.nonce, pad: state.pad.toString('hex'), logins, canSave })
+    const text = { title: t('Mots de passe enregistrés dans Zak'), noUsername: t('(sans identifiant)') }
+    const code = pageScript({ nonce: state.nonce, pad: state.pad.toString('hex'), logins, canSave, text })
     void wc.executeJavaScriptInIsolatedWorld(PASSWORDS_WORLD_ID, [{ code }]).catch(() => {})
   }
 

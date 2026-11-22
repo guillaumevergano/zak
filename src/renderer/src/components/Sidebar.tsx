@@ -8,6 +8,7 @@ import { selectActiveTab, useBrowserStore } from '../store/useBrowserStore'
 import { dndId, ROOT_ZONE } from '../lib/dnd'
 import { matchFavorite, rectOf } from '../lib/favorites'
 import { ChevronIcon, GearIcon, GlobeIcon, PlusIcon } from './Icons'
+import { t } from '@shared/i18n'
 
 const api = window.zak
 export const SIDEBAR_COLLAPSED_WIDTH = 64
@@ -70,21 +71,21 @@ export function Sidebar(): JSX.Element {
 
         <button
           data-testid="new-folder"
-          title="Nouveau dossier"
+          title={t('Nouveau dossier')}
           onClick={newFolder}
           className={`mt-1 mb-3 flex h-9 shrink-0 items-center gap-2.5 rounded-lg text-[14px] text-frame-text hover:bg-frame-2 ${
             collapsed ? 'justify-center' : 'px-2'
           }`}
         >
           <PlusIcon />
-          {!collapsed && 'Nouveau dossier'}
+          {!collapsed && t('Nouveau dossier')}
         </button>
       </div>
 
       <footer className={`flex shrink-0 items-center pt-2 pb-3 ${collapsed ? 'justify-center' : 'justify-end px-3'}`}>
         <button
           data-testid="open-settings"
-          title="Réglages (⌘,)"
+          title={t('Réglages (⌘,)')}
           onClick={() => void api.invoke('tabs:create', SETTINGS_PAGE_URL)}
           className="grid h-10 w-10 place-items-center rounded-full border border-frame-line text-frame-text hover:bg-frame-2"
         >
@@ -193,14 +194,14 @@ function FolderList(props: { folderId: string; favorites: FavoriteInfo[]; active
           isOver ? 'border-iris-ring bg-frame-2' : 'border-frame-line'
         }`}
       >
-        <span>Glisse un favori ou un onglet ici</span>
+        <span>{t('Glisse un favori ou un onglet ici')}</span>
         <button
           data-testid="add-favorite"
           onClick={add}
           className="-ml-1.5 flex h-7 items-center gap-1.5 rounded-md px-1.5 font-semibold text-iris hover:bg-frame-3"
         >
           <PlusIcon />
-          Ajouter la page actuelle
+          {t('Ajouter la page actuelle')}
         </button>
       </div>
     )
@@ -254,7 +255,7 @@ function Mosaic(props: {
       {props.showAdd && !props.collapsed && (
         <button
           data-testid="add-favorite"
-          title="Ajouter un favori"
+          title={t('Ajouter un favori')}
           onClick={add}
           className="grid aspect-square place-items-center rounded-[10px] border border-dashed border-frame-line text-frame-sub hover:border-frame-sub hover:text-frame-text"
         >
@@ -385,7 +386,7 @@ function ResizeHandle({ aside }: { aside: React.RefObject<HTMLElement | null> })
   return (
     <div
       onPointerDown={start}
-      title="Redimensionner"
+      title={t('Redimensionner')}
       className="absolute top-4 bottom-4 -left-[5px] w-2.5 cursor-col-resize rounded-full hover:bg-iris/25"
     />
   )
