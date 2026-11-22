@@ -1,0 +1,32 @@
+[
+  {
+    "id": "nuit-bleue",
+    "name": "Nuit bleue",
+    "kinds": ["theme"],
+    "author": "Zak",
+    "description": {
+      "fr": "Un cadre bleu nuit, un panneau gris-bleu doux et un accent corail.",
+      "en": "A deep blue frame, a soft blue-grey panel and a coral accent."
+    },
+    "prompt": {
+      "fr": "Crée un mod Zak « Nuit bleue » dans mon dossier des mods : un thème bleu nuit avec un panneau gris-bleu clair et un accent corail, en suivant docs/customize/README.md du dépôt guillaumevergano/zak.",
+      "en": "Create a Zak mod “Nuit bleue” in my mods folder: a deep blue theme with a light blue-grey panel and a coral accent, following docs/customize/README.md of the guillaumevergano/zak repository."
+    },
+    "swatches": ["#14213d", "#1f2f52", "#eef2f8", "#c9d4e5", "#ff7a59"]
+  },
+  {
+    "id": "accueil-minimal",
+    "name": "Accueil minimal",
+    "kinds": ["newtab"],
+    "author": "Zak",
+    "description": {
+      "fr": "Un nouvel onglet calme : l'heure, une salutation, un champ de recherche et vos sites récents.",
+      "en": "A quiet new tab: the time, a greeting, a search field and your recent sites."
+    },
+    "prompt": {
+      "fr": "Crée un mod Zak « Accueil minimal » : une page Nouvel onglet avec une grande horloge, « Bonjour » ou « Bonsoir », un champ de recherche et mes sites récents (API /api/state), en suivant docs/customize/README.md du dépôt guillaumevergano/zak.",
+      "en": "Create a Zak mod “Accueil minimal”: a new tab page with a big clock, a greeting, a search field and my recent sites (API /api/state), following docs/customize/README.md of the guillaumevergano/zak repository."
+    },
+    "preview": "accueil-minimal.png"
+  }
+]
