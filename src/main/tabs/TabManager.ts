@@ -1,8 +1,9 @@
 import { t } from '@shared/i18n'
 import { EventEmitter } from 'node:events'
 import { WebContentsView, type BaseWindow, type Session, type WebContents } from 'electron'
-import type { LayoutInsets, Rect, TabGroupInfo, TabId, TabInfo, TabSplitInfo, TabsState } from '@shared/types'
-import { randomUUID } from 'node:crypto'
+import type { LayoutInsets, PageScroll, Rect, TabGroupInfo, TabId, TabInfo, TabSplitInfo, TabsState } from '@shared/types'
+import { randomBytes, randomUUID } from 'node:crypto'
+import { SCROLL_PREFIX, SCROLL_WORLD_ID, scrollScript, scrollToScript } from './scrollScript'
 import { endOfGroup, groupAt, nextColor, usedGroups } from './groups'
 import { outsideSplits, partnerOf, repairSplits, splitOf } from './splits'
 import { clampRatio, splitRects, SPLIT_ZOOM } from '@shared/split'
@@ -19,7 +20,10 @@ const PAGE_RADIUS = 12
 const CLOSED_STACK_SIZE = 20
 
 /**
- * Thin scrollbar in the app's colors for every page (CLAUDE.md §7). A transparent track also lets
+ * The page's own vertical scrollbar is hidden (`html`, !important to beat the site's style): the
+ * chrome UI draws a thin one in the gutter next to the page (scrollScript.ts). Inner scrollers
+ * keep a scrollbar:
+ * thin, in the app's colors (CLAUDE.md §7). A transparent track also lets
  * the page's rounded corners show (Chromium's default track fills the top-right corner). User
  * origin: sites that style their own scrollbars keep theirs.
  */
@@ -32,6 +36,7 @@ const SCROLLBAR_CSS = `
 }
 ::-webkit-scrollbar-thumb:hover { background-color: rgb(120 90 115 / 0.62); }
 ::-webkit-scrollbar-thumb:active { background-color: rgb(198 122 251 / 0.75); }
+html { scrollbar-width: none !important; }
 `
 
 const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
@@ -52,6 +57,8 @@ interface Tab {
   /** Asleep: the page was swapped for about:blank to free memory; what to show and reload. */
   asleep: { url: string; title: string; favicon: string | null } | null
   groupId: string | null
+  /** Secret of the scroll reports of this tab's page (scrollScript.ts). */
+  scrollNonce: string
 }
 
 interface ClosedTab {
@@ -86,6 +93,8 @@ export interface TabManagerEvents {
   favicon: [pageUrl: string, favicon: string]
   /** The last tab was closed: the window should close, like Chrome. */
   empty: []
+  /** The page scrolled or changed height; null: a new page, nothing known yet. */
+  scroll: [id: TabId, scroll: PageScroll | null]
   /** Context menu requested inside a tab. */
   'context-menu': [webContents: WebContents, params: Electron.ContextMenuParams]
 }
@@ -211,7 +220,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     })
     const wc = view.webContents
     const pinned = opts.pinned ?? false
-    const tab: Tab = { id: wc.id, view, wc, favicon: null, pinned, url, setup: Promise.resolve(), lastActive: Date.now(), asleep: null, groupId: null }
+    const tab: Tab = { id: wc.id, view, wc, favicon: null, pinned, url, setup: Promise.resolve(), lastActive: Date.now(), asleep: null, groupId: null, scrollNonce: randomBytes(12).toString('hex') }
     this.tabs.set(tab.id, tab)
     const [start, end] = this.groupRange(pinned)
     // Never between the two tabs of a split view (a link opened from its left page goes after both).
@@ -530,6 +539,13 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     this.emit('changed')
   }
 
+  /** The scroll indicator next to the page was dragged or clicked. */
+  scrollTo(id: TabId, top: number, smooth: boolean): void {
+    const wc = this.tabs.get(id)?.wc
+    if (!wc || wc.isDestroyed() || !Number.isFinite(top)) return
+    void wc.executeJavaScriptInIsolatedWorld(SCROLL_WORLD_ID, [{ code: scrollToScript(top, smooth) }]).catch(() => {})
+  }
+
   /** The other page of `id`'s split view, or null. */
   splitPartner(id: TabId): TabId | null {
     return partnerOf(this.splits, id)
@@ -842,6 +858,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     }
     wc.on('page-title-updated', changed)
     wc.on('did-navigate', (_e, url) => {
+      this.emit('scroll', tab.id, null)
       if (tab.asleep) return // about:blank of the tab sleep: the strip keeps the page's title and icon
       tab.url = url
       tab.favicon = null
@@ -873,7 +890,16 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     wc.on('focus', () => {
       if (this.shown.has(tab.id) && this.activeId !== tab.id) this.activate(tab.id, false)
     })
-    wc.on('dom-ready', () => void wc.insertCSS(SCROLLBAR_CSS, { cssOrigin: 'user' }).catch(() => {}))
+    wc.on('dom-ready', () => {
+      void wc.insertCSS(SCROLLBAR_CSS, { cssOrigin: 'user' }).catch(() => {})
+      void wc.executeJavaScriptInIsolatedWorld(SCROLL_WORLD_ID, [{ code: scrollScript(tab.scrollNonce) }]).catch(() => {})
+    })
+    wc.on('console-message', (event) => {
+      const prefix = `${SCROLL_PREFIX}${tab.scrollNonce}:`
+      if (!event.message.startsWith(prefix) || event.frame !== wc.mainFrame) return
+      const [top, height, viewport] = event.message.slice(prefix.length).split(',').map(Number)
+      if ([top, height, viewport].every((n) => Number.isFinite(n))) this.emit('scroll', tab.id, { top: top!, height: height!, viewport: viewport! })
+    })
     // HTML full screen (§6.7): the page covers the sidebar and the bars.
     wc.on('enter-html-full-screen', () => {
       // From the other page of a split view: it becomes the active tab, on top of its partner.

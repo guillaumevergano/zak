@@ -110,6 +110,9 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
       this.emit('tabs-changed', handle)
     }
     tabs.on('changed', push)
+    tabs.on('scroll', (tabId, scroll) => {
+      if (!window.isDestroyed()) this.sendTo(window, 'tabs:scroll', { tabId, scroll })
+    })
     tabs.on('created', (wc) => this.emit('tab-created', wc, window))
     tabs.on('removed', (wc) => this.emit('tab-removed', wc))
     tabs.on('empty', () => window.close())

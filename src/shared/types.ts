@@ -45,6 +45,14 @@ export interface TabSplitInfo {
   ratio: number
 }
 
+/** Vertical scroll of a tab's page (CSS px), for the thin indicator next to the page. */
+export interface PageScroll {
+  top: number
+  /** Scrollable height; equal to `viewport` when the page doesn't scroll. */
+  height: number
+  viewport: number
+}
+
 export interface TabsState {
   tabs: TabInfo[]
   activeId: TabId | null

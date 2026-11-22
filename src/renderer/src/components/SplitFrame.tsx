@@ -3,6 +3,7 @@ import { t } from '@shared/i18n'
 import { ratioAt, splitRects, SPLIT_GAP } from '@shared/split'
 import type { Rect } from '@shared/types'
 import { useBrowserStore } from '../store/useBrowserStore'
+import { ScrollTrack } from './ScrollTrack'
 
 const api = window.zak
 
@@ -56,6 +57,12 @@ export function SplitFrame(): JSX.Element {
             className="absolute rounded-[14px] border-2 border-iris-ring"
             style={{ left: focused.x - 2, top: focused.y - 2, width: focused.width + 4, height: focused.height + 4 }}
           />
+          {/* The left page's scroll indicator, in the gap (the right page's is next to the sidebar). */}
+          <ScrollTrack
+            tabId={split.tabs[0]}
+            testId="split-scroll"
+            style={{ left: left.x + left.width + 1, top: left.y, width: 4, height: left.height, pointerEvents: 'auto', zIndex: 1 }}
+          />
           <div
             role="separator"
             aria-orientation="vertical"
@@ -90,7 +97,7 @@ export function SplitFrame(): JSX.Element {
           >
             <span
               className={`h-9 w-1 rounded-full transition-colors duration-150 ${
-                dragRatio !== null ? 'bg-iris' : 'bg-cream-dim/60 group-hover:bg-iris'
+                dragRatio !== null ? 'bg-iris' : 'bg-transparent group-hover:bg-iris/70'
               }`}
             />
           </div>

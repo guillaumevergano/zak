@@ -169,6 +169,7 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
   handle('tabs:move', (e, id, index) => tabsOf(e).move(id, index))
   handle('tabs:split', (e, targetId, otherId) => void tabsOf(e).split(targetId, otherId))
   handle('tabs:setSplitRatio', (e, splitId, ratio) => tabsOf(e).setSplitRatio(splitId, ratio))
+  handle('tabs:scrollTo', (e, id, top, smooth) => tabsOf(e).scrollTo(id, top, smooth))
   handle('tabs:showContextMenu', (e, id) => windows.showTabMenu(windowOf(e), id))
   handle('tabGroups:update', (e, groupId, changes) => tabsOf(e).updateGroup(groupId, changes))
   handle('tabGroups:showMenu', (e, groupId) => windows.showGroupMenu(windowOf(e), groupId))

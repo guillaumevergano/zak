@@ -97,8 +97,6 @@ export function Sidebar(): JSX.Element {
       }}
       className="no-drag relative flex shrink-0 flex-col bg-frame text-frame-text"
     >
-      {/* The cream toolbar above turns down into the page: a concave corner at the sidebar's top left. */}
-      <div aria-hidden className="concave-corner pointer-events-none absolute top-0 left-0 size-[14px]" />
       <div style={content} className={`no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto pt-4 ${collapsed ? 'px-2.5' : 'px-4'}`}>
         <Mosaic zone={ROOT_ZONE} favorites={inFolder(null)} activeId={activeId} collapsed={collapsed} folderId={null} showAdd />
 
@@ -446,7 +444,8 @@ function ResizeHandle({ aside }: { aside: React.RefObject<HTMLElement | null> })
     <div
       onPointerDown={start}
       title={t('Redimensionner')}
-      className="absolute top-4 bottom-4 -left-[5px] w-2.5 cursor-col-resize rounded-full hover:bg-iris/25"
+      // Inside the sidebar's edge: the gutter on its left holds the page's scroll indicator.
+      className="absolute top-4 bottom-4 left-0 w-1.5 cursor-col-resize rounded-full hover:bg-iris/25"
     />
   )
 }

@@ -150,9 +150,19 @@ body {
   background: radial-gradient(circle at 100% 0, transparent 9.5px, var(--color-cream) 10px);
 }
 
-/* Behind the page view (rounded by main): cream, like the toolbar it meets. */
+/*
+ * Behind the page view (rounded by main): the plum frame, so its rounded corners show no light
+ * edge; cream only behind its top corners, where the cream toolbar turns down into the page. A
+ * split view's pages sit on the frame (their gap, their ring).
+ */
 .page-slot {
-  background: var(--color-cream);
+  background:
+    linear-gradient(var(--color-cream), var(--color-cream)) top left / 16px 16px no-repeat,
+    linear-gradient(var(--color-cream), var(--color-cream)) top right / 16px 16px no-repeat,
+    var(--color-frame);
+}
+.page-slot[data-split] {
+  background: var(--color-frame);
 }
 
 /* Fills the corner outside a 14 px quarter circle with cream (toolbar → page, over the sidebar). */

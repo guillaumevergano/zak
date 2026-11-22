@@ -1,7 +1,7 @@
 import type { Rect } from './types'
 
 /** Space between the two pages of a split view; the divider sits in it. */
-export const SPLIT_GAP = 10
+export const SPLIT_GAP = 14
 /** Margin around the pages of a split view, where the ring of the focused page is drawn. */
 export const SPLIT_INSET = 3
 /**
