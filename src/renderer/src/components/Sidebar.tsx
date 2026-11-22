@@ -44,6 +44,7 @@ export function Sidebar(): JSX.Element {
   return (
     <aside
       ref={asideRef}
+      aria-label={t('Favoris')}
       data-testid="sidebar"
       style={{ width: collapsed ? SIDEBAR_COLLAPSED_WIDTH : layout.width }}
       className="no-drag relative flex shrink-0 flex-col bg-frame text-frame-text transition-[width] duration-150"

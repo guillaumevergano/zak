@@ -316,5 +316,8 @@ export const EN_UI: Record<string, string> = {
   'Sites exclus': 'Excluded sites',
   'Jamais de lecteur flottant sur ces sites (sous-domaines compris).': 'Never picture-in-picture on these sites (subdomains included).',
   'Retirer {domain}': 'Remove {domain}',
-  'Site à exclure': 'Site to exclude'
+  'Site à exclure': 'Site to exclude',
+
+  // App.tsx (landmarks)
+  Page: 'Page'
 }

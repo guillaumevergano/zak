@@ -124,7 +124,7 @@ function NewTabPage(): JSX.Element {
           autoComplete="off"
           className="h-full min-w-0 flex-1 bg-transparent text-[19px] text-cream-ink outline-none placeholder:text-cream-sub"
         />
-        <kbd className="rounded-[10px] bg-cream-edge px-2.5 py-1.5 font-sans text-[14px] text-cream-sub">
+        <kbd className="rounded-[10px] border border-cream-edge bg-cream px-2.5 py-1.5 font-sans text-[14px] text-cream-sub">
           {isMac ? '⌘ K' : 'Ctrl K'}
         </kbd>
       </form>

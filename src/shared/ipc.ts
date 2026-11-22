@@ -37,7 +37,8 @@ import type {
 /** renderer → main, request/response (ipcRenderer.invoke / ipcMain.handle). */
 export interface InvokeChannels {
   'tabs:create': { args: [url?: string]; result: TabId }
-  'tabs:activate': { args: [id: TabId]; result: void }
+  /** `focusPage` false: keep the keyboard in the tab strip (arrow keys). */
+  'tabs:activate': { args: [id: TabId, focusPage?: boolean]; result: void }
   'tabs:close': { args: [id: TabId]; result: void }
   'tabs:navigate': { args: [id: TabId, input: string]; result: void }
   'tabs:back': { args: [id: TabId]; result: void }

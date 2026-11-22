@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { t } from '@shared/i18n'
 import {
   DndContext,
   DragOverlay,
@@ -71,10 +72,14 @@ export function App(): JSX.Element {
   return (
     <DragAndDrop>
       <div className="flex h-full flex-col">
-        <TabStrip />
-        <Toolbar widevine={widevine} />
+        {/* For screen readers: the window's title, and the bars as one landmark. */}
+        <header className="contents">
+          <h1 className="sr-only">Zak</h1>
+          <TabStrip />
+          <Toolbar widevine={widevine} />
+        </header>
         <div className="flex min-h-0 flex-1">
-          <main className="page-slot no-drag mb-2 ml-2 min-w-0 flex-1 overflow-hidden rounded-b-[14px]">
+          <main aria-label={t('Page')} className="page-slot no-drag mb-2 ml-2 min-w-0 flex-1 overflow-hidden rounded-b-[14px]">
             <div ref={contentRef} className="h-full w-full" />
           </main>
           <Sidebar />

@@ -125,7 +125,7 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
     windows.newTab(windowOf(e))
     return tabsOf(e).getActiveId()!
   })
-  handle('tabs:activate', (e, id) => tabsOf(e).activate(id))
+  handle('tabs:activate', (e, id, focusPage) => tabsOf(e).activate(id, focusPage !== false))
   handle('tabs:close', (e, id) => tabsOf(e).close(id))
   handle('tabs:navigate', (e, id, input) => tabsOf(e).navigate(id, input))
   handle('tabs:back', (e, id) => tabsOf(e).get(id)?.navigationHistory.goBack())

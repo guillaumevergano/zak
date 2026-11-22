@@ -34,7 +34,7 @@ export function TabStrip(): JSX.Element {
       )}
       <CloseAllButton closable={regular.filter((t) => t.id !== activeId).length} />
       <SortableContext items={regular.map((t) => dndId('tab', t.id))} strategy={horizontalListSortingStrategy}>
-        <div role="tablist" className="no-scrollbar flex min-w-0 items-end gap-1.5 overflow-x-auto px-1.5">
+        <div role="tablist" aria-label={t('Onglets')} className="no-scrollbar flex min-w-0 items-end gap-1.5 overflow-x-auto px-1.5">
           {regular.map((tab) => (
             <TabItem key={tab.id} tab={tab} active={tab.id === activeId} />
           ))}
@@ -76,7 +76,21 @@ function TabItem({ tab, active }: { tab: TabInfo; active: boolean }): JSX.Elemen
       {...listeners}
       role="tab"
       aria-selected={active}
+      // Roving focus, like any tab list: Tab reaches the active tab, arrows move between tabs.
+      tabIndex={active ? 0 : -1}
+      onKeyDown={(e) => {
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'Home' && e.key !== 'End') return
+        e.preventDefault()
+        const all = [...document.querySelectorAll<HTMLElement>('[data-testid="tab"]')]
+        const index = all.indexOf(e.currentTarget)
+        const next =
+          e.key === 'Home' ? all[0] : e.key === 'End' ? all[all.length - 1] : all[(index + (e.key === 'ArrowRight' ? 1 : -1) + all.length) % all.length]
+        if (!next) return
+        next.focus()
+        void api.invoke('tabs:activate', Number(next.dataset['tabId']), false)
+      }}
       data-testid="tab"
+      data-tab-id={tab.id}
       data-pinned={tab.pinned || undefined}
       data-asleep={tab.asleep || undefined}
       title={tab.asleep ? t('{title} (en veille)', { title: tab.title }) : tab.title}
@@ -108,7 +122,9 @@ function TabItem({ tab, active }: { tab: TabInfo; active: boolean }): JSX.Elemen
         <span className="min-w-0 flex-1 truncate">{tab.title}</span>
       )}
       {(tab.audible || tab.muted) && (
-        <button
+        <span
+          // Not a focusable button inside the tab (nested controls): ⌘W and the tab's menu do the same.
+          aria-hidden
           title={tab.muted ? t('Réactiver le son') : t('Couper le son')}
           className={`grid shrink-0 place-items-center rounded-md ${
             tab.pinned ? 'absolute -top-1 -right-1 h-4 w-4 bg-frame' : 'h-5 w-5 hover:bg-black/10'
@@ -117,10 +133,12 @@ function TabItem({ tab, active }: { tab: TabInfo; active: boolean }): JSX.Elemen
           onClick={() => void api.invoke('tabs:toggleMute', tab.id)}
         >
           <SpeakerIcon muted={tab.muted} />
-        </button>
+        </span>
       )}
       {!tab.pinned && (
-        <button
+        <span
+          // Not a focusable button inside the tab (nested controls): ⌘W and the tab's menu do the same.
+          aria-hidden
           title={t("Fermer l'onglet (⌘W)")}
           data-testid="tab-close"
           className={`grid h-5 w-5 shrink-0 place-items-center rounded-md ${
@@ -130,7 +148,7 @@ function TabItem({ tab, active }: { tab: TabInfo; active: boolean }): JSX.Elemen
           onClick={close}
         >
           <CloseIcon />
-        </button>
+        </span>
       )}
     </div>
   )
