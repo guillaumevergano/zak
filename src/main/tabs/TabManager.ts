@@ -529,25 +529,38 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
   private keepFocusAway(tab: Tab): void {
     const wc = tab.wc
     const giveBack = (): void => {
-      if (this.activeId === tab.id) this.focusChrome?.()
+      if (this.activeId === tab.id && !wc.isDestroyed()) this.focusChrome?.()
     }
-    let timer: NodeJS.Timeout | null = null
+    const timers: NodeJS.Timeout[] = []
     const stop = (): void => {
-      if (timer) clearTimeout(timer)
+      timers.forEach(clearTimeout)
       if (!wc.isDestroyed()) {
         wc.off('focus', giveBack)
         wc.off('did-stop-loading', onLoaded)
+        wc.off('input-event', onInput)
       }
     }
-    // about:blank loads first (userAgent.ts): wait for the real page, plus a short grace period.
+    // about:blank loads first (userAgent.ts): wait for the real page. Windows may hand the page
+    // the focus a little after it loads, without a `focus` event: check again for a moment.
     const onLoaded = (): void => {
       if (wc.getURL() === 'about:blank') return
-      if (timer) clearTimeout(timer)
-      timer = setTimeout(stop, 500)
+      for (const ms of [50, 300, 800, 1500]) {
+        timers.push(
+          setTimeout(() => {
+            if (!wc.isDestroyed() && wc.isFocused()) giveBack()
+          }, ms)
+        )
+      }
+      timers.push(setTimeout(stop, 2000))
+    }
+    // The user clicked in the page: the focus is theirs to give.
+    const onInput = (_e: Electron.Event, input: Electron.InputEvent): void => {
+      if (input.type === 'mouseDown') stop()
     }
     wc.on('focus', giveBack)
     wc.on('did-stop-loading', onLoaded)
-    timer = setTimeout(stop, 10_000)
+    wc.on('input-event', onInput)
+    timers.push(setTimeout(stop, 10_000))
     wc.once('destroyed', stop)
   }
 

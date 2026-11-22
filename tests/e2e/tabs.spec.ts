@@ -109,5 +109,7 @@ test('pinned tabs sit on the left and show their title on hover', async () => {
   expect(pinBox.x).toBeLessThan(broomBox.x)
   await pinned.hover()
   await expect.poll(async () => (await pinned.boundingBox())!.width).toBeGreaterThan(pinBox.width + 20)
+  // Not the last tab: on Windows, closing it would close the window, and quit.
+  expect(await chrome.getByTestId('tab').count()).toBeGreaterThan(1)
   await chrome.evaluate((tabId) => window.zak.invoke('tabs:close', tabId), id)
 })

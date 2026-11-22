@@ -87,6 +87,9 @@ const activeTabTitle = (window: Page): Promise<string | null> =>
 test('private windows have their own throwaway session, dark theme and no extensions', async () => {
   // A cookie in the normal profile.
   await visit(chrome, '/?name=normal')
+  // Let the cookie arrive before the next load (Windows is slower to answer: it would be aborted).
+  await expect.poll(() => chrome.getByTestId('omnibox').inputValue()).toContain('name=normal')
+  await expect.poll(() => app.evaluate(({ webContents }) => webContents.getAllWebContents().some((w) => w.getURL().includes('name=normal') && !w.isLoading()))).toBe(true)
   await visit(chrome, '/')
   await expect.poll(() => activeTabTitle(chrome)).toBe('cookies:normal=1')
 
