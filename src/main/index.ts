@@ -83,10 +83,20 @@ const primaryInstance = links.install()
 
 let widevine: WidevineStatus = { ready: false, detail: 'pending' }
 
+const WIDEVINE_WAIT_MS = 20_000
+
 async function waitForWidevine(): Promise<void> {
   try {
     // castLabs ECS: downloads/registers the Widevine CDM on first launch (can take a few seconds).
-    await components.whenReady()
+    // Never wait forever (offline, captive portal, slow server): open the browser after 20 s, the
+    // download goes on and DRM videos play once it's done.
+    const ready = components.whenReady().then(() => true)
+    const late = new Promise<false>((resolve) => setTimeout(() => resolve(false), WIDEVINE_WAIT_MS).unref())
+    if (!(await Promise.race([ready, late]))) {
+      widevine = { ready: false, detail: 'still downloading' }
+      void ready.then(() => (widevine = { ready: true, detail: JSON.stringify(components.status()) })).catch(() => {})
+      return
+    }
     widevine = { ready: true, detail: JSON.stringify(components.status()) }
   } catch (err) {
     widevine = { ready: false, detail: String(err) }

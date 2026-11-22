@@ -16,9 +16,15 @@ export async function launch(
 ): Promise<{ app: ElectronApplication; chrome: Page; profile: string }> {
   const dir = profile ?? mkdtempSync(join(tmpdir(), `zak-e2e-${name}-`))
   const app = await electron.launch({ executablePath: electronPath, args: [root], env: { ...process.env, ZAK_USER_DATA: dir, ZAK_E2E: '1', ZAK_LANG: 'fr', ...env } })
-  const chrome = await firstChrome(app)
-  await expect(chrome.getByTestId('tab').first()).toBeVisible()
-  return { app, chrome, profile: dir }
+  try {
+    const chrome = await firstChrome(app)
+    await expect(chrome.getByTestId('tab').first()).toBeVisible()
+    return { app, chrome, profile: dir }
+  } catch (err) {
+    // Don't leave a stuck app behind: the worker would hang on teardown (and the retry with it).
+    await app.close().catch(() => {})
+    throw err
+  }
 }
 
 /**
