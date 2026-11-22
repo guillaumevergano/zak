@@ -158,7 +158,7 @@ agent there: [`CLAUDE.md`](../../CLAUDE.md) (Claude Code) and [`AGENTS.md`](../.
 explains how to propose your change to everyone. Note that a build you make yourself can't play
 DRM-protected streaming (Netflix…): that needs Zak's signed release.
 
-Made something others would like? Mods are in the [gallery](https://guillaumevergano.github.io/zak/mods/):
+Made something others would like? Mods are in the [gallery](https://hellozak.com/mods/):
 open a pull request adding your mod's folder to [`docs/customize/mods`](mods) and an entry, with
 the prompt that made it, to [`site/mods/mods.json`](../../site/mods/mods.json). Extensions: publish
 the folder on GitHub with the `zak-extension` topic.

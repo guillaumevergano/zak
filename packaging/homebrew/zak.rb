@@ -12,7 +12,7 @@ cask "zak" do
       verified: "github.com/guillaumevergano/zak/"
   name "Zak"
   desc "Calm desktop browser built on Chromium"
-  homepage "https://guillaumevergano.github.io/zak/"
+  homepage "https://hellozak.com/"
 
   livecheck do
     url :url

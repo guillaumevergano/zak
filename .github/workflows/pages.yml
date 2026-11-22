@@ -1,4 +1,6 @@
-# The download website (site/) on GitHub Pages: Settings → Pages → Source: GitHub Actions.
+# The website (site/) goes to hellozak.com, on the project's VPS: an rsync restricted to
+# /opt/zak/site (user zakdeploy, `rrsync`), served by the host's Caddy. GitHub Pages only keeps a
+# redirect from the old address (guillaumevergano.github.io/zak) to hellozak.com.
 name: Website
 
 on:
@@ -13,25 +15,60 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: website
   cancel-in-progress: true
 
 jobs:
   deploy:
+    name: Deploy to hellozak.com
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build the site
+        run: |
+          mkdir -p build
+          cp -R site/. build/
+          # The gallery's downloads: one zip per mod folder (docs/customize/mods).
+          (cd docs/customize/mods && for mod in */; do zip -qr "../../../build/mods/${mod%/}.zip" "$mod"; done)
+          find build -type d -exec chmod 755 {} +
+          find build -type f -exec chmod 644 {} +
+      - name: Upload
+        env:
+          DEPLOY_KEY: ${{ secrets.ZAK_DEPLOY_KEY }}
+          KNOWN_HOSTS: ${{ secrets.ZAK_DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          rsync -rlpz --delete -e "ssh -i ~/.ssh/deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes" build/ zakdeploy@72.61.104.113:/
+      - name: Check
+        run: |
+          for path in / /en/ /mods/ /mods/mods.json; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "https://hellozak.com$path")
+            echo "$path $code"; test "$code" = 200
+          done
+
+  redirect:
+    name: Redirect the old GitHub Pages address
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/configure-pages@v6
-      # The gallery's downloads: one zip per mod folder (docs/customize/mods).
-      - name: Zip the mods
+      - name: Build the redirect
         run: |
-          cd docs/customize/mods
-          for mod in */; do zip -qr "../../../site/mods/${mod%/}.zip" "$mod"; done
+          mkdir -p redirect
+          cat > redirect/index.html <<'EOF'
+          <!doctype html><meta charset="utf-8"><title>Zak</title>
+          <link rel="canonical" href="https://hellozak.com/">
+          <meta http-equiv="refresh" content="0; url=https://hellozak.com/">
+          <script>location.replace('https://hellozak.com' + location.pathname.replace(/^\/zak/, '') + location.search + location.hash)</script>
+          <p>Zak est maintenant sur <a href="https://hellozak.com/">hellozak.com</a>.</p>
+          EOF
+          cp redirect/index.html redirect/404.html
+      - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
-          path: site
+          path: redirect
       - id: deployment
         uses: actions/deploy-pages@v5

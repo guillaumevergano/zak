@@ -29,7 +29,7 @@ export function bugReportUrl(): string {
 }
 
 export const HELP_URLS = {
-  site: 'https://guillaumevergano.github.io/zak/',
+  site: 'https://hellozak.com/',
   issues: `${REPO}/issues`,
   privacy: `${REPO}/blob/main/PRIVACY.md`
 }
