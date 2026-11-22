@@ -1,6 +1,6 @@
 import type { Server } from 'node:http'
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test'
-import { activeTabTitle, launch, pageAt, serve, visit } from './helpers'
+import { activeTabTitle, forceClose, launch, pageAt, serve, visit } from './helpers'
 
 let app: ElectronApplication
 let chrome: Page
@@ -16,7 +16,7 @@ test.beforeAll(async () => {
 })
 
 test.afterAll(async () => {
-  await app?.close()
+  if (app) await forceClose(app)
   server?.close()
 })
 

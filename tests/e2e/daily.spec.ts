@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Server } from 'node:http'
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test'
-import { activeTabTitle, clickMenu, launch, pageAt, serve, visit } from './helpers'
+import { activeTabTitle, clickMenu, forceClose, launch, pageAt, serve, visit } from './helpers'
 
 let app: ElectronApplication
 let chrome: Page
@@ -31,7 +31,7 @@ test.beforeAll(async () => {
 })
 
 test.afterAll(async () => {
-  await app?.close()
+  if (app) await forceClose(app)
   server?.close()
 })
 

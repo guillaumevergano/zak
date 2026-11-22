@@ -2,7 +2,7 @@ import { _electron as electron, expect, test } from '@playwright/test'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { firstChrome, launch, pageAt, visit } from './helpers'
+import { firstChrome, forceClose, launch, pageAt, visit } from './helpers'
 
 const root = join(__dirname, '../..')
 const electronPath = require('electron') as unknown as string
@@ -37,6 +37,6 @@ test('a new profile is created from the settings and opens as a separate Zak', a
     expect(await work.evaluate(({ app: a }) => a.getPath('userData'))).toBe(join(profilesDir, opened![0]!))
   } finally {
     // Closed even on failure: a stuck app makes the worker's teardown time out (and fails the run).
-    await work.close().catch(() => {})
+    await forceClose(work)
   }
 })

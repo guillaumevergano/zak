@@ -2,7 +2,7 @@ import { join } from 'node:path'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { _electron as electron, expect, test, type ElectronApplication, type Page } from '@playwright/test'
-import { firstChrome } from './helpers'
+import { firstChrome, forceClose } from './helpers'
 
 const root = join(__dirname, '../..')
 const electronPath = require('electron') as unknown as string
@@ -29,7 +29,7 @@ test.beforeAll(async () => {
 })
 
 test.afterAll(async () => {
-  await app?.close()
+  if (app) await forceClose(app)
 })
 
 const loadedIds = (): Promise<string[]> =>

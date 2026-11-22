@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { _electron as electron, expect, test, type ElectronApplication, type Page } from '@playwright/test'
-import { clickMenu, firstChrome } from './helpers'
+import { clickMenu, firstChrome, forceClose } from './helpers'
 
 const root = join(__dirname, '../..')
 // The castLabs Electron binary (the `electron` package exports its path).
@@ -34,7 +34,7 @@ test.beforeAll(async () => {
 })
 
 test.afterAll(async () => {
-  await app?.close()
+  if (app) await forceClose(app)
 })
 
 const page = (title: string): string => `data:text/html,<title>${encodeURIComponent(title)}</title><h1>${title}</h1>`
@@ -98,7 +98,15 @@ test('pinned tabs sit on the left and show their title on hover', async () => {
   await omnibox.press('Enter')
   const tab = chrome.getByTestId('tab').filter({ has: chrome.getByText('Pinned') })
   await expect(tab).toHaveCount(1)
-  const id = await app.evaluate(({ webContents }) => webContents.getAllWebContents().find((w) => w.getTitle() === 'Pinned')!.id)
+  // Not the only tab (alone, e.g. on a retry): on Windows, closing the last tab closes the window, and quits.
+  if ((await chrome.getByTestId('tab').count()) < 2) {
+    await clickMenu(app, 'Nouvel onglet')
+    await expect(chrome.getByTestId('tab')).toHaveCount(2)
+  }
+  const pinnedId = (): Promise<number | undefined> =>
+    app.evaluate(({ webContents }) => webContents.getAllWebContents().find((w) => w.getTitle() === 'Pinned')?.id)
+  await expect.poll(pinnedId).toBeDefined()
+  const id = (await pinnedId())!
   await chrome.evaluate((tabId) => window.zak.invoke('tabs:setPinned', tabId, true), id)
   const pinned = chrome.getByTestId('pinned-tabs').getByTestId('tab')
   await expect(pinned).toHaveCount(1)
@@ -111,7 +119,5 @@ test('pinned tabs sit on the left and show their title on hover', async () => {
   expect(pinBox.x).toBeLessThan(broomBox.x)
   await pinned.hover()
   await expect.poll(async () => (await pinned.boundingBox())!.width).toBeGreaterThan(pinBox.width + 20)
-  // Not the last tab: on Windows, closing it would close the window, and quit.
-  expect(await chrome.getByTestId('tab').count()).toBeGreaterThan(1)
   await chrome.evaluate((tabId) => window.zak.invoke('tabs:close', tabId), id)
 })

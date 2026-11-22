@@ -22,9 +22,16 @@ export async function launch(
     return { app, chrome, profile: dir }
   } catch (err) {
     // Don't leave a stuck app behind: the worker would hang on teardown (and the retry with it).
-    await app.close().catch(() => {})
+    await forceClose(app)
     throw err
   }
+}
+
+/** Closes the app, killing it if it doesn't quit: a stuck app makes the worker's teardown time out. */
+export async function forceClose(app: ElectronApplication): Promise<void> {
+  const closed = app.close().then(() => true, () => true)
+  const timedOut = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 15_000))
+  if (!(await Promise.race([closed, timedOut]))) app.process().kill('SIGKILL')
 }
 
 /**

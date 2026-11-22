@@ -1,7 +1,7 @@
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test'
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { launch, pageAt, visit } from './helpers'
+import { forceClose, launch, pageAt, visit } from './helpers'
 
 let app: ElectronApplication
 let chrome: Page
@@ -12,7 +12,7 @@ test.beforeAll(async () => {
 })
 
 test.afterAll(async () => {
-  await app?.close()
+  if (app) await forceClose(app)
 })
 
 test('search engine, theme and sidebar settings apply at once', async () => {
