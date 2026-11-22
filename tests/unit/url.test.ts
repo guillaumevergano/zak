@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { NEW_TAB_URL, toUrl } from '../../src/shared/url'
+import { NEW_TAB_URL, toUrl, translateUrl } from '../../src/shared/url'
 
 const search = (q: string): string => `https://www.google.com/search?q=${encodeURIComponent(q)}`
 
@@ -30,5 +30,14 @@ describe('toUrl (omnibox input)', () => {
 
   it('opens the new tab page for empty input', () => {
     expect(toUrl('   ')).toBe(NEW_TAB_URL)
+  })
+})
+
+describe('translateUrl', () => {
+  it('opens the page through Google Translate, into French by default', () => {
+    expect(translateUrl('https://example.com/a?b=1&c=2')).toBe(
+      'https://translate.google.com/translate?sl=auto&tl=fr&u=https%3A%2F%2Fexample.com%2Fa%3Fb%3D1%26c%3D2'
+    )
+    expect(translateUrl('https://example.com/', 'en')).toContain('tl=en')
   })
 })

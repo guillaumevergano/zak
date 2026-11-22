@@ -42,6 +42,10 @@ interface Tab {
   url: string
   /** Chrome identity being installed over CDP (userAgent.ts); see dispose(). */
   setup: Promise<void>
+  /** Last time the tab was shown (or created), for the tab sleep. */
+  lastActive: number
+  /** Asleep: the page was swapped for about:blank to free memory; what to show and reload. */
+  asleep: { url: string; title: string; favicon: string | null } | null
 }
 
 interface ClosedTab {
@@ -110,12 +114,70 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
   /** Gives the keyboard focus back to the chrome UI (the omnibox of a new tab keeps it). */
   focusChrome: (() => void) | null = null
 
+  /**
+   * Tab sleep (CLAUDE.md §6.1): minutes of inactivity after which a background tab is unloaded,
+   * or null when off. Set by index.ts from the settings.
+   */
+  static sleepAfterMinutes: () => number | null = () => null
+
   constructor(
     private readonly window: BaseWindow,
     private readonly session: Session
   ) {
     super()
     window.on('resize', () => this.layout())
+    const timer = setInterval(() => this.sleepIdleTabs(), 60_000)
+    timer.unref()
+    window.once('closed', () => clearInterval(timer))
+  }
+
+  /**
+   * Unloads the background tabs left alone long enough: the page is replaced by about:blank (its
+   * renderer and memory are freed) and comes back, reloaded, when the tab is shown again. Like
+   * Chrome's Memory Saver: not a tab playing sound, a loading one, or a page that asks before
+   * leaving (beforeunload cancels the navigation, so the tab stays awake).
+   */
+  sleepIdleTabs(now = Date.now()): void {
+    const minutes = TabManager.sleepAfterMinutes()
+    if (minutes === null) return
+    for (const tab of this.tabs.values()) {
+      const wc = tab.wc
+      if (tab.id === this.activeId || tab.asleep || wc.isDestroyed()) continue
+      if (now - tab.lastActive < minutes * 60_000) continue
+      if (wc.isCurrentlyAudible() || wc.isLoading() || !/^https?:/.test(wc.getURL())) continue
+      this.sleep(tab)
+    }
+  }
+
+  private sleep(tab: Tab): void {
+    const wc = tab.wc
+    tab.asleep = { url: wc.getURL(), title: wc.getTitle(), favicon: tab.favicon }
+    wc.loadURL('about:blank')
+      .then(() => {
+        if (wc.isDestroyed() || wc.getURL() !== 'about:blank') tab.asleep = null
+        this.emit('changed')
+      })
+      .catch(() => {
+        tab.asleep = null // the page refused to leave (beforeunload), or navigated meanwhile
+      })
+  }
+
+  /** Reloads a sleeping tab where it was, without leaving about:blank in its history. */
+  private wake(tab: Tab): void {
+    const asleep = tab.asleep
+    if (!asleep) return
+    tab.asleep = null
+    const wc = tab.wc
+    const nav = wc.navigationHistory
+    const blank = nav.getActiveIndex()
+    const previous = nav.getEntryAtIndex(blank - 1)
+    if (wc.getURL() === 'about:blank' && previous?.url === asleep.url) {
+      wc.once('did-navigate', () => {
+        if (!wc.isDestroyed() && nav.getEntryAtIndex(blank)?.url === 'about:blank') nav.removeEntryAtIndex(blank)
+      })
+      nav.goBack()
+    } else void wc.loadURL(asleep.url).catch(() => {})
+    tab.favicon = asleep.favicon
   }
 
   create(url: string = this.newTabUrl, opts: CreateTabOptions = {}): WebContents {
@@ -131,7 +193,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     })
     const wc = view.webContents
     const pinned = opts.pinned ?? false
-    const tab: Tab = { id: wc.id, view, wc, favicon: null, pinned, url, setup: Promise.resolve() }
+    const tab: Tab = { id: wc.id, view, wc, favicon: null, pinned, url, setup: Promise.resolve(), lastActive: Date.now(), asleep: null }
     this.tabs.set(tab.id, tab)
     const [start, end] = this.groupRange(pinned)
     this.order.splice(clamp(opts.index ?? end, start, end), 0, tab.id)
@@ -179,6 +241,9 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     }
 
     this.activeId = id
+    next.lastActive = Date.now()
+    if (previous) previous.lastActive = Date.now()
+    this.wake(next)
     next.view.setVisible(true)
     // Re-adding an existing child view moves it on top, above the previous tab still visible below.
     this.window.contentView.addChildView(next.view)
@@ -268,7 +333,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
   duplicate(id: TabId): void {
     const tab = this.tabs.get(id)
     if (!tab) return
-    this.create(tab.wc.getURL() || tab.url, { active: true, index: this.order.indexOf(id) + 1, pinned: tab.pinned })
+    this.create(tab.asleep?.url ?? (tab.wc.getURL() || tab.url), { active: true, index: this.order.indexOf(id) + 1, pinned: tab.pinned })
   }
 
   setPinned(id: TabId, pinned: boolean): void {
@@ -324,6 +389,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
   snapshot(id: TabId): { title: string; url: string; favicon: string | null } | undefined {
     const tab = this.tabs.get(id)
     if (!tab || tab.wc.isDestroyed()) return undefined
+    if (tab.asleep) return { ...tab.asleep, title: tab.asleep.title || tab.asleep.url }
     const url = tab.wc.getURL()
     return { title: tab.wc.getTitle() || url, url, favicon: tab.favicon }
   }
@@ -381,7 +447,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
   }
 
   private remember(tab: Tab, index: number): void {
-    const url = tab.wc.isDestroyed() ? tab.url : tab.wc.getURL() || tab.url
+    const url = tab.asleep?.url ?? (tab.wc.isDestroyed() ? tab.url : tab.wc.getURL() || tab.url)
     if (isNewTabUrl(url)) return
     this.closed.push({ url, index, pinned: tab.pinned })
     if (this.closed.length > CLOSED_STACK_SIZE) this.closed.shift()
@@ -399,6 +465,23 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
 
   private describe(tab: Tab): TabInfo {
     const wc = tab.wc
+    const asleep = tab.asleep
+    if (asleep) {
+      return {
+        id: tab.id,
+        title: asleep.title || asleep.url,
+        url: asleep.url,
+        favicon: asleep.favicon,
+        audible: false,
+        muted: wc.isAudioMuted(),
+        loading: false,
+        pinned: tab.pinned,
+        canGoBack: true,
+        canGoForward: false,
+        zoom: Math.round(wc.getZoomFactor() * 100),
+        asleep: true
+      }
+    }
     // An error page shows the address that failed, like Chrome.
     const failed = failedUrlOf(wc.getURL())
     const url = failed ?? wc.getURL()
@@ -414,7 +497,8 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
       pinned: tab.pinned,
       canGoBack: wc.navigationHistory.canGoBack(),
       canGoForward: wc.navigationHistory.canGoForward(),
-      zoom: Math.round(wc.getZoomFactor() * 100)
+      zoom: Math.round(wc.getZoomFactor() * 100),
+      asleep: false
     }
   }
 
@@ -474,6 +558,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     }
     wc.on('page-title-updated', changed)
     wc.on('did-navigate', (_e, url) => {
+      if (tab.asleep) return // about:blank of the tab sleep: the strip keeps the page's title and icon
       tab.url = url
       tab.favicon = null
       changed()

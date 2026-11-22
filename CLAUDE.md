@@ -140,7 +140,7 @@ Les fenêtres privées n'écrivent **rien** dans `history` ni `tab_sessions`.
 - Raccourcis : `Cmd/Ctrl+T` nouveau, `Cmd/Ctrl+W` fermer, `Cmd/Ctrl+Shift+T` rouvrir le dernier fermé (pile de 20), `Ctrl+Tab`/`Ctrl+Shift+Tab` suivant/précédent, `Cmd/Ctrl+1..9` aller à l'onglet n, `Cmd/Ctrl+Shift+W` tout fermer.
 - Implémentation : `TabManager` crée une `WebContentsView` par onglet dans la session de la fenêtre, l'ajoute à `win.contentView`, ne rend visible que l'active (`setVisible`). Les bounds sont recalculées à partir du layout envoyé par le renderer (`layout:update { sidebarWidth, topHeight }`).
 - `webContents.setWindowOpenHandler` → ouvre dans un nouvel onglet (jamais une BrowserWindow sauvage), sauf popups OAuth (features `popup` ou taille explicite) → petite fenêtre dédiée dans la même session.
-- Onglets inactifs depuis > 30 min : déchargement (« mise en veille ») optionnel, réglage désactivé par défaut en v1.
+- Mise en veille des onglets inactifs (réglage Général : jamais par défaut, 15 min à 2 h) : la page est remplacée par about:blank, l'onglet garde titre et icône (estompé) et se recharge quand on y revient. Jamais un onglet qui joue du son, qui charge, ou dont la page refuse de partir (beforeunload).
 
 ### 6.2 Barre latérale droite — favoris
 - Panneau fixe à droite (sous la barre d'outils), largeur réglable (220–380 px), repliable (`Cmd/Ctrl+B`) en mode « icônes seules ». Roue crantée en bas → `zak://settings`.
@@ -197,6 +197,7 @@ Les fenêtres privées n'écrivent **rien** dans `history` ni `tab_sessions`.
 - **Restauration de session** au lancement (onglets de la dernière fenêtre normale) + « Rouvrir la fenêtre fermée ».
 - **Réglages** `zak://settings` : moteur de recherche, page de démarrage, PiP, sidebar, extensions en privé, thème (clair/sombre/système), dossier de téléchargement, effacer les données.
 - **Sites dangereux** (Electron n'a pas Google Safe Browsing) : listes publiques d'hameçonnage et de logiciels malveillants (malware-filter : OpenPhish, PhishTank, URLhaus) téléchargées toutes les 12 h et vérifiées localement, sans envoyer d'URL ; page ou cadre listé bloqué, avertissement rouge dans `zak://error?threat=…` (« Retour en lieu sûr », « Continuer quand même » pour la session). Réglage Sécurité, actif par défaut (`src/main/safety/`).
+- **PDF** : visionneuse intégrée de Chromium dans l'onglet. **Orthographe** : correcteur de Chromium (système sur macOS), suggestions et « Ajouter au dictionnaire » dans le menu contextuel. **Traduire en français** (menu contextuel de la page) : ouvre la page via Google Traduction, seulement à la demande.
 - **Impression** `Cmd/Ctrl+P` (`webContents.print`). **DevTools** `F12` / `Cmd+Opt+I`.
 - **Mise à jour** : `electron-updater` via GitHub Releases (v1.1). En attendant, suivre les releases castLabs (elles suivent de près Electron upstream, donc les correctifs de sécurité Chromium).
 

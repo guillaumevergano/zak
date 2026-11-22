@@ -62,3 +62,11 @@ export function failedUrlOf(url: string): string | null {
   if (!url.startsWith(ERROR_PAGE_URL)) return null
   return new URL(url).searchParams.get('url')
 }
+
+/**
+ * Electron has no built-in page translation: Google Translate's web proxy shows the page
+ * translated (only when asked: the address goes to Google).
+ */
+export function translateUrl(pageUrl: string, to = 'fr'): string {
+  return `https://translate.google.com/translate?sl=auto&tl=${to}&u=${encodeURIComponent(pageUrl)}`
+}

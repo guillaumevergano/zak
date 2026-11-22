@@ -1,7 +1,7 @@
 import { clipboard, Menu, MenuItem, type WebContents } from 'electron'
 import { reloadPage, TabManager } from '../tabs/TabManager'
 import type { TabId } from '@shared/types'
-import { SEARCH_ENGINES, searchUrl } from '@shared/url'
+import { SEARCH_ENGINES, searchUrl, translateUrl } from '@shared/url'
 
 /**
  * Right-click inside a page (CLAUDE.md §6.7). Extension entries (chrome.contextMenus) are appended
@@ -50,6 +50,18 @@ export function buildPageMenu(
     separator()
   }
 
+  // Spelling (Chromium's checker: the system's on macOS and Windows): suggestions first, like Chrome.
+  if (params.isEditable && params.misspelledWord) {
+    const suggestions = params.dictionarySuggestions.slice(0, 5)
+    for (const word of suggestions) add({ label: word, click: () => wc.replaceMisspelling(word) })
+    if (suggestions.length === 0) add({ label: 'Aucune suggestion', enabled: false })
+    add({
+      label: 'Ajouter au dictionnaire',
+      click: () => wc.session.addWordToSpellCheckerDictionary(params.misspelledWord)
+    })
+    separator()
+  }
+
   if (params.isEditable) {
     const flags = params.editFlags
     add({ label: 'Annuler', role: 'undo', enabled: flags.canUndo })
@@ -76,6 +88,12 @@ export function buildPageMenu(
     add({ label: 'Avancer', enabled: wc.navigationHistory.canGoForward(), click: () => wc.navigationHistory.goForward() })
     add({ label: 'Recharger', click: () => reloadPage(wc) })
     separator()
+    const pageUrl = wc.getURL()
+    if (/^https?:/.test(pageUrl)) {
+      add({ label: 'Traduire en français', click: () => tabs.create(translateUrl(pageUrl), { index: openerIndex }) })
+      add({ label: 'Imprimer…', click: () => wc.print() })
+      separator()
+    }
   }
 
   hooks.addExtensionItems(menu)

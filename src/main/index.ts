@@ -175,6 +175,11 @@ app.whenReady().then(async () => {
   const session = new SessionRestore(new SessionStore(db), windows)
   sessionRestore = session
   TabManager.searchEngine = () => settings.getGeneral().searchEngine
+  TabManager.sleepAfterMinutes = () => settings.getGeneral().sleepTabsAfter || null
+  // e2e tests (ZAK_USER_DATA): put idle tabs to sleep now instead of waiting for the timer.
+  if (testProfile) {
+    Object.assign(globalThis, { zakSleepIdleTabs: () => windows.all().forEach((w) => w.tabs.sleepIdleTabs(Date.now() + 864e5)) })
+  }
   nativeTheme.themeSource = settings.getGeneral().theme
   recordHistory(windows, history)
   const sidebar = new SidebarController(favorites, settings, windows)

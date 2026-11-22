@@ -77,7 +77,8 @@ function TabItem({ tab, active }: { tab: TabInfo; active: boolean }): JSX.Elemen
       aria-selected={active}
       data-testid="tab"
       data-pinned={tab.pinned || undefined}
-      title={tab.title}
+      data-asleep={tab.asleep || undefined}
+      title={tab.asleep ? `${tab.title} (en veille)` : tab.title}
       style={{ transform: CSS.Translate.toString(transform && { ...transform, y: 0 }), transition }}
       onPointerDown={(e) => {
         if (e.button === 0) void api.invoke('tabs:activate', tab.id)
@@ -91,7 +92,7 @@ function TabItem({ tab, active }: { tab: TabInfo; active: boolean }): JSX.Elemen
         void api.invoke('tabs:showContextMenu', tab.id)
       }}
       className={`no-drag group relative flex cursor-default items-center outline-none ${shape} ${
-        isDragging ? 'opacity-40' : ''
+        isDragging ? 'opacity-40' : tab.asleep && !active ? 'opacity-60' : ''
       }`}
     >
       <Favicon tab={tab} />

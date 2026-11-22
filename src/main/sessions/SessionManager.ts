@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { session, type Session } from 'electron'
+import { app, session, type Session } from 'electron'
 import { chromeUserAgent } from '../userAgent'
 
 export const MAIN_PARTITION = 'persist:main'
@@ -59,5 +59,13 @@ export class SessionManager {
 
 function configure(ses: Session): void {
   ses.setUserAgent(chromeUserAgent())
+  // Spell check: macOS uses the system's checker (every language it knows). Elsewhere Chromium
+  // needs the languages: the system's preferred ones it has a dictionary for, French by default.
+  if (process.platform !== 'darwin') {
+    const available = new Set(ses.availableSpellCheckerLanguages)
+    const wanted = app.getPreferredSystemLanguages().flatMap((tag) => [tag, tag.split('-')[0]!])
+    const languages = [...new Set(wanted.filter((tag) => available.has(tag)))].slice(0, 3)
+    ses.setSpellCheckerLanguages(languages.length > 0 ? languages : available.has('fr') ? ['fr'] : [])
+  }
   // Permissions: see permissions/PermissionsHandler.ts, attached through onSession hooks.
 }

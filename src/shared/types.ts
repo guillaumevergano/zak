@@ -15,6 +15,8 @@ export interface TabInfo {
   canGoForward: boolean
   /** Page zoom in percent (100 = default), shown in the omnibox when different. */
   zoom: number
+  /** Unloaded by the tab sleep; reloads when shown. */
+  asleep: boolean
 }
 
 export interface TabsState {
@@ -173,6 +175,8 @@ export interface GeneralSettings {
   downloadDir: string
   /** Warn before opening a known phishing or malware page (src/main/safety/). */
   safeBrowsing: boolean
+  /** Unload background tabs after this many minutes alone (CLAUDE.md §6.1), 0 = never. */
+  sleepTabsAfter: number
 }
 
 /** What zak://settings shows and edits. */

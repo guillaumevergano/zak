@@ -122,6 +122,23 @@ function SettingsPage(): JSX.Element {
           </div>
         </Row>
         <ImportBookmarks onError={fail} />
+        <Row
+          title="Mettre en veille les onglets inactifs"
+          detail="Libère la mémoire des onglets restés en arrière-plan. Ils se rechargent quand vous y revenez ; ceux qui jouent du son ou ont un formulaire en cours ne sont pas mis en veille."
+        >
+          <select
+            aria-label="Mettre en veille les onglets inactifs"
+            className={selectClass}
+            value={general.sleepTabsAfter}
+            onChange={(e) => saveGeneral({ sleepTabsAfter: Number(e.target.value) })}
+          >
+            <option value={0}>Jamais</option>
+            <option value={15}>Après 15 minutes</option>
+            <option value={30}>Après 30 minutes</option>
+            <option value={60}>Après 1 heure</option>
+            <option value={120}>Après 2 heures</option>
+          </select>
+        </Row>
         <Row title="Barre latérale réduite" detail="Icônes seules (⌘B).">
           <Toggle
             label="Barre latérale réduite"
