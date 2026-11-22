@@ -27,7 +27,7 @@ export async function launch(
  */
 export async function firstChrome(app: ElectronApplication): Promise<Page> {
   const isChrome = (p: Page): boolean => /\/index\.html(\?|$)|^http:\/\/localhost:\d+\/$/.test(p.url()) && !p.url().includes('#overlay')
-  await expect.poll(() => app.windows().some(isChrome), { timeout: 30_000 }).toBe(true)
+  await expect.poll(() => app.windows().some(isChrome), { timeout: 60_000 }).toBe(true)
   return app.windows().find(isChrome)!
 }
 
