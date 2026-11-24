@@ -39,6 +39,7 @@ export default defineConfig({
           extensions: resolve(__dirname, 'src/renderer/extensions.html'),
           settings: resolve(__dirname, 'src/renderer/settings.html'),
           history: resolve(__dirname, 'src/renderer/history.html'),
+          downloads: resolve(__dirname, 'src/renderer/downloads.html'),
           passwords: resolve(__dirname, 'src/renderer/passwords.html'),
           welcome: resolve(__dirname, 'src/renderer/welcome.html'),
           error: resolve(__dirname, 'src/renderer/error.html')

@@ -214,6 +214,8 @@ export interface GeneralSettings {
   theme: 'system' | 'light' | 'dark'
   /** Where downloads go (private windows too, like Chrome). */
   downloadDir: string
+  /** Ask where to save each file (a save dialog) instead of saving straight into downloadDir. */
+  askWhereToSave: boolean
   /** Warn before opening a known phishing or malware page (src/main/safety/). */
   safeBrowsing: boolean
   /** Offer to save the passwords typed in login forms (src/main/passwords/). */
@@ -308,6 +310,8 @@ export interface ClearDataRequest {
   /** Cookies and site data (storage, cache of service workers…). */
   siteData: boolean
   cache: boolean
+  /** The list of zak://downloads (the files stay on disk). */
+  downloads: boolean
 }
 
 // ── Étape 6: history, downloads, permissions, session (CLAUDE.md §6.7) ─────────────
@@ -331,18 +335,24 @@ export type DefaultBrowserStatus = 'default' | 'other' | 'unavailable'
 /** "Effacer les données de navigation": how far back. */
 export type ClearPeriod = 'hour' | 'day' | 'week' | 'month' | 'all'
 
-/** A download of this session (CLAUDE.md §6.7), as shown in the downloads panel. */
+/**
+ * A download (CLAUDE.md §6.7), as shown in the toolbar panel and on zak://downloads.
+ * `blocked`: its address is on the malware list (src/main/safety/), nothing was saved.
+ */
 export interface DownloadInfo {
   id: string
   filename: string
-  /** Final path on disk. */
+  /** Final path on disk ('' while the save dialog is open). */
   path: string
   url: string
-  state: 'progressing' | 'paused' | 'completed' | 'cancelled' | 'interrupted'
+  state: 'progressing' | 'paused' | 'completed' | 'cancelled' | 'interrupted' | 'blocked'
   receivedBytes: number
   /** 0 when unknown. */
   totalBytes: number
   startedAt: number
+  /** Completed downloads only: false once the file was moved or deleted. */
+  exists?: boolean
 }
 
-export type DownloadAction = 'pause' | 'resume' | 'cancel' | 'open' | 'show' | 'remove'
+/** `retry`: download the address again; `keep`: a blocked download, downloaded anyway. */
+export type DownloadAction = 'pause' | 'resume' | 'cancel' | 'open' | 'show' | 'remove' | 'retry' | 'keep'

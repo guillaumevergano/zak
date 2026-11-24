@@ -155,6 +155,7 @@ export class ZakMcpServer {
           theme: z.enum(['system', 'light', 'dark']).optional(),
           safeBrowsing: z.boolean().optional(),
           savePasswords: z.boolean().optional(),
+          askWhereToSave: z.boolean().optional(),
           sleepTabsAfter: z.union([z.literal(0), z.literal(15), z.literal(30), z.literal(60), z.literal(120)]).optional()
         }
       },

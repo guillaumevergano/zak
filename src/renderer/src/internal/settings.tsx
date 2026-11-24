@@ -197,6 +197,13 @@ function SettingsPage(): JSX.Element {
             {t('Modifier…@@dossier')}
           </SmallButton>
         </Row>
+        <Row title={t('Demander où enregistrer chaque fichier')} detail={t('Sinon, les fichiers vont directement dans ce dossier.')}>
+          <Toggle
+            label={t('Demander où enregistrer chaque fichier')}
+            on={general.askWhereToSave}
+            onChange={(askWhereToSave) => saveGeneral({ askWhereToSave })}
+          />
+        </Row>
       </Section>
 
       <Section
@@ -853,12 +860,13 @@ function ClearData({ onError }: { onError: (err: unknown) => void }): JSX.Elemen
   const [history, setHistory] = useState(true)
   const [siteData, setSiteData] = useState(false)
   const [cache, setCache] = useState(true)
+  const [downloads, setDownloads] = useState(false)
   const [done, setDone] = useState(false)
 
   const submit = (e: FormEvent): void => {
     e.preventDefault()
     setDone(false)
-    callInternal('settings/clearData', { period, history, siteData, cache })
+    callInternal('settings/clearData', { period, history, siteData, cache, downloads })
       .then(() => setDone(true))
       .catch(onError)
   }
@@ -884,6 +892,7 @@ function ClearData({ onError }: { onError: (err: unknown) => void }): JSX.Elemen
           </select>
         </label>
         {check(t('Historique de navigation'), history, setHistory)}
+        {check(t('Historique des téléchargements (les fichiers restent)'), downloads, setDownloads)}
         {check(t('Cookies et données de sites (toutes périodes, vous serez déconnecté)'), siteData, setSiteData)}
         {check(t('Images et fichiers en cache (toutes périodes)'), cache, setCache)}
         <div className="flex items-center gap-3">

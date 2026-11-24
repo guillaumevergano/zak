@@ -2,7 +2,7 @@ import { bugReportUrl, HELP_URLS } from '../support/report'
 import { t } from '@shared/i18n'
 import type { ProfileInfo } from '@shared/types'
 import { app, BrowserWindow, Menu, type MenuItemConstructorOptions } from 'electron'
-import { EXTENSIONS_PAGE_URL, HISTORY_PAGE_URL, PASSWORDS_PAGE_URL, SETTINGS_PAGE_URL } from '@shared/ipc'
+import { DOWNLOADS_PAGE_URL, EXTENSIONS_PAGE_URL, HISTORY_PAGE_URL, PASSWORDS_PAGE_URL, SETTINGS_PAGE_URL } from '@shared/ipc'
 import type { BrowserWindowHandle, WindowManager } from '../windows/WindowManager'
 import type { FindController } from '../find/FindController'
 import type { ZoomController } from '../tabs/zoom'
@@ -205,6 +205,13 @@ export function installAppMenu(windows: WindowManager, { find, zoom, session, up
           label: t("Afficher tout l'historique"),
           accelerator: 'CmdOrCtrl+Y',
           click: () => void windows.focusedNormal().tabs.create(HISTORY_PAGE_URL)
+        },
+        {
+          label: t('Téléchargements'),
+          // Like Chrome: ⌘⇧J on macOS, Ctrl+J elsewhere.
+          accelerator: process.platform === 'darwin' ? 'Cmd+Shift+J' : 'Ctrl+J',
+          // In a private window, its own downloads (like Chrome).
+          click: () => void windows.focusedOrFirst().tabs.create(DOWNLOADS_PAGE_URL)
         },
         { type: 'separator' },
         { label: t('Rouvrir la fenêtre fermée'), accelerator: 'CmdOrCtrl+Alt+Shift+T', click: () => session.reopenClosedWindow() },

@@ -19,7 +19,7 @@ async function audit(page: Page): Promise<string[]> {
 test('the chrome UI and the internal pages pass an accessibility audit', async () => {
   const { app, chrome } = await launch('a11y')
   expect(await audit(chrome)).toEqual([])
-  for (const page of ['newtab', 'settings', 'history', 'passwords', 'extensions']) {
+  for (const page of ['newtab', 'settings', 'history', 'downloads', 'passwords', 'extensions']) {
     await visit(chrome, `zak://${page}`)
     const internal = await pageAt(app, `zak://${page}`)
     // The page has rendered (and is the one asked: the omnibox navigates the same tab).

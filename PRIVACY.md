@@ -8,14 +8,14 @@ we (the Zak authors) receive nothing about you or how you use it.
 Everything Zak keeps is stored in its profile folder (`~/Library/Application Support/Zak` on
 macOS, `%APPDATA%\Zak` on Windows) and never leaves it:
 
-- your history, favorites, open tabs and settings;
+- your history, download list, favorites, open tabs and settings;
 - cookies, site data and cache, as in any browser;
 - saved passwords, encrypted with your system's keychain (macOS Keychain, Windows DPAPI);
 - crash reports: if Zak crashes, Chromium writes a report in the `Crashpad` folder of the profile.
   Nothing is uploaded. When you use **Help → Report a problem…**, Zak opens a GitHub issue
   prefilled with your Zak version and operating system, which you can edit before sending it.
 
-Private windows keep nothing: no history, no session, and their cookies and site data are deleted
+Private windows keep nothing: no history, no download list, no session, and their cookies and site data are deleted
 when the window closes.
 
 ## What Zak downloads, and from where

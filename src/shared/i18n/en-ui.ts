@@ -87,6 +87,17 @@ export const EN_UI: Record<string, string> = {
   Reprendre: 'Resume',
   'Afficher dans le dossier': 'Show in folder',
   'Retirer {name} de la liste': 'Remove {name} from the list',
+  'Rechercher dans les téléchargements': 'Search downloads',
+  'Les fichiers restent sur votre ordinateur quand vous les retirez de la liste.': 'Files stay on your computer when you remove them from the list.',
+  'Ouvrir le dossier': 'Open folder',
+  'Tout effacer': 'Clear all',
+  'Télécharger quand même': 'Download anyway',
+  'Demander où enregistrer chaque fichier': 'Ask where to save each file',
+  'Sinon, les fichiers vont directement dans ce dossier.': 'Otherwise, files go straight into this folder.',
+  'Historique des téléchargements (les fichiers restent)': 'Download history (files are kept)',
+  'Fichier supprimé': 'File deleted',
+  "Bloqué : ce fichier vient d'une adresse connue pour diffuser des logiciels malveillants": 'Blocked: this file comes from an address known to spread malware',
+  'Glissez le fichier vers le Finder ou une autre app': 'Drag the file to the Finder or another app',
 
   // overlay/EmojiField.tsx
   'Choisir un emoji': 'Choose an emoji',
