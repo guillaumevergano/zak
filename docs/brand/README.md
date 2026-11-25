@@ -1,6 +1,8 @@
 > Extrait du kit de marque v3.0 versionné dans le dépôt : les logos SVG (`logos/`), la palette,
 > les jetons CSS et la charte PDF. Les icônes de l'app sont dans `build/` (icon.icns, icon.ico, icon.png),
 > celles du site dans `site/brand/`, le favicon des pages internes dans `src/renderer/public/zak.svg`.
+> Dans `icon.icns` et `icon.ico`, les tailles 16 à 64 px utilisent le symbole micro, agrandi et épaissi
+> dans la tuile (sinon le Z ne se lit pas dans la vue en liste du Finder ni dans la barre des tâches).
 > Les autres chemins cités plus bas renvoient au kit complet.
 
 # Zak - kit de marque final v3.0
