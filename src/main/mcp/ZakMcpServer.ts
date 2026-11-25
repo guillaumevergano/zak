@@ -4,7 +4,7 @@ import type { AddressInfo } from 'node:net'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { z } from 'zod'
-import type { GeneralSettings, TabGroupColor } from '@shared/types'
+import type { GeneralSettings, SidebarSide, TabGroupColor, TabsPosition } from '@shared/types'
 
 /**
  * What the MCP tools can do with the running Zak (implemented in index.ts). Deliberately limited:
@@ -19,11 +19,14 @@ export interface ZakControl {
   groupTabs(ids: number[], name: string, color: TabGroupColor | undefined): string | null
   favorites(): unknown
   addFavorite(input: { url: string; title: string; emoji: string | null; folder: string | null }): string
-  settings(): GeneralSettings
-  updateSettings(patch: Partial<GeneralSettings>): GeneralSettings
+  settings(): McpSettings
+  updateSettings(patch: Partial<McpSettings>): McpSettings
   mods(): unknown
   selectMod(kind: 'theme' | 'newtab', id: string | null): unknown
 }
+
+/** The general settings, plus the window layout: sidebar side and where the tabs are. */
+export type McpSettings = GeneralSettings & { sidebarSide: SidebarSide; tabsPosition: TabsPosition }
 
 const COLORS = ['grey', 'blue', 'red', 'yellow', 'green', 'pink', 'purple', 'cyan', 'orange'] as const
 const MAX_BODY = 1_000_000
@@ -141,13 +144,15 @@ export class ZakMcpServer {
     )
     mcp.registerTool(
       'get_settings',
-      { description: 'Reads Zak\'s general settings (search engine, theme, startup, tab sleep…).', annotations: { readOnlyHint: true } },
+      { description: 'Reads Zak\'s general settings (search engine, theme, startup, tab sleep…) and its layout (sidebar side, tabs position).', annotations: { readOnlyHint: true } },
       () => json(c.settings())
     )
     mcp.registerTool(
       'update_settings',
       {
-        description: 'Changes general settings. Invalid values are ignored. The language applies at the next launch.',
+        description:
+          'Changes general settings and the layout. Invalid values are ignored. The language applies at the next launch; ' +
+          'sidebarSide (left or right of the page) and tabsPosition (top strip, or one per row in the sidebar) apply at once to every window.',
         inputSchema: {
           language: z.enum(['system', 'fr', 'en']).optional(),
           searchEngine: z.enum(['google', 'duckduckgo', 'brave', 'bing', 'qwant', 'ecosia']).optional(),
@@ -156,7 +161,9 @@ export class ZakMcpServer {
           safeBrowsing: z.boolean().optional(),
           savePasswords: z.boolean().optional(),
           askWhereToSave: z.boolean().optional(),
-          sleepTabsAfter: z.union([z.literal(0), z.literal(15), z.literal(30), z.literal(60), z.literal(120)]).optional()
+          sleepTabsAfter: z.union([z.literal(0), z.literal(15), z.literal(30), z.literal(60), z.literal(120)]).optional(),
+          sidebarSide: z.enum(['left', 'right']).optional(),
+          tabsPosition: z.enum(['top', 'sidebar']).optional()
         }
       },
       (patch) => json(c.updateSettings(patch))

@@ -95,11 +95,18 @@ export interface FolderInfo {
   collapsed: boolean
 }
 
+export type SidebarSide = 'left' | 'right'
+export type TabsPosition = 'top' | 'sidebar'
+
 export interface SidebarLayout {
-  /** 180–320 px when expanded. */
+  /** 220–380 px when expanded. */
   width: number
   /** Cmd/Ctrl+B: icons-only column. */
   collapsed: boolean
+  /** Which side of the page the sidebar sits on (right by default, CLAUDE.md §6.2). */
+  side: SidebarSide
+  /** Tabs in the strip at the top (default) or in the sidebar, one per row (§6.1). */
+  tabs: TabsPosition
 }
 
 export interface SidebarState {
@@ -231,7 +238,7 @@ export interface BrowserSettings {
   /** Remembered per-site permission decisions. */
   permissions: SitePermission[]
   /** Sidebar in icons-only mode (Cmd/Ctrl+B). */
-  sidebarCollapsed: boolean
+  sidebar: SidebarLayout
   extensionBar: ExtensionBarSettings
 }
 

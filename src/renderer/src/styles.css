@@ -169,6 +169,10 @@ body {
 .concave-corner {
   background: radial-gradient(circle at 100% 100%, transparent 13.5px, var(--color-cream) 14px);
 }
+/* The same, mirrored, when the sidebar is on the left of the page. */
+.concave-corner-left {
+  background: radial-gradient(circle at 0 100%, transparent 13.5px, var(--color-cream) 14px);
+}
 
 .emoji {
   font-family: var(--font-emoji);

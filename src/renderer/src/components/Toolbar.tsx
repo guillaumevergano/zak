@@ -12,17 +12,20 @@ const api = window.zak
 
 /**
  * Cream toolbar across the window (CLAUDE.md §7): navigation buttons, omnibox, then the extension
- * icons and the downloads button at its end, above the sidebar. No extensions in private windows (§6.3).
+ * icons and the downloads button at its end. Its rounded bottom corner is on the sidebar's side
+ * (the page goes down from the other one). No extensions in private windows (§6.3).
  */
 export function Toolbar({ widevine }: { widevine: WidevineStatus | null }): JSX.Element {
   const tab = useBrowserStore(selectActiveTab)
   const sidebar = useBrowserStore((s) => s.sidebar)
   const collapsed = sidebar?.layout.collapsed ?? false
+  // Sidebar on the left: the page's right edge has the scroll gutter (10 px) next to it.
+  const shape = sidebar?.layout.side === 'left' ? 'ml-2 mr-2.5 rounded-bl-[14px]' : 'mx-2 rounded-br-[14px]'
 
   return (
     <div
       data-testid="toolbar"
-      className="no-drag relative mx-2 flex h-[52px] shrink-0 items-center rounded-t-[14px] rounded-br-[14px] bg-cream text-cream-ink"
+      className={`no-drag relative flex h-[52px] shrink-0 items-center rounded-t-[14px] bg-cream text-cream-ink ${shape}`}
     >
       <div className="flex min-w-0 flex-1 items-center gap-1 pr-3 pl-2.5">
         <ToolButton title={t('Page précédente (⌘[)')} disabled={!tab?.canGoBack} onClick={() => tab && api.invoke('tabs:back', tab.id)}>

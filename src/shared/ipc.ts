@@ -74,7 +74,7 @@ export interface InvokeChannels {
   'widevine:getStatus': { args: []; result: WidevineStatus }
 
   'sidebar:getState': { args: []; result: SidebarState }
-  'sidebar:setLayout': { args: [layout: SidebarLayout]; result: void }
+  'sidebar:setLayout': { args: [layout: Partial<SidebarLayout>]; result: void }
   'favorites:add': { args: [input: FavoriteInput]; result: string }
   /** Drag of a tab from the strip into the sidebar: main knows its title, URL and favicon. */
   'favorites:addFromTab': { args: [tabId: TabId, folderId: string | null, index: number]; result: string }
@@ -277,7 +277,8 @@ export interface InternalApiRoutes {
   'settings/chooseDownloadDir': { body: null; result: GeneralSettings }
   'settings/removePermission': { body: { origin: string; permission: PermissionKind }; result: SitePermission[] }
   'settings/clearData': { body: ClearDataRequest; result: null }
-  'settings/setSidebarCollapsed': { body: { collapsed: boolean }; result: null }
+  /** Folded or not, left or right, tabs at the top or in the sidebar. */
+  'settings/setSidebar': { body: Partial<Pick<SidebarLayout, 'collapsed' | 'side' | 'tabs'>>; result: SidebarLayout }
   /** Installed extensions (a page only reaches its own routes, so not extensions/list). */
   'settings/listExtensions': { body: null; result: ExtensionInfo[] }
   /** Which extension icons the sidebar shows, and in what order. */
@@ -362,7 +363,7 @@ export const INTERNAL_API_ROUTES = [
   'settings/chooseDownloadDir',
   'settings/removePermission',
   'settings/clearData',
-  'settings/setSidebarCollapsed',
+  'settings/setSidebar',
   'settings/listExtensions',
   'settings/setExtensionBar',
   'settings/importBookmarks',

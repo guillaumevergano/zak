@@ -2,12 +2,13 @@ import { useEffect, useRef, useState, type MouseEvent, type PointerEvent as Reac
 import { useDroppable } from '@dnd-kit/core'
 import { rectSortingStrategy, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import type { FavoriteInfo, FolderInfo, OpenDisposition } from '@shared/types'
+import type { FavoriteInfo, FolderInfo, OpenDisposition, SidebarSide } from '@shared/types'
 import { SETTINGS_PAGE_URL } from '@shared/ipc'
 import { selectActiveTab, useBrowserStore } from '../store/useBrowserStore'
 import { dndId, ROOT_ZONE } from '../lib/dnd'
 import { matchFavorite, rectOf } from '../lib/favorites'
 import { ChevronIcon, GearIcon, GlobeIcon, PlusIcon, SidebarIcon } from './Icons'
+import { SidebarTabs } from './SidebarTabs'
 import { t } from '@shared/i18n'
 
 const api = window.zak
@@ -57,8 +58,9 @@ function useFoldAnimation(collapsed: boolean | null): { shown: boolean; phase: '
 }
 
 /**
- * Right sidebar on the plum frame, under the toolbar (CLAUDE.md §6.2, §7): the root favorites as a
- * 5-per-row emoji mosaic, then the folders as a list (their favorites as rows), and the settings button.
+ * Sidebar on the plum frame, under the toolbar, on the right of the page (or on its left, setting;
+ * CLAUDE.md §6.2, §7): the root favorites as a 5-per-row emoji mosaic, then the folders as a list
+ * (their favorites as rows), the tabs when they are in the sidebar, and the settings button.
  */
 export function Sidebar(): JSX.Element {
   const sidebar = useBrowserStore((s) => s.sidebar)
@@ -87,7 +89,7 @@ export function Sidebar(): JSX.Element {
   return (
     <aside
       ref={asideRef}
-      aria-label={t('Favoris')}
+      aria-label={layout.tabs === 'sidebar' ? t('Barre latérale') : t('Favoris')}
       data-testid="sidebar"
       data-collapsed={layout.collapsed || undefined}
       style={{
@@ -127,6 +129,13 @@ export function Sidebar(): JSX.Element {
           <PlusIcon />
           {!collapsed && t('Nouveau dossier')}
         </button>
+
+        {layout.tabs === 'sidebar' && (
+          <>
+            <div className="mb-3 h-px shrink-0 bg-frame-line" />
+            <SidebarTabs collapsed={collapsed} />
+          </>
+        )}
       </div>
 
       <footer style={content} className={`flex shrink-0 items-center gap-2 pt-2 pb-3 ${collapsed ? 'flex-col justify-center' : 'justify-end px-3'}`}>
@@ -138,7 +147,10 @@ export function Sidebar(): JSX.Element {
           onClick={() => useBrowserStore.getState().toggleSidebar()}
           className="grid h-10 w-10 place-items-center rounded-full border border-frame-line text-frame-text hover:bg-frame-2"
         >
-          <SidebarIcon collapse={!collapsed} />
+          {/* The icon draws a sidebar on the right: mirrored when it is on the left. */}
+          <span className={layout.side === 'left' ? '-scale-x-100' : undefined}>
+            <SidebarIcon collapse={!collapsed} />
+          </span>
         </button>
         <button
           data-testid="open-settings"
@@ -150,7 +162,7 @@ export function Sidebar(): JSX.Element {
         </button>
       </footer>
 
-      {!collapsed && phase === 'idle' && <ResizeHandle aside={asideRef} />}
+      {!collapsed && phase === 'idle' && <ResizeHandle aside={asideRef} side={layout.side} />}
     </aside>
   )
 }
@@ -420,16 +432,16 @@ export function TileIcon(props: { favorite: Pick<FavoriteInfo, 'emoji' | 'favico
   )
 }
 
-/** Drag the sidebar's left edge: 220–380 px, saved on release. */
-function ResizeHandle({ aside }: { aside: React.RefObject<HTMLElement | null> }): JSX.Element {
+/** Drag the sidebar's edge next to the page: 220–380 px, saved on release. */
+function ResizeHandle({ aside, side }: { aside: React.RefObject<HTMLElement | null>; side: SidebarSide }): JSX.Element {
   const setLayout = useBrowserStore((s) => s.setSidebarLayout)
 
   const start = (e: ReactPointerEvent<HTMLDivElement>): void => {
     const el = aside.current
     if (!el) return
     e.preventDefault()
-    const right = el.getBoundingClientRect().right
-    const widthAt = (x: number): number => Math.round(Math.min(Math.max(right - x, MIN_WIDTH), MAX_WIDTH))
+    const { left, right } = el.getBoundingClientRect()
+    const widthAt = (x: number): number => Math.round(Math.min(Math.max(side === 'left' ? x - left : right - x, MIN_WIDTH), MAX_WIDTH))
     const move = (ev: PointerEvent): void => setLayout({ width: widthAt(ev.clientX), collapsed: false }, false)
     const up = (ev: PointerEvent): void => {
       window.removeEventListener('pointermove', move)
@@ -444,8 +456,8 @@ function ResizeHandle({ aside }: { aside: React.RefObject<HTMLElement | null> })
     <div
       onPointerDown={start}
       title={t('Redimensionner')}
-      // Inside the sidebar's edge: the gutter on its left holds the page's scroll indicator.
-      className="absolute top-4 bottom-4 left-0 w-1.5 cursor-col-resize rounded-full hover:bg-iris/25"
+      // Inside the sidebar's edge: the frame between it and the page has the cream panel's corner.
+      className={`absolute top-4 bottom-4 w-1.5 cursor-col-resize rounded-full hover:bg-iris/25 ${side === 'left' ? 'right-0' : 'left-0'}`}
     />
   )
 }

@@ -178,7 +178,9 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
   handle('widevine:getStatus', () => widevine)
 
   handle('sidebar:getState', () => sidebar.state())
-  handle('sidebar:setLayout', (_e, layout) => sidebar.setLayout(layout))
+  handle('sidebar:setLayout', (_e, layout) => {
+    sidebar.setLayout(layout)
+  })
   handle('favorites:add', (_e, input) => sidebar.change(() => favorites.addFavorite(input)))
   handle('favorites:addFromTab', (e, tabId, folderId, index) => sidebar.addFromTab(windowOf(e), tabId, folderId, index))
   handle('favorites:update', (_e, id, input) => sidebar.change(() => favorites.updateFavorite(id, input)))
@@ -252,6 +254,7 @@ app.whenReady().then(async () => {
   nativeTheme.themeSource = settings.getGeneral().theme
   recordHistory(windows, history)
   const sidebar = new SidebarController(favorites, settings, windows)
+  windows.setTabsPosition(settings.getSidebar().tabs)
   // Mods (docs/customize/): a theme for Zak itself, a new tab page of one's own.
   const mods = new ModsManager({ get: () => settings.getMods(), set: (m) => settings.setMods(m) })
   mods.start()
@@ -419,7 +422,7 @@ app.whenReady().then(async () => {
       general: settings.getGeneral(),
       pip: settings.getPip(),
       permissions: sites.permissions(),
-      sidebarCollapsed: settings.getSidebar().collapsed,
+      sidebar: settings.getSidebar(),
       extensionBar: settings.getExtensionBar()
     }),
     'settings/listExtensions': () => extensions.list(),
@@ -504,10 +507,7 @@ app.whenReady().then(async () => {
       settings.setGeneral({ language })
       return null
     },
-    'settings/setSidebarCollapsed': ({ collapsed }) => {
-      sidebar.setLayout({ ...settings.getSidebar(), collapsed })
-      return null
-    },
+    'settings/setSidebar': ({ collapsed, side, tabs }) => sidebar.setLayout({ collapsed, side, tabs }),
     'settings/setGeneral': (patch) => {
       // The folder only changes through the picker below.
       const { downloadDir: _ignored, ...rest } = patch

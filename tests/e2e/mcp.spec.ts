@@ -45,6 +45,12 @@ test('Claude Code or Codex can drive Zak through its MCP server, once allowed', 
   await client.callTool({ name: 'update_settings', arguments: { theme: 'dark', searchEngine: 'duckduckgo' } })
   await expect.poll(() => app.evaluate(({ nativeTheme }) => nativeTheme.themeSource)).toBe('dark')
 
+  // The layout too: sidebar on the left, tabs in it, in every window at once.
+  await client.callTool({ name: 'update_settings', arguments: { sidebarSide: 'left', tabsPosition: 'sidebar' } })
+  await expect(chrome.getByTestId('sidebar-tabs')).toBeVisible()
+  await expect.poll(() => chrome.getByTestId('sidebar').evaluate((el) => el.getBoundingClientRect().left)).toBe(0)
+  expect(JSON.parse(text(await client.callTool({ name: 'get_settings', arguments: {} })))).toMatchObject({ sidebarSide: 'left', tabsPosition: 'sidebar' })
+
   await client.close()
   // Switched off: the server stops.
   await settings.getByRole('switch', { name: 'Laisser Claude Code ou Codex piloter Zak' }).click()

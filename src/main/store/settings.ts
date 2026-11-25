@@ -30,11 +30,24 @@ const SCHEMA_URL = 'https://raw.githubusercontent.com/guillaumevergano/zak/main/
 export const SIDEBAR_MIN_WIDTH = 220
 export const SIDEBAR_MAX_WIDTH = 380
 
+export const DEFAULT_SIDEBAR: SidebarLayout = { width: 300, collapsed: false, side: 'right', tabs: 'top' }
+
+/** The file can be edited by hand: anything unknown falls back to the default. */
+export function normalizeSidebar(raw: Partial<SidebarLayout> | undefined): SidebarLayout {
+  const width = typeof raw?.width === 'number' && Number.isFinite(raw.width) ? raw.width : DEFAULT_SIDEBAR.width
+  return {
+    width: Math.round(Math.min(Math.max(width, SIDEBAR_MIN_WIDTH), SIDEBAR_MAX_WIDTH)),
+    collapsed: raw?.collapsed === true,
+    side: raw?.side === 'left' ? 'left' : 'right',
+    tabs: raw?.tabs === 'sidebar' ? 'sidebar' : 'top'
+  }
+}
+
 export class SettingsStore {
   private store = new Store<Settings>({
     // The file can be edited by hand or by an AI agent (docs/customize/): changes apply at once.
     watch: true,
-    defaults: { sidebar: { width: 300, collapsed: false }, disabledExtensions: [], unpackedExtensions: [], pip: DEFAULT_PIP_SETTINGS, general: {}, extensionBar: DEFAULT_EXTENSION_BAR, onboarded: false, mods: { theme: null, newtab: null }, mcp: { enabled: false, port: 0, token: '' } }
+    defaults: { sidebar: DEFAULT_SIDEBAR, disabledExtensions: [], unpackedExtensions: [], pip: DEFAULT_PIP_SETTINGS, general: {}, extensionBar: DEFAULT_EXTENSION_BAR, onboarded: false, mods: { theme: null, newtab: null }, mcp: { enabled: false, port: 0, token: '' } }
   })
 
   /** Where the settings live (config.json in the profile folder), for « Ouvrir le fichier de réglages ». */
@@ -54,12 +67,15 @@ export class SettingsStore {
   }
 
   getSidebar(): SidebarLayout {
-    return this.store.get('sidebar')
+    return normalizeSidebar(this.store.get('sidebar'))
   }
 
-  setSidebar(layout: SidebarLayout): void {
-    const width = Math.round(Math.min(Math.max(layout.width, SIDEBAR_MIN_WIDTH), SIDEBAR_MAX_WIDTH))
-    this.store.set('sidebar', { width, collapsed: layout.collapsed })
+  /** Any part of the layout; the rest stays as it is. */
+  setSidebar(patch: Partial<SidebarLayout>): SidebarLayout {
+    const given = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined))
+    const layout = normalizeSidebar({ ...this.getSidebar(), ...given })
+    this.store.set('sidebar', layout)
+    return layout
   }
 
   getExtensionBar(): ExtensionBarSettings {

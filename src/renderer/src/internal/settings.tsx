@@ -14,8 +14,7 @@ import type {
   McpState,
   ModInfo,
   PipSettings,
-  ProfileInfo
-} from '@shared/types'
+  ProfileInfo, SidebarLayout } from '@shared/types'
 import { orderExtensions } from '@shared/extensionBar'
 import { EXTENSIONS_PAGE_URL, PASSWORDS_PAGE_URL } from '@shared/ipc'
 import { permissionLabel } from '../lib/permissions'
@@ -36,6 +35,16 @@ function SettingsPage(): JSX.Element {
   }, [])
 
   const update = (patch: Partial<BrowserSettings>): void => setSettings((s) => (s ? { ...s, ...patch } : s))
+
+  const saveSidebar = (patch: Partial<Pick<SidebarLayout, 'collapsed' | 'side' | 'tabs'>>): void => {
+    if (settings) update({ sidebar: { ...settings.sidebar, ...patch } })
+    callInternal('settings/setSidebar', patch)
+      .then((sidebar) => {
+        update({ sidebar })
+        setError(null)
+      })
+      .catch(fail)
+  }
 
   const saveGeneral = (patch: Partial<GeneralSettings>): void => {
     if (settings) update({ general: { ...settings.general, ...patch } })
@@ -162,15 +171,30 @@ function SettingsPage(): JSX.Element {
             <option value={120}>{t('Après {n} heures', { n: 2 })}</option>
           </select>
         </Row>
+        <Row title={t('Position de la barre latérale')} detail={t('À gauche ou à droite de la page.')}>
+          <select
+            aria-label={t('Position de la barre latérale')}
+            className={selectClass}
+            value={settings.sidebar.side}
+            onChange={(e) => saveSidebar({ side: e.target.value === 'left' ? 'left' : 'right' })}
+          >
+            <option value="left">{t('À gauche')}</option>
+            <option value="right">{t('À droite')}</option>
+          </select>
+        </Row>
+        <Row title={t('Onglets')} detail={t('En haut de la fenêtre, ou un par ligne dans la barre latérale.')}>
+          <select
+            aria-label={t('Position des onglets')}
+            className={selectClass}
+            value={settings.sidebar.tabs}
+            onChange={(e) => saveSidebar({ tabs: e.target.value === 'sidebar' ? 'sidebar' : 'top' })}
+          >
+            <option value="top">{t('En haut')}</option>
+            <option value="sidebar">{t('Dans la barre latérale')}</option>
+          </select>
+        </Row>
         <Row title={t('Barre latérale réduite')} detail={t('Icônes seules (⌘B).')}>
-          <Toggle
-            label={t('Barre latérale réduite')}
-            on={settings.sidebarCollapsed}
-            onChange={(collapsed) => {
-              update({ sidebarCollapsed: collapsed })
-              callInternal('settings/setSidebarCollapsed', { collapsed }).catch(fail)
-            }}
-          />
+          <Toggle label={t('Barre latérale réduite')} on={settings.sidebar.collapsed} onChange={(collapsed) => saveSidebar({ collapsed })} />
         </Row>
       </Section>
 
