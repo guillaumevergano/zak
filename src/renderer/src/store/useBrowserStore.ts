@@ -30,7 +30,8 @@ interface BrowserStore {
   /** Optimistic drag & drop of a favorite while main persists it. */
   moveFavoriteLocally: (id: string, folderId: string | null, index: number) => void
   /** Local layout change; `persist` saves it (shared by all windows). */
-  setSidebarLayout: (layout: SidebarLayout, persist: boolean) => void
+  /** Merged into the current layout; `persist` saves it (every window follows). */
+  setSidebarLayout: (patch: Partial<SidebarLayout>, persist: boolean) => void
   toggleSidebar: () => void
 }
 
@@ -88,14 +89,14 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
       return { sidebar: { ...sidebar, favorites: [...others, ...placed] } }
     }),
 
-  setSidebarLayout: (layout, persist) => {
-    set(({ sidebar }) => (sidebar ? { sidebar: { ...sidebar, layout } } : {}))
-    if (persist) void api.invoke('sidebar:setLayout', layout)
+  setSidebarLayout: (patch, persist) => {
+    set(({ sidebar }) => (sidebar ? { sidebar: { ...sidebar, layout: { ...sidebar.layout, ...patch } } } : {}))
+    if (persist) void api.invoke('sidebar:setLayout', patch)
   },
 
   toggleSidebar: () => {
     const layout = get().sidebar?.layout
-    if (layout) get().setSidebarLayout({ ...layout, collapsed: !layout.collapsed }, true)
+    if (layout) get().setSidebarLayout({ collapsed: !layout.collapsed }, true)
   }
 }))
 

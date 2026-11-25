@@ -6,7 +6,7 @@ import type { SettingsStore } from '../store/settings'
 import type { SidebarController } from '../sidebar/SidebarController'
 import type { ModsManager } from '../mods/ModsManager'
 import type { BrowserWindowHandle, WindowManager } from '../windows/WindowManager'
-import type { ZakControl } from './ZakMcpServer'
+import type { McpSettings, ZakControl } from './ZakMcpServer'
 
 /** The MCP tools' view of the running Zak (see ZakControl for what is, and isn't, reachable). */
 export function zakControl(deps: {
@@ -18,6 +18,10 @@ export function zakControl(deps: {
   applySettings: (general: GeneralSettings) => void
 }): ZakControl {
   const { windows, favorites, sidebar, settings, mods } = deps
+  const withLayout = (general: GeneralSettings): McpSettings => {
+    const { side, tabs } = settings.getSidebar()
+    return { ...general, sidebarSide: side, tabsPosition: tabs }
+  }
   const normal = (): BrowserWindowHandle[] => windows.all().filter((h) => !h.private)
   const windowOf = (tabId: number): BrowserWindowHandle | undefined => normal().find((h) => h.tabs.indexOf(tabId) !== -1)
 
@@ -73,13 +77,14 @@ export function zakControl(deps: {
       sidebar.broadcast()
       return id
     },
-    settings: () => settings.getGeneral(),
+    settings: () => withLayout(settings.getGeneral()),
     updateSettings: (patch) => {
       // The download folder only changes through its picker, like in the settings page.
-      const { downloadDir: _ignored, ...rest } = patch
+      const { downloadDir: _ignored, sidebarSide, tabsPosition, ...rest } = patch
       const general = settings.setGeneral(rest)
       deps.applySettings(general)
-      return general
+      if (sidebarSide !== undefined || tabsPosition !== undefined) sidebar.setLayout({ side: sidebarSide, tabs: tabsPosition })
+      return withLayout(general)
     },
     mods: () => ({ dir: mods.dir, mods: mods.list() }),
     selectMod: (kind, id) => {

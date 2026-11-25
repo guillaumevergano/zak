@@ -32,6 +32,15 @@ export const EN_UI: Record<string, string> = {
 
   // components/Sidebar.tsx
   'Nouveau dossier': 'New folder',
+  'Barre latérale': 'Sidebar',
+  'Position de la barre latérale': 'Sidebar position',
+  'À gauche ou à droite de la page.': 'On the left or the right of the page.',
+  'À gauche': 'Left',
+  'À droite': 'Right',
+  'En haut de la fenêtre, ou un par ligne dans la barre latérale.': 'At the top of the window, or one per row in the sidebar.',
+  'Position des onglets': 'Tabs position',
+  'En haut': 'At the top',
+  'Dans la barre latérale': 'In the sidebar',
   'Réglages (⌘,)': 'Settings (⌘,)',
   'Glisse un favori ou un onglet ici': 'Drag a favorite or a tab here',
   'Ajouter la page actuelle': 'Add current page',

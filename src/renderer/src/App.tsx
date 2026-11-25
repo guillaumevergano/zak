@@ -15,7 +15,7 @@ import { useBrowserStore } from './store/useBrowserStore'
 import { collisionDetection, parseDndId, ROOT_ZONE, type DndKind } from './lib/dnd'
 import { rectOf } from './lib/favorites'
 import { Sidebar, TileIcon } from './components/Sidebar'
-import { TabGhost, TabStrip } from './components/TabStrip'
+import { TabGhost, TabStrip, TitleBar } from './components/TabStrip'
 import { Toolbar } from './components/Toolbar'
 import { SplitFrame } from './components/SplitFrame'
 import { ScrollTrack } from './components/ScrollTrack'
@@ -24,15 +24,18 @@ import { SPLIT_INSET } from '@shared/split'
 const api = window.zak
 
 /**
- * Browser chrome (CLAUDE.md §7, docs/design/maquette-v2.png): tab strip on the plum frame, then the
- * cream toolbar across the whole width (extension icons at its end), then the page on the left and
- * the plum sidebar on the right. Toolbar and page form one cream panel with rounded corners.
+ * Browser chrome (CLAUDE.md §7, docs/design/maquette-v2.png): tab strip on the plum frame (or, with
+ * the tabs in the sidebar, a thin title bar), then the cream toolbar across the whole width
+ * (extension icons at its end), then the page and the plum sidebar, on its right by default or on
+ * its left (mirrored). Toolbar and page form one cream panel with rounded corners.
  * The page itself is a WebContentsView that main lays over the `content` placeholder.
  */
 export function App(): JSX.Element {
   const [widevine, setWidevine] = useState<WidevineStatus | null>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const inSplit = useBrowserStore((s) => s.splits.some((x) => s.activeId !== null && x.tabs.includes(s.activeId)))
+  const side = useBrowserStore((s) => s.sidebar?.layout.side ?? 'right')
+  const tabsInSidebar = useBrowserStore((s) => s.sidebar?.layout.tabs === 'sidebar')
 
   useEffect(() => {
     const { setTabsState, focusOmnibox, setSidebar, toggleSidebar, setDownloads } = useBrowserStore.getState()
@@ -88,16 +91,26 @@ export function App(): JSX.Element {
         {/* For screen readers: the window's title, and the bars as one landmark. */}
         <header className="contents">
           <h1 className="sr-only">Zak</h1>
-          <TabStrip />
+          {tabsInSidebar ? <TitleBar /> : <TabStrip />}
           <Toolbar widevine={widevine} />
         </header>
         <div className="flex min-h-0 flex-1">
-          <main aria-label={t('Page')} data-split={inSplit || undefined} className="page-slot no-drag relative mb-2 ml-2 min-w-0 flex-1 overflow-hidden rounded-b-[14px]">
+          {side === 'left' && (
+            <>
+              <Sidebar />
+              <SidebarEdge />
+            </>
+          )}
+          <main
+            aria-label={t('Page')}
+            data-split={inSplit || undefined}
+            className={`page-slot no-drag relative mb-2 min-w-0 flex-1 overflow-hidden rounded-b-[14px] ${side === 'right' ? 'ml-2' : ''}`}
+          >
             <div ref={contentRef} className="h-full w-full" />
             <SplitFrame />
           </main>
-          <ScrollGutter />
-          <Sidebar />
+          <ScrollGutter corner={side === 'right'} />
+          {side === 'right' && <Sidebar />}
         </div>
       </div>
     </DragAndDrop>
@@ -105,18 +118,27 @@ export function App(): JSX.Element {
 }
 
 /**
- * Between the page and the sidebar: the page's thin scroll indicator (its own scrollbar is hidden),
- * on the plum frame. In a split view, the right page's (the left one's is in the split's gap).
- * The cream panel turns down here into the page: a concave corner at the top.
+ * On the page's right: its thin scroll indicator (its own scrollbar is hidden), on the plum frame.
+ * In a split view, the right page's (the left one's is in the split's gap). With the sidebar on the
+ * right, the cream panel turns down here into the page: a concave corner at the top.
  */
-function ScrollGutter(): JSX.Element {
+function ScrollGutter({ corner }: { corner: boolean }): JSX.Element {
   const activeId = useBrowserStore((s) => s.activeId)
   const split = useBrowserStore((s) => s.splits.find((x) => activeId !== null && x.tabs.includes(activeId)))
   const inset = split ? SPLIT_INSET : 0
   return (
     <div data-testid="page-gutter" className="relative mb-2 w-2.5 shrink-0 bg-frame">
-      <div aria-hidden className="concave-corner pointer-events-none absolute top-0 left-0 z-10 size-[14px]" />
+      {corner && <div aria-hidden className="concave-corner pointer-events-none absolute top-0 left-0 z-10 size-[14px]" />}
       <ScrollTrack tabId={split ? split.tabs[1] : activeId} testId="page-scroll" style={{ left: 0, right: 0, top: inset, bottom: inset }} />
+    </div>
+  )
+}
+
+/** Sidebar on the left: the frame between it and the page, where the cream panel turns down into the page. */
+function SidebarEdge(): JSX.Element {
+  return (
+    <div className="relative mb-2 w-2.5 shrink-0 bg-frame">
+      <div aria-hidden className="concave-corner-left pointer-events-none absolute top-0 right-0 z-10 size-[14px]" />
     </div>
   )
 }
@@ -146,14 +168,15 @@ function openEditor({ kind, id }: { kind: 'favorite' | 'folder'; id: string }): 
 
 /**
  * The tab a dragged tab would join in a split view: the pointer is over the middle of a tab that
- * isn't pinned nor already in a split view. Over its edges, the drag reorders as usual. While over
- * the middle the strip stays still (TabStrip), so the target doesn't slide away from the pointer.
+ * isn't pinned nor already in a split view (across the strip, or down the sidebar's list). Over its
+ * edges, the drag reorders as usual. While over the middle the list stays still, so the target
+ * doesn't slide away from the pointer.
  */
 function mergeCandidate({ active, over, delta, activatorEvent }: DragMoveEvent): number | null {
   const from = parseDndId(active.id)
   const to = over ? parseDndId(over.id) : null
   if (!over || from.kind !== 'tab' || to?.kind !== 'tab' || !(activatorEvent instanceof PointerEvent)) return null
-  const { tabs, splits } = useBrowserStore.getState()
+  const { tabs, splits, sidebar } = useBrowserStore.getState()
   const dragged = tabs.find((t) => t.id === Number(from.id))
   const target = tabs.find((t) => t.id === Number(to.id))
   if (!dragged || !target || dragged.id === target.id || dragged.pinned || target.pinned) return null
@@ -161,6 +184,10 @@ function mergeCandidate({ active, over, delta, activatorEvent }: DragMoveEvent):
   const x = activatorEvent.clientX + delta.x
   const y = activatorEvent.clientY + delta.y
   const r = over.rect
+  if (sidebar?.layout.tabs === 'sidebar') {
+    const down = (y - r.top) / r.height
+    return x >= r.left - 6 && x <= r.left + r.width + 6 && down > 0.25 && down < 0.75 ? target.id : null
+  }
   const across = (x - r.left) / r.width
   return y >= r.top - 6 && y <= r.top + r.height + 6 && across > 0.2 && across < 0.8 ? target.id : null
 }

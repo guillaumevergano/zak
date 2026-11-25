@@ -3,7 +3,7 @@ import { EventEmitter } from 'node:events'
 import { join } from 'node:path'
 import { BrowserWindow, nativeTheme, type BaseWindow, type Menu, type Session, type WebContents } from 'electron'
 import type { EventChannel, EventChannels } from '@shared/ipc'
-import type { OverlayRequest, TabId } from '@shared/types'
+import type { OverlayRequest, TabId, TabsPosition } from '@shared/types'
 import { PRIVATE_NEW_TAB_URL } from '@shared/url'
 import type { SessionTab } from '../store/sessions'
 import { TabManager } from '../tabs/TabManager'
@@ -48,6 +48,8 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
   static profileLabel: () => string | null = () => null
 
   private handles = new Map<number, BrowserWindowHandle>()
+  /** Tabs at the top (a 44 px strip) or in the sidebar (a 36 px title bar): Windows' caption buttons follow. */
+  private tabsPosition: TabsPosition = 'top'
 
   /** Page context menu → "Ajouter aux favoris de la sidebar" (set by the sidebar controller). */
   addLinkToFavorites: ((url: string, title: string) => void) | null = null
@@ -77,7 +79,7 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
       backgroundColor: frameColor,
       ...(isMac
         ? { trafficLightPosition: { x: 16, y: 11 } }
-        : { titleBarOverlay: { color: frameColor, symbolColor: isPrivate ? '#C9BCE8' : '#D9C9D4', height: 44 } }),
+        : { titleBarOverlay: { color: frameColor, symbolColor: isPrivate ? '#C9BCE8' : '#D9C9D4', height: titleBarHeight(this.tabsPosition) } }),
       webPreferences: {
         // The chrome UI lives in the default session; tabs live in `persist:main`.
         preload: join(__dirname, '../preload/chrome.js'),
@@ -189,6 +191,20 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
     return [...this.handles.values()]
   }
 
+  /**
+   * Tabs moved between the top strip and the sidebar: the band at the top changes height, and so do
+   * the caption buttons drawn over it on Windows and Linux. On macOS the traffic lights stay put
+   * (y 11 sits at the middle of both bands).
+   */
+  setTabsPosition(position: TabsPosition): void {
+    if (position === this.tabsPosition) return
+    this.tabsPosition = position
+    if (process.platform === 'darwin') return
+    for (const { window } of this.handles.values()) {
+      if (!window.isDestroyed()) window.setTitleBarOverlay({ height: titleBarHeight(position) })
+    }
+  }
+
   /** The window of a chrome UI or overlay webContents. */
   fromWebContents(sender: WebContents): BrowserWindowHandle | undefined {
     for (const handle of this.handles.values()) {
@@ -289,3 +305,6 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
     if (!window.isDestroyed()) window.webContents.send(channel, payload)
   }
 }
+
+/** Height of the plum band at the top: the tab strip, or the title bar when tabs are in the sidebar. */
+const titleBarHeight = (position: TabsPosition): number => (position === 'sidebar' ? 36 : 44)

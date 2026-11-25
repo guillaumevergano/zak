@@ -34,7 +34,13 @@
       "type": "object",
       "properties": {
         "width": { "type": "number", "minimum": 220, "maximum": 380, "default": 300 },
-        "collapsed": { "type": "boolean", "default": false, "description": "Icons-only sidebar (⌘B)." }
+        "collapsed": { "type": "boolean", "default": false, "description": "Icons-only sidebar (⌘B)." },
+        "side": { "enum": ["left", "right"], "default": "right", "description": "Which side of the page the sidebar sits on." },
+        "tabs": {
+          "enum": ["top", "sidebar"],
+          "default": "top",
+          "description": "Tabs in the strip at the top of the window, or one per row in the sidebar (under the folders)."
+        }
       }
     },
     "extensionBar": {

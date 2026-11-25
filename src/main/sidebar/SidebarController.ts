@@ -73,8 +73,9 @@ export class SidebarController {
     return result
   }
 
-  setLayout(layout: SidebarLayout): void {
-    this.change(() => this.settings.setSidebar(layout))
+  /** Width, folding, side, tabs position: every window follows at once. */
+  setLayout(patch: Partial<SidebarLayout>): SidebarLayout {
+    return this.change(() => this.settings.setSidebar(patch))
   }
 
   addFromTab(handle: BrowserWindowHandle, tabId: TabId, folderId: string | null, index: number): string {
@@ -138,7 +139,10 @@ export class SidebarController {
   }
 
   /** Pushes the sidebar state (favorites, layout, extension bar) to every window. */
+  /** After any change, also one made to the settings file outside Zak. */
   broadcast(): void {
-    this.windows.broadcast('sidebar:state', this.state())
+    const state = this.state()
+    this.windows.setTabsPosition(state.layout.tabs)
+    this.windows.broadcast('sidebar:state', state)
   }
 }
