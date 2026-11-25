@@ -74,6 +74,14 @@ test('favorites go in rows: drop one under the last row to start a new line', as
   const sidebar = chrome.getByTestId('sidebar')
   const rows = sidebar.getByTestId('mosaic-row')
   await expect(rows).toHaveCount(1)
+  // While dragging, the free places show as dotted squares.
+  const musique = (await sidebar.getByRole('button', { name: 'Musique', exact: true }).boundingBox())!
+  await chrome.mouse.move(musique.x + musique.width / 2, musique.y + musique.height / 2)
+  await chrome.mouse.down()
+  await chrome.mouse.move(musique.x + 30, musique.y + 30, { steps: 4 })
+  await expect(sidebar.getByTestId('mosaic-slot')).toHaveCount(3)
+  await chrome.mouse.up()
+  await expect(sidebar.getByTestId('mosaic-slot')).toHaveCount(0)
   await dragTo(sidebar.getByRole('button', { name: 'Musique', exact: true }), () => sidebar.getByTestId('new-row'))
   await expect(rows).toHaveCount(2)
   await expect(rows.nth(1).getByRole('button', { name: 'Musique', exact: true })).toBeVisible()
