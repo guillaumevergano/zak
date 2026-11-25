@@ -43,6 +43,77 @@
         }
       }
     },
+    "appearance": {
+      "type": "object",
+      "description": "Zak's own colors and fonts (zak://appearance, MCP update_appearance): only what differs from Zak's defaults. Applied at once, over a mod theme; private windows keep their colors.",
+      "properties": {
+        "colors": {
+          "type": "object",
+          "description": "Color tokens per theme. frame = tab strip and sidebar, cream = toolbar and Zak's pages, iris and pink = accents.",
+          "properties": {
+            "light": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "frame": { "$ref": "#/$defs/color" },
+                "frame-2": { "$ref": "#/$defs/color" },
+                "frame-3": { "$ref": "#/$defs/color" },
+                "frame-line": { "$ref": "#/$defs/color" },
+                "frame-text": { "$ref": "#/$defs/color" },
+                "frame-sub": { "$ref": "#/$defs/color" },
+                "frame-dim": { "$ref": "#/$defs/color" },
+                "cream": { "$ref": "#/$defs/color" },
+                "cream-2": { "$ref": "#/$defs/color" },
+                "cream-edge": { "$ref": "#/$defs/color" },
+                "cream-ink": { "$ref": "#/$defs/color" },
+                "cream-sub": { "$ref": "#/$defs/color" },
+                "cream-dim": { "$ref": "#/$defs/color" },
+                "blush": { "$ref": "#/$defs/color" },
+                "iris": { "$ref": "#/$defs/color" },
+                "iris-ring": { "$ref": "#/$defs/color" },
+                "pink": { "$ref": "#/$defs/color" },
+                "pink-button": { "$ref": "#/$defs/color" },
+                "pink-soft": { "$ref": "#/$defs/color" }
+              }
+            },
+            "dark": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "frame": { "$ref": "#/$defs/color" },
+                "frame-2": { "$ref": "#/$defs/color" },
+                "frame-3": { "$ref": "#/$defs/color" },
+                "frame-line": { "$ref": "#/$defs/color" },
+                "frame-text": { "$ref": "#/$defs/color" },
+                "frame-sub": { "$ref": "#/$defs/color" },
+                "frame-dim": { "$ref": "#/$defs/color" },
+                "cream": { "$ref": "#/$defs/color" },
+                "cream-2": { "$ref": "#/$defs/color" },
+                "cream-edge": { "$ref": "#/$defs/color" },
+                "cream-ink": { "$ref": "#/$defs/color" },
+                "cream-sub": { "$ref": "#/$defs/color" },
+                "cream-dim": { "$ref": "#/$defs/color" },
+                "blush": { "$ref": "#/$defs/color" },
+                "iris": { "$ref": "#/$defs/color" },
+                "iris-ring": { "$ref": "#/$defs/color" },
+                "pink": { "$ref": "#/$defs/color" },
+                "pink-button": { "$ref": "#/$defs/color" },
+                "pink-soft": { "$ref": "#/$defs/color" }
+              }
+            }
+          }
+        },
+        "fonts": {
+          "type": "object",
+          "description": "An installed font family, or null for Zak's own (DM Sans, Fraunces, JetBrains Mono).",
+          "properties": {
+            "ui": { "type": ["string", "null"], "description": "Interface: tabs, menus, settings." },
+            "display": { "type": ["string", "null"], "description": "Titles: new tab, Zak's pages." },
+            "mono": { "type": ["string", "null"], "description": "The address in the address bar, code." }
+          }
+        }
+      }
+    },
     "extensionBar": {
       "type": "object",
       "description": "Extension icons shown at the top of the sidebar.",
@@ -58,5 +129,8 @@
     },
     "disabledExtensions": { "type": "array", "items": { "type": "string" }, "description": "Ids of extensions switched off." },
     "onboarded": { "type": "boolean", "description": "The welcome page has been shown." }
+  },
+  "$defs": {
+    "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" }
   }
 }

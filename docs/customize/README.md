@@ -148,6 +148,7 @@ bearer_token_env_var = "ZAK_MCP_TOKEN"
 | `open_tab`, `close_tabs`, `activate_tab` | open an address or a search, close, show a tab |
 | `group_tabs` | put tabs into a named, colored group |
 | `list_favorites`, `add_favorite` | read the sidebar, add a favorite (emoji, folder) |
+| `get_appearance`, `update_appearance` | read and change Zak's colors (per theme) and fonts; the window follows at once |
 | `get_settings`, `update_settings` | read and change the general settings and the layout (`sidebarSide`: left or right, `tabsPosition`: top or sidebar) |
 | `list_mods`, `use_mod` | list the mods, pick a theme or a new tab page |
 

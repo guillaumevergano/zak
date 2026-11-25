@@ -1,3 +1,4 @@
+import type { Appearance } from './appearance'
 import type { SearchEngine } from './url'
 
 export type TabId = number
@@ -363,3 +364,12 @@ export interface DownloadInfo {
 
 /** `retry`: download the address again; `keep`: a blocked download, downloaded anyway. */
 export type DownloadAction = 'pause' | 'resume' | 'cancel' | 'open' | 'show' | 'remove' | 'retry' | 'keep'
+
+/** What zak://appearance shows: the overrides, the theme, the layout, and a mod theme underneath. */
+export interface AppearanceState {
+  appearance: Appearance
+  theme: GeneralSettings['theme']
+  sidebar: SidebarLayout
+  /** Name of the mod theme in use (Réglages → Personnaliser), under these colors; null: none. */
+  modTheme: string | null
+}

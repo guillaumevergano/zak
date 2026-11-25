@@ -1,3 +1,4 @@
+import type { Appearance, AppearancePatch } from './appearance'
 import type {
   PageScroll,
   AgentId,
@@ -9,6 +10,7 @@ import type {
   TabGroupInfo,
   SavePasswordChoice,
   SavedLogin,
+  AppearanceState,
   BrowserSettings,
   DownloadAction,
   DownloadInfo,
@@ -342,6 +344,12 @@ export interface InternalApiRoutes {
   'welcome/importFrom': { body: { profile: string }; result: { favorites: number; folders: number; pages: number } }
   'welcome/makeDefaultBrowser': { body: null; result: DefaultBrowserStatus }
   'welcome/setLanguage': { body: { language: GeneralSettings['language'] }; result: null }
+  /** zak://appearance: Zak's colors and fonts, the theme, the layout; everything applies at once. */
+  'appearance/get': { body: null; result: AppearanceState }
+  'appearance/set': { body: AppearancePatch; result: Appearance }
+  'appearance/reset': { body: null; result: Appearance }
+  'appearance/setTheme': { body: { theme: GeneralSettings['theme'] }; result: null }
+  'appearance/setLayout': { body: Partial<Pick<SidebarLayout, 'side' | 'tabs'>>; result: SidebarLayout }
   /** Warning page of a dangerous site: « Continuer quand même » for this session. */
   'error/proceed': { body: { url: string }; result: null }
   /** « Retour en lieu sûr »: back to the last page before the dangerous one (`page` = the warning's URL). */
@@ -407,6 +415,11 @@ export const INTERNAL_API_ROUTES = [
   'welcome/importFrom',
   'welcome/makeDefaultBrowser',
   'welcome/setLanguage',
+  'appearance/get',
+  'appearance/set',
+  'appearance/reset',
+  'appearance/setTheme',
+  'appearance/setLayout',
   'error/proceed',
   'error/leave'
 ] as const satisfies readonly InternalApiRoute[]
@@ -420,6 +433,7 @@ export const INTERNAL_PAGES = {
   downloads: 'downloads.html',
   passwords: 'passwords.html',
   welcome: 'welcome.html',
+  appearance: 'appearance.html',
   error: 'error.html'
 } as const
 export type InternalPage = keyof typeof INTERNAL_PAGES
@@ -431,3 +445,4 @@ export const DOWNLOADS_PAGE_URL = `${INTERNAL_SCHEME}://downloads/`
 export const PASSWORDS_PAGE_URL = `${INTERNAL_SCHEME}://passwords/`
 export const WELCOME_PAGE_URL = `${INTERNAL_SCHEME}://welcome/`
 export const ERROR_PAGE_URL = `${INTERNAL_SCHEME}://error/`
+export const APPEARANCE_PAGE_URL = `${INTERNAL_SCHEME}://appearance/`

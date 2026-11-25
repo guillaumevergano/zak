@@ -5,6 +5,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { z } from 'zod'
 import type { GeneralSettings, SidebarSide, TabGroupColor, TabsPosition } from '@shared/types'
+import { COLOR_TOKENS, type AppearancePatch } from '@shared/appearance'
 
 /**
  * What the MCP tools can do with the running Zak (implemented in index.ts). Deliberately limited:
@@ -21,6 +22,8 @@ export interface ZakControl {
   addFavorite(input: { url: string; title: string; emoji: string | null; folder: string | null }): string
   settings(): McpSettings
   updateSettings(patch: Partial<McpSettings>): McpSettings
+  appearance(): unknown
+  updateAppearance(patch: AppearancePatch, reset: boolean): unknown
   mods(): unknown
   selectMod(kind: 'theme' | 'newtab', id: string | null): unknown
 }
@@ -167,6 +170,36 @@ export class ZakMcpServer {
         }
       },
       (patch) => json(c.updateSettings(patch))
+    )
+    const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/)
+    const palette = z.object(Object.fromEntries(COLOR_TOKENS.map((token) => [token, hex.nullable().optional()]))).partial()
+    const font = z.string().max(64).nullable().optional()
+    mcp.registerTool(
+      'get_appearance',
+      {
+        description:
+          "Reads Zak's look: the color tokens changed for the light and the dark theme, the fonts, Zak's defaults for every token, " +
+          'the theme in use and the layout. Frame = tab strip and sidebar, cream = toolbar and pages, iris and pink = accents.',
+        annotations: { readOnlyHint: true }
+      },
+      () => json(c.appearance())
+    )
+    mcp.registerTool(
+      'update_appearance',
+      {
+        description:
+          "Changes Zak's look at once, in every window (like zak://appearance): colors per theme (#rrggbb, null = Zak's own), " +
+          "fonts (an installed font family; null = Zak's own: DM Sans, Fraunces, JetBrains Mono). reset: true starts from Zak's own look. " +
+          'Private windows keep their colors. The theme and the layout are in update_settings.',
+        inputSchema: {
+          light: palette.optional(),
+          dark: palette.optional(),
+          fonts: z.object({ ui: font, display: font, mono: font }).partial().optional(),
+          reset: z.boolean().optional()
+        }
+      },
+      ({ light, dark, fonts, reset }) =>
+        json(c.updateAppearance({ colors: { light: light ?? {}, dark: dark ?? {} }, fonts: fonts ?? {} } as AppearancePatch, reset ?? false))
     )
     mcp.registerTool(
       'list_mods',

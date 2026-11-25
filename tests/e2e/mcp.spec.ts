@@ -51,6 +51,16 @@ test('Claude Code or Codex can drive Zak through its MCP server, once allowed', 
   await expect.poll(() => chrome.getByTestId('sidebar').evaluate((el) => el.getBoundingClientRect().left)).toBe(0)
   expect(JSON.parse(text(await client.callTool({ name: 'get_settings', arguments: {} })))).toMatchObject({ sidebarSide: 'left', tabsPosition: 'sidebar' })
 
+  // Colors and fonts: the window follows at once (Playwright keeps pages in light mode: the light colors show).
+  await client.callTool({ name: 'update_appearance', arguments: { light: { frame: '#14213d' }, fonts: { ui: 'Verdana' } } })
+  await expect.poll(() => chrome.getByTestId('sidebar').evaluate((el) => getComputedStyle(el).backgroundColor)).toBe('rgb(20, 33, 61)')
+  await expect.poll(() => chrome.evaluate(() => getComputedStyle(document.body).fontFamily)).toContain('Verdana')
+  expect(JSON.parse(text(await client.callTool({ name: 'get_appearance', arguments: {} })))).toMatchObject({
+    colors: { light: { frame: '#14213d' }, dark: {} },
+    fonts: { ui: 'Verdana' },
+    theme: 'dark'
+  })
+
   await client.close()
   // Switched off: the server stops.
   await settings.getByRole('switch', { name: 'Laisser Claude Code ou Codex piloter Zak' }).click()
