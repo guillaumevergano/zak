@@ -1,3 +1,4 @@
+import { appearanceCss } from '@shared/appearance'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { app, BrowserWindow, components, dialog, ipcMain, nativeTheme, shell, webContents, type IpcMainInvokeEvent } from 'electron'
@@ -257,6 +258,9 @@ app.whenReady().then(async () => {
   windows.setTabsPosition(settings.getSidebar().tabs)
   // Mods (docs/customize/): a theme for Zak itself, a new tab page of one's own.
   const mods = new ModsManager({ get: () => settings.getMods(), set: (m) => settings.setMods(m) })
+  // Zak's own colors and fonts (zak://appearance), over the mod's theme.
+  let shownAppearance = appearanceCss(settings.getAppearance())
+  mods.appearanceCss = () => shownAppearance
   mods.start()
   setNewtabOverride((pathname) => mods.newtabResponse(pathname))
   // Zak's MCP server (Settings → Customize): off by default, on 127.0.0.1 only, behind a token.
@@ -311,6 +315,11 @@ app.whenReady().then(async () => {
   settings.onChange(() => {
     nativeTheme.themeSource = settings.getGeneral().theme
     sidebar.broadcast()
+    const css = appearanceCss(settings.getAppearance())
+    if (css !== shownAppearance) {
+      shownAppearance = css
+      mods.reapply()
+    }
   })
   const find = new FindController(windows)
   const zoom = new ZoomController(sites, windows)
@@ -508,6 +517,20 @@ app.whenReady().then(async () => {
       return null
     },
     'settings/setSidebar': ({ collapsed, side, tabs }) => sidebar.setLayout({ collapsed, side, tabs }),
+    'appearance/get': () => ({
+      appearance: settings.getAppearance(),
+      theme: settings.getGeneral().theme,
+      sidebar: settings.getSidebar(),
+      modTheme: mods.list().find((m) => m.themeActive)?.name ?? null
+    }),
+    // Saved, then applied everywhere by the settings change listener (live while a color is dragged).
+    'appearance/set': (patch) => settings.setAppearance(patch),
+    'appearance/reset': () => settings.setAppearance({}, true),
+    'appearance/setTheme': ({ theme }) => {
+      nativeTheme.themeSource = settings.setGeneral({ theme }).theme
+      return null
+    },
+    'appearance/setLayout': ({ side, tabs }) => sidebar.setLayout({ side, tabs }),
     'settings/setGeneral': (patch) => {
       // The folder only changes through the picker below.
       const { downloadDir: _ignored, ...rest } = patch

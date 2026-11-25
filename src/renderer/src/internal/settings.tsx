@@ -18,7 +18,7 @@ import type {
   SidebarLayout
 } from '@shared/types'
 import { orderExtensions } from '@shared/extensionBar'
-import { EXTENSIONS_PAGE_URL, PASSWORDS_PAGE_URL } from '@shared/ipc'
+import { APPEARANCE_PAGE_URL, EXTENSIONS_PAGE_URL, PASSWORDS_PAGE_URL } from '@shared/ipc'
 import { permissionLabel } from '../lib/permissions'
 import { SEARCH_ENGINES, type SearchEngine } from '@shared/url'
 import { callInternal } from './api'
@@ -172,6 +172,15 @@ function SettingsPage(): JSX.Element {
             <option value={60}>{t('Après 1 heure')}</option>
             <option value={120}>{t('Après {n} heures', { n: 2 })}</option>
           </select>
+        </Row>
+        <Row title={t('Couleurs et polices')} detail={t('Chaque couleur de Zak et ses polices, avec le résultat en direct.')}>
+          <a
+            href={APPEARANCE_PAGE_URL}
+            data-testid="open-appearance"
+            className="rounded-[10px] border border-cream-edge bg-cream-2 px-3 py-1 text-[12.5px] font-semibold text-violet no-underline hover:border-violet/40"
+          >
+            {t('Personnaliser…')}
+          </a>
         </Row>
         <Row title={t('Position de la barre latérale')} detail={t('À gauche ou à droite de la page.')}>
           <select

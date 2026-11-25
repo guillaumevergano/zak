@@ -56,6 +56,8 @@ export class ModsManager {
   private inserted = new Map<WebContents, string>()
   private watcher: FSWatcher | null = null
   private listeners: (() => void)[] = []
+  /** Zak's own look (zak://appearance), inserted after the mod's theme so it wins. */
+  appearanceCss: () => string = () => ''
 
   constructor(
     private readonly selection: { get: () => ModsSelection; set: (s: ModsSelection) => void },
@@ -104,6 +106,12 @@ export class ModsManager {
     for (const listener of this.listeners) listener()
   }
 
+  /** The theme or the appearance changed: every interface view and internal page gets it again. */
+  reapply(): void {
+    for (const wc of [...this.inserted.keys()]) if (wc.isDestroyed()) this.inserted.delete(wc)
+    for (const wc of allWebContents.getAllWebContents()) if (!wc.isDestroyed() && this.themed(wc)) void this.applyTheme(wc)
+  }
+
   onChange(listener: () => void): void {
     this.listeners.push(listener)
   }
@@ -146,7 +154,7 @@ export class ModsManager {
 
   private async applyTheme(wc: WebContents): Promise<void> {
     if (wc.isDestroyed()) return
-    const css = this.themeCss()
+    const css = [this.themeCss(), this.appearanceCss()].filter(Boolean).join('\n')
     const previous = this.inserted.get(wc)
     this.inserted.delete(wc)
     try {

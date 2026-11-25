@@ -1,4 +1,5 @@
 import type { GeneralSettings } from '@shared/types'
+import { DEFAULT_COLORS, DEFAULT_FONTS } from '@shared/appearance'
 import { toUrl } from '@shared/url'
 import { TabManager } from '../tabs/TabManager'
 import type { FavoritesStore } from '../store/favorites'
@@ -86,6 +87,14 @@ export function zakControl(deps: {
       if (sidebarSide !== undefined || tabsPosition !== undefined) sidebar.setLayout({ side: sidebarSide, tabs: tabsPosition })
       return withLayout(general)
     },
+    appearance: () => ({
+      ...settings.getAppearance(),
+      defaults: { colors: DEFAULT_COLORS, fonts: DEFAULT_FONTS },
+      theme: settings.getGeneral().theme,
+      sidebarSide: settings.getSidebar().side,
+      tabsPosition: settings.getSidebar().tabs
+    }),
+    updateAppearance: (patch, reset) => settings.setAppearance(patch, reset),
     mods: () => ({ dir: mods.dir, mods: mods.list() }),
     selectMod: (kind, id) => {
       mods.select(kind, id)
