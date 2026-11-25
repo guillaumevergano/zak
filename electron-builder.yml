@@ -74,7 +74,8 @@ publish:
   provider: github
   owner: guillaumevergano
   repo: zak
-  releaseType: release
+  # Builds upload into the draft made by .github/workflows/release.yml, which publishes it at the end.
+  releaseType: draft
 
 linux:
   target: [AppImage]
