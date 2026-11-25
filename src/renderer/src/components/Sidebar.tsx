@@ -259,18 +259,19 @@ function FolderList(props: { folderId: string; favorites: FavoriteInfo[]; active
       <div
         ref={setNodeRef}
         data-testid="mosaic"
-        className={`mt-1 mb-1.5 ml-7 flex flex-col items-start gap-1 rounded-[10px] border border-dashed px-3 py-2 text-[12.5px] text-frame-sub ${
-          isOver ? 'border-iris-ring bg-frame-2' : 'border-frame-line'
-        }`}
+        // Full width (no indent), centered: at the narrowest sidebar the button stays on one line.
+        className={`mt-1 mb-1.5 rounded-[10px] border border-dashed ${isOver ? 'border-iris-ring bg-frame-2' : 'border-frame-line'}`}
       >
-        <span>{t('Glisse un favori ou un onglet ici')}</span>
         <button
           data-testid="add-favorite"
           onClick={add}
-          className="-ml-1.5 flex h-7 items-center gap-1.5 rounded-md px-1.5 font-semibold text-iris hover:bg-frame-3"
+          className="flex w-full flex-col items-center gap-0.5 rounded-[9px] px-3 py-2.5 text-center hover:bg-frame-3"
         >
-          <PlusIcon />
-          {t('Ajouter la page actuelle')}
+          <span className="flex max-w-full items-center gap-1.5 text-[13px] font-semibold whitespace-nowrap text-iris">
+            <PlusIcon />
+            <span className="truncate">{t('Ajouter cette page')}</span>
+          </span>
+          <span className="text-[12px] leading-snug text-balance text-frame-sub">{t('Glisse un favori ou un onglet ici')}</span>
         </button>
       </div>
     )
