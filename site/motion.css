@@ -1,0 +1,182 @@
+/* Motion edition: warm canvas, one living mark, synchronized assistant names. */
+.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.assistant-switch{display:inline-grid;grid-template-areas:'name';vertical-align:baseline;white-space:nowrap;text-align:center;line-height:inherit}
+.assistant-state{grid-area:name;transition:opacity .35s ease,transform .35s ease;will-change:opacity}
+.assistant-chatgpt{opacity:0;transform:translateY(5px);visibility:hidden}
+.assistant-claude{opacity:1;transform:translateY(0);visibility:visible}
+body[data-assistant=chatgpt] .assistant-chatgpt{opacity:1;transform:translateY(0);visibility:visible}
+body[data-assistant=chatgpt] .assistant-claude{opacity:0;transform:translateY(-5px);visibility:hidden}
+.assistant-icon{display:inline-grid;grid-template-areas:'name';place-items:center;width:29px;height:29px;flex-shrink:0}
+.assistant-icon img{width:29px;height:29px;object-fit:contain}
+.assistant-icon .claude-star{font:32px/1 'DM Sans',sans-serif;color:#b87352}
+.eyebrow-pill>.assistant-switch{font:inherit;color:inherit;border:0;padding:0;margin:0}
+.eyebrow-pill{gap:6px}
+.eyebrow-pill>.pill-protocol{margin-left:4px}
+.section-tag .assistant-switch{text-transform:uppercase}
+.claude-heading{padding-bottom:12px}
+.claude-heading strong{font-family:'DM Sans',sans-serif;font-size:18px;font-weight:600}
+.assistant-controls{display:flex;justify-content:space-between;align-items:center;gap:8px;padding-top:9px;font-size:12px;color:#806b78}
+.assistant-controls button{display:grid;place-items:center;width:32px;height:28px;flex-shrink:0;border:1px solid #d5c8d1;border-radius:6px;background:transparent;color:#724783;font-size:19px;line-height:1;transition:background .2s}
+.assistant-controls button:hover{background:#eaddf0}
+.claude-panel .conversation{padding-top:10px}
+.claude-name{font:500 19px 'DM Sans',sans-serif}
+.mcp-path{gap:16px}
+.path-line{position:relative;overflow:hidden}
+.path-line:after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,#a260ca,transparent);transform:translateX(-100%);animation:signal 3s ease-in-out infinite}
+@keyframes signal{0%,15%{transform:translateX(-100%)}65%,100%{transform:translateX(100%)}}
+
+.hero h1{position:relative}
+
+.motion-ready .hero-copy>.eyebrow-pill,.motion-ready .hero-copy>h1,.motion-ready .hero-copy>.hero-description,.motion-ready .hero-actions{animation:arrive .85s both cubic-bezier(.2,.7,.2,1)}
+.motion-ready .hero-copy>h1{animation-delay:.08s}.motion-ready .hero-copy>.hero-description{animation-delay:.16s}.motion-ready .hero-actions{animation-delay:.23s}
+@keyframes arrive{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.reveal{opacity:0;transform:translateY(25px);transition:opacity .8s ease,transform .8s cubic-bezier(.2,.7,.2,1)}
+.reveal.is-visible{opacity:1;transform:none}
+.character-stage{height:490px;position:relative;display:grid;place-items:center;isolation:isolate;overflow:hidden;border-radius:24px}
+.character-stage:before{content:'';position:absolute;inset:8%;z-index:-2;background:radial-gradient(ellipse,#d5b8e65c,transparent 68%)}
+
+
+
+
+
+
+
+
+.bird-button{border:0;background:none;padding:0;display:block;width:76%;max-width:395px;cursor:pointer;position:relative;border-radius:40%}
+.bird-mark{display:block}
+.living-bird{width:100%;height:auto;overflow:visible}
+.bird-eye{transform-box:fill-box;transform-origin:center}
+.bird-button.blink .bird-eye{animation:bird-blink .65s ease-in-out}
+@keyframes bird-blink{0%,15%,45%,100%{transform:scaleY(1)}25%,32%{transform:scaleY(.06)}65%,73%{transform:scaleY(.06)}}
+
+
+.motion-toggle{position:fixed;z-index:30;right:18px;bottom:18px;width:42px;height:42px;display:grid;place-items:center;border:1px solid #cdbcc9;background:#f3ede3e6;border-radius:50%;color:#765a76;backdrop-filter:blur(12px);transition:background .2s}
+.motion-toggle:hover{background:#e8daed}.motion-toggle .icon{width:17px;height:17px;stroke-width:1.7}
+.motion-paused *,.motion-paused *:before,.motion-paused *:after{animation-play-state:paused!important}
+.motion-paused .assistant-state{transition:none}.motion-paused .reveal{opacity:1;transform:none;transition:none}
+.motion-paused .bird-button{transform:none!important}
+.motion-paused .hero-copy>*{animation:none!important}
+@media(max-width:1050px){.character-stage{height:410px}.hero h1:after{left:calc(50% + 245px)}}
+@media(min-width:681px) and (max-width:900px){.assistant-controls{grid-column:1;grid-row:2;align-self:start;max-width:250px;padding-top:12px}.claude-panel .conversation{grid-column:2;grid-row:1/5;padding-top:0}.demo-apply{grid-row:3}.reset-demo{grid-row:4}.claude-heading{padding-bottom:0}.character-stage{height:350px}.mcp-path{gap:10px}.claude-name{font-size:17px}}
+@media(max-width:680px){.hero h1:after{display:none}.assistant-controls{font-size:11px}.character-stage{height:365px;max-width:410px;width:100%;margin:auto}.bird-button{width:78%}.motion-toggle{width:38px;height:38px;right:12px;bottom:12px}.mcp-path{gap:13px}.mcp-path .claude-name{font-size:18px}.eyebrow-pill{font-size:11px;gap:5px;padding-left:8px;padding-right:5px}.eyebrow-pill>.pill-protocol{font-size:9px;padding-inline:6px;margin-left:0}}
+@media(max-width:360px){.eyebrow-pill{font-size:10px;gap:4px}.eyebrow-pill>.icon{width:13px;height:13px}.character-stage{height:310px}}
+@media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none}.bird-button{transform:none!important}.path-line:after,.bird-eye,.motion-ready .hero-copy>*{animation:none!important}.assistant-state{transition:none;transform:none!important}}
+
+/* The character block is the hero. The bird itself stays completely still. */
+.hero{padding-top:44px}
+.hero-content{text-align:left}
+.hero-intro{display:grid;grid-template-columns:1fr 1.13fr;gap:36px;align-items:center;min-height:460px}
+.hero-copy{min-width:0}
+.hero-copy h1{font-size:clamp(44px,4.5vw,65px);line-height:1.08;letter-spacing:-.045em;margin:28px 0 24px}
+.hero-copy h1>span{white-space:nowrap}
+.hero-copy .hero-description{font-size:18px;line-height:1.75;max-width:540px;margin:0}
+.hero-copy .hero-actions{justify-content:flex-start;margin-top:28px}
+
+.hero-intro .character-stage{height:460px;width:100%;max-width:none}
+.hero-intro .bird-button{width:82%;max-width:440px}
+.hero .demo{margin-top:50px}
+@media(max-width:1150px) and (min-width:901px){.hero-intro{gap:20px;min-height:410px}.hero-intro .character-stage{height:410px}.hero-copy h1{font-size:49px}.hero-copy .hero-description{font-size:17px}.hero-copy .hero-actions{gap:9px}.hero-copy .hero-actions .button{padding-inline:17px;font-size:14px}}
+@media(max-width:900px){.hero{padding-top:42px}.hero-intro{grid-template-columns:1fr;gap:12px;min-height:0}.hero-copy{max-width:640px}.hero-copy h1{font-size:60px}.hero-intro .character-stage{max-width:500px;height:400px;margin-inline:auto}.hero-intro .bird-button{max-width:355px;width:76%}.hero .demo{margin-top:35px}}
+@media(max-width:680px){.hero{padding-top:32px}.hero-intro{gap:2px}.hero-copy h1{font-size:clamp(31px,8.6vw,51px);margin:25px 0 20px}.hero-copy .hero-description{font-size:16px;margin:0;max-width:420px}.hero-copy .hero-actions{align-items:stretch;margin:23px 0 0;max-width:360px}.hero-intro .character-stage{height:330px;max-width:370px}.hero-intro .bird-button{width:78%;max-width:300px}.hero .demo{margin-top:30px}}
+@media(max-width:360px){.hero-copy h1{font-size:30px}.hero-intro .character-stage{height:280px}.hero-copy .hero-description{font-size:16px}}
+
+/* Quiet calls to action, with a touch target that stays comfortable. */
+.button[data-download]{min-height:40px;padding:10px 18px;border:1px solid #bda5cb;background:#e9dfee80;color:#493347;font-size:14px;font-weight:550;border-radius:8px;line-height:1.3}
+.button[data-download]:hover{background:#e5d3ef;border-color:#a881bc;transform:none}
+.header-cta.button[data-download]{min-height:36px;padding:8px 14px;font-size:13px;background:transparent;border-color:#cbbcc8}
+.hero-copy .hero-actions{align-items:flex-start}
+.hero-copy .hero-actions .button[data-download]{font-size:14px;padding:10px 18px;min-height:40px;flex:none;width:auto}
+.character-stage:before{inset:0;background:radial-gradient(ellipse at center,#c67afb28,transparent 66%)}
+
+/* The bird and the full-width opaque surface share a single moving parent. */
+.finale{position:relative;padding-top:45px}
+.finale-sticky{position:relative;padding:140px 0 0;overflow:clip}
+.landing-composition{position:relative;width:100%;margin-inline:0}
+.landing-bird{position:absolute;z-index:2;left:50%;top:-97.533333px;width:140px;height:140px;transform:translateX(-50%);transform-origin:50% 69.666667%;pointer-events:none}
+.landing-symbol{width:100%;height:100%;overflow:visible}.landing-cutout{fill:var(--bg)}
+.final-cta.final-panel{width:100%;margin:0;padding:56px 0 56px;background:#2e1f2d;color:#f3edea;border:0;border-radius:0;isolation:isolate;overflow:visible;opacity:1}
+.final-panel .section-tag{color:#cda7e6;margin:0 0 22px;font-size:12px}
+.final-panel h2{margin-bottom:28px}
+.final-panel .final-note{color:#c8b3c2;font-size:16px}
+.final-panel .button[data-download]{background:#f3edea0b;color:#f3edea;border-color:#f3edea45}
+.final-panel .button[data-download]:hover{background:#f3edea18;border-color:#e4c2f3}
+.finale-enhanced .finale{height:190svh;min-height:1100px;padding-top:0}
+.finale-enhanced .finale-sticky{position:sticky;top:0;height:100svh;min-height:570px;padding:0;display:flex;align-items:flex-end}
+.finale-enhanced .landing-composition{margin-top:0;transform:translateY(var(--landing-y,0px));will-change:transform}
+.finale-enhanced .landing-bird{transform:translateX(-50%) scale(var(--flight-scale,1));will-change:transform}
+.finale-enhanced .final-panel{opacity:1;transform:none}
+.finale-enhanced .final-copy{opacity:var(--copy-opacity,1)}
+@media(max-width:680px){
+  .header-cta.button[data-download]{font-size:12px;min-height:36px;padding:8px 11px}
+  .hero-copy .hero-actions{align-items:flex-start;max-width:none}
+  .hero-copy .hero-actions .button[data-download]{font-size:14px;min-height:40px;padding:10px 18px}
+  .finale{padding-top:30px}.finale-sticky{padding-top:118px}
+  .landing-bird{width:116px;height:116px;top:-80.813333px}
+  .final-cta.final-panel{padding:44px 0 44px;border-radius:0}
+  .final-panel h2{font-size:32px;line-height:1.16}
+  .final-panel .final-note{font-size:14px}
+  .finale-enhanced .finale{height:180svh;min-height:970px}
+  .finale-enhanced .landing-composition{margin-top:0}
+}
+@media(prefers-reduced-motion:reduce){.landing-composition,.landing-bird,.final-panel,.final-copy{will-change:auto!important}}
+
+/* The complete wordmark stays still; only its masked eye blinks. */
+.hero-intro .bird-button{width:88%;max-width:500px;border-radius:16px}
+.hero{padding-top:56px}
+
+/* Navigation enters only once the visitor starts scrolling. */
+.site-header{position:fixed;top:0;left:0;width:100%;z-index:40;transform:translateY(-101%);opacity:0;visibility:hidden;transition:transform .35s cubic-bezier(.2,.7,.2,1),opacity .25s,visibility .35s;backdrop-filter:blur(18px);background:#f3ede3ed}
+.site-header.is-visible{transform:translateY(0);opacity:1;visibility:visible}
+.nav-wrap{height:76px;gap:26px}
+.main-nav{padding-left:0;gap:28px}
+.faq details:first-child{border-top:0}
+.open-source{display:grid;grid-template-columns:1.05fr 1fr;gap:100px;padding-block:90px;border-top:1px solid var(--line)}
+.open-source h2{font-size:clamp(38px,4.3vw,58px);font-weight:550;line-height:1.12;letter-spacing:-.045em;margin:0}
+.open-source h2 em{font-family:Fraunces,serif;font-weight:500;color:#8954a5}
+.open-source-copy{max-width:510px}
+.open-source-icon{width:30px;height:30px;color:#9163a8;margin-bottom:20px}
+.open-source-copy p{font-size:18px;line-height:1.75;margin:0 0 16px;color:var(--muted)}
+.open-source-copy .open-source-note{font-size:16px;color:#80578d;margin-bottom:24px}
+.source-cta{min-height:40px;padding:10px 17px;font-size:14px;font-weight:550;border:1px solid #bda5cb;border-radius:8px;background:transparent;color:#493347}
+.source-cta:hover{background:#e9dfee80;transform:none}
+.source-cta .icon{width:17px;height:17px}
+@media(max-width:1050px){.main-nav{gap:20px}.nav-wrap{gap:20px}.brand img{width:92px}.open-source{gap:60px}}
+@media(max-width:900px){.hero{padding-top:48px}.hero-intro .character-stage{height:260px;max-width:560px}.hero-intro .bird-button{width:88%;max-width:460px}.open-source{gap:38px;padding-block:76px}}
+@media(max-width:820px){
+  :root{scroll-padding-top:96px}
+  .nav-wrap{height:72px;gap:14px}.brand img{width:86px;height:42px}
+  .header-cta{margin-left:auto}
+  .menu-toggle{display:block;flex-shrink:0;width:38px;height:38px;padding:8px}
+  .main-nav{display:none;position:absolute;top:72px;left:0;right:0;background:#faf6f0;border-bottom:1px solid #d9cdd5;padding:22px 24px;gap:22px;flex-direction:column;margin:0}
+  .main-nav.open{display:flex}.main-nav a{font-size:16px}
+}
+@media(max-width:680px){.hero{padding-top:28px}.hero-intro .character-stage{height:200px;max-width:420px}.hero-intro .bird-button{width:88%;max-width:340px}.open-source{grid-template-columns:1fr;gap:28px;padding-block:60px}.open-source h2{font-size:40px}.open-source-copy p{font-size:16px}.open-source-copy .open-source-note{font-size:15px}.open-source-icon{display:none}.site-footer nav{flex-wrap:wrap}}
+@media(max-width:360px){.hero-intro .character-stage{height:175px}.open-source h2{font-size:36px}}
+@media(prefers-reduced-motion:reduce){.site-header{transition:none}}
+.toast{width:max-content;max-width:min(420px,calc(100vw - 32px));text-align:center}
+
+/* Equal-height benefit columns keep their closing lines on one baseline. */
+.benefits>article{display:flex;flex-direction:column}
+.benefits .feature-detail{margin-top:auto}
+
+/* A lavender chapter for the open-source project, with a quiet GitHub cue. */
+.open-source.wrap{background:#d8b9ef;border:1px solid #cba6e4;border-radius:24px;padding:64px;gap:76px;margin-bottom:88px;align-items:center}
+.open-source .section-tag{color:#644276;font-size:12px}
+.open-source h2{color:#2e1f2d;font-size:clamp(38px,4vw,56px)}
+.open-source h2 em{color:#70408d}
+.open-source-copy p{color:#4e375b;font-size:17px}
+.open-source-copy .open-source-note{color:#644276;font-size:15px}
+.source-repository{display:flex;align-items:center;gap:9px;margin-bottom:22px;color:#563367;font:13px 'JetBrains Mono',monospace}
+.source-repository .icon{width:20px;height:20px;stroke-width:1.6}
+.repository-slash{color:#8b61a2;margin-inline:5px}
+.repository-kind{color:#644276}
+.open-source .source-cta{border-color:#8b61a2;background:#f3ede333;color:#39233f}
+.open-source .source-cta:hover{background:#f3ede370;border-color:#70408d}
+.contribution-grid{display:grid;grid-template-rows:repeat(5,9px);grid-auto-flow:column;grid-auto-columns:9px;gap:4px;width:max-content;margin-top:34px;opacity:.7;mask-image:linear-gradient(90deg,#000 50%,transparent)}
+.contribution-grid i{display:block;border-radius:2px;background:#7a439b0f}
+.contribution-grid .level-1{background:#7a439b18}.contribution-grid .level-2{background:#7a439b2b}.contribution-grid .level-3{background:#7a439b40}.contribution-grid .level-4{background:#7a439b60}
+.open-source + .faq{border-top:0;padding-top:0}
+@media(max-width:1050px){.open-source.wrap{padding:48px;gap:44px}}
+@media(max-width:900px){.open-source.wrap{padding:38px;gap:32px;margin-bottom:76px}.open-source h2{font-size:40px}.contribution-grid{grid-template-rows:repeat(5,7px);grid-auto-columns:7px;gap:3px}}
+@media(max-width:680px){.open-source.wrap{padding:30px 24px;gap:30px;border-radius:20px;margin-bottom:60px}.open-source h2{font-size:38px}.open-source .section-tag{font-size:11px;line-height:1.6}.open-source-copy p{font-size:16px}.source-repository{font-size:12px;margin-bottom:18px}.contribution-grid{margin-top:24px}.open-source .source-cta{font-size:14px;min-height:44px}}
+@media(max-width:360px){.open-source.wrap{padding:28px 20px}.open-source h2{font-size:34px}.open-source .source-cta{padding-inline:12px;font-size:13px}}
