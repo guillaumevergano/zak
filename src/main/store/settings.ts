@@ -30,7 +30,7 @@ interface Settings {
 const SCHEMA_URL = 'https://raw.githubusercontent.com/guillaumevergano/zak/main/docs/customize/settings.schema.json'
 
 /** Same bounds as the renderer's Sidebar (5 tiles per row need some room). */
-export const SIDEBAR_MIN_WIDTH = 220
+export const SIDEBAR_MIN_WIDTH = 140
 export const SIDEBAR_MAX_WIDTH = 380
 
 export const DEFAULT_SIDEBAR: SidebarLayout = { width: 300, collapsed: false, side: 'right', tabs: 'top' }

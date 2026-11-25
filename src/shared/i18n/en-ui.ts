@@ -198,7 +198,7 @@ export const EN_UI: Record<string, string> = {
   Adresse: 'URL',
   Dossier: 'Folder',
   'Aucun (racine)': 'None (top level)',
-  'Renommer le dossier': 'Rename folder',
+  'Modifier le dossier': 'Edit folder',
   Nom: 'Name',
   'Travail, À lire…': 'Work, To read…',
   Créer: 'Create',

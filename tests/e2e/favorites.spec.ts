@@ -83,3 +83,18 @@ test('favorites go in rows: drop one under the last row to start a new line', as
   await dragTo(sidebar.getByRole('button', { name: 'Musique', exact: true }), () => rows.first())
   await expect(rows).toHaveCount(1)
 })
+
+test('a narrow sidebar shows the folders as icons, and fewer tiles per row', async () => {
+  const sidebar = chrome.getByTestId('sidebar')
+  await chrome.evaluate(() => window.zak.invoke('folders:add', { name: 'Réseaux', emoji: '🌐' }))
+  const folder = sidebar.getByTestId('folder').filter({ hasText: '🌐' })
+  await expect(folder).toContainText('Réseaux')
+  await chrome.evaluate(() => window.zak.invoke('sidebar:setLayout', { width: 150 }))
+  await expect(sidebar).toHaveCSS('width', '150px')
+  await expect(folder).not.toContainText('Réseaux')
+  await expect(folder.locator('button').first()).toHaveAttribute('title', 'Réseaux')
+  const columns = await sidebar.getByTestId('mosaic-row').first().evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length)
+  expect(columns).toBe(3)
+  await chrome.evaluate(() => window.zak.invoke('sidebar:setLayout', { width: 300 }))
+  await expect(folder).toContainText('Réseaux')
+})

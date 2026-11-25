@@ -120,7 +120,7 @@ export const EN_MAIN: Record<string, string> = {
   'Déplacer vers': 'Move to',
   "Copier l'adresse": 'Copy address',
   'Ouvrir tous dans des onglets': 'Open all in tabs',
-  'Renommer…': 'Rename…',
+  'Modifier le nom et l’icône…': 'Edit name and icon…',
   'Supprimer le dossier (garder ses favoris)': 'Delete folder (keep its favorites)',
   'Supprimer le dossier': 'Delete folder',
 

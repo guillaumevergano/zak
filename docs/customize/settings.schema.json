@@ -33,7 +33,7 @@
     "sidebar": {
       "type": "object",
       "properties": {
-        "width": { "type": "number", "minimum": 220, "maximum": 380, "default": 300 },
+        "width": { "type": "number", "minimum": 140, "maximum": 380, "default": 300 },
         "collapsed": { "type": "boolean", "default": false, "description": "Icons-only sidebar (⌘B)." },
         "side": { "enum": ["left", "right"], "default": "right", "description": "Which side of the page the sidebar sits on." },
         "tabs": {

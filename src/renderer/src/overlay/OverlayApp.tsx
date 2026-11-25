@@ -159,7 +159,7 @@ function FolderEditor(props: { request: Extract<OverlayRequest, { kind: 'folder-
   return (
     <Popover anchor={anchor}>
       <form className="flex flex-col gap-3" onSubmit={submit} data-testid="folder-editor">
-        <span className="text-[15px] font-bold text-title">{folderId ? t('Renommer le dossier') : t('Nouveau dossier')}</span>
+        <span className="text-[15px] font-bold text-title">{folderId ? t('Modifier le dossier') : t('Nouveau dossier')}</span>
         <EmojiField emoji={emoji} allowNone={false} onChange={setEmoji} />
         <Field label={t('Nom')}>
           <input

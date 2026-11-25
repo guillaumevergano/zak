@@ -136,7 +136,7 @@ export class SidebarController {
         click: () => inside.forEach((f, i) => handle.tabs.create(f.url, { active: i === 0 }))
       },
       { type: 'separator' },
-      { label: t('Renommer…'), click: () => this.windows.send(handle, 'sidebar:edit', { kind: 'folder', id }) },
+      { label: t('Modifier le nom et l’icône…'), click: () => this.windows.send(handle, 'sidebar:edit', { kind: 'folder', id }) },
       {
         label: inside.length > 0 ? t('Supprimer le dossier (garder ses favoris)') : t('Supprimer le dossier'),
         click: () => this.change(() => this.favorites.removeFolder(id))
