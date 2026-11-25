@@ -1,4 +1,5 @@
 import type { Appearance } from './appearance'
+import type { LangSetting } from './languages'
 import type { SearchEngine } from './url'
 
 export type TabId = number
@@ -224,7 +225,7 @@ export interface PipSettings {
 /** General preferences (CLAUDE.md §6.7), set on zak://settings. */
 export interface GeneralSettings {
   /** Interface language; applied at the next launch. */
-  language: 'system' | 'fr' | 'en'
+  language: LangSetting
   searchEngine: SearchEngine
   /** At launch: reopen the last session's tabs, or a single new tab. */
   startup: 'restore' | 'newtab'

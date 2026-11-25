@@ -43,8 +43,9 @@ All three checks must pass before you finish.
   `window.zak` only.
 - Declare every new IPC channel or internal page route in `src/shared/ipc.ts`, with its types,
   before using it.
-- Every visible text goes through `t('…')` (`src/shared/i18n.ts`): French is the key, the English
-  goes in `src/shared/i18n/`. `tests/unit/i18n.test.ts` fails if one is missing.
+- Every visible text goes through `t('…')` (`src/shared/i18n.ts`): French is the key; English,
+  Spanish, German, Italian and Portuguese go in `src/shared/i18n/` (languages listed in
+  `src/shared/languages.ts`). `tests/unit/i18n.test.ts` fails if one is missing in any language.
 - Code, comments and commits in English; docs in `docs/` in French; public files (README,
   CONTRIBUTING, SECURITY, PRIVACY, this file, `docs/customize/`) in English.
 - Small commits with imperative messages. Add a unit test for logic and a Playwright test for a
