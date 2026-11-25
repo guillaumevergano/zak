@@ -14,7 +14,9 @@ import type {
   McpState,
   ModInfo,
   PipSettings,
-  ProfileInfo, SidebarLayout } from '@shared/types'
+  ProfileInfo,
+  SidebarLayout
+} from '@shared/types'
 import { orderExtensions } from '@shared/extensionBar'
 import { EXTENSIONS_PAGE_URL, PASSWORDS_PAGE_URL } from '@shared/ipc'
 import { permissionLabel } from '../lib/permissions'
