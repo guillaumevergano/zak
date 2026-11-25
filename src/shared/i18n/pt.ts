@@ -562,5 +562,20 @@ export const PT: Record<string, string> = {
   'Traduire cette page': 'Traduzir esta página',
   'Modifier le nom et l’icône…': 'Editar nome e ícone…',
   'Nouvelle ligne': 'Nova linha',
-  'Modifier le dossier': 'Editar pasta'
+  'Modifier le dossier': 'Editar pasta',
+  'Proverbe': 'Provérbio',
+  'Ce jour dans l’histoire · {date}': 'Neste dia · {date}',
+  'Le saviez-vous ? · {topic}': 'Você sabia? · {topic}',
+  '« {text} »': '“{text}”',
+  'En savoir plus sur Wikipédia': 'Saiba mais na Wikipédia',
+  'Sous le logo': 'Abaixo do logotipo',
+  'Récupéré sur Wikipédia, dans la langue de Zak. Un nouveau à chaque onglet.': 'Da Wikipédia, no idioma do Zak. Um novo a cada guia.',
+  'Une nouvelle à chaque onglet, sans connexion.': 'Um novo a cada guia, sem conexão.',
+  '« Un peu d’espace. »': '“Um pouco de espaço.”',
+  'Mon texte': 'Meu texto',
+  'Une citation': 'Uma citação',
+  'Un proverbe': 'Um provérbio',
+  'Ce jour dans l’histoire': 'Neste dia na história',
+  'Le saviez-vous ?': 'Você sabia?',
+  'Rien': 'Nada'
 }

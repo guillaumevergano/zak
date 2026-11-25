@@ -485,5 +485,17 @@ export const EN_UI: Record<string, string> = {
   'C’est fait. Redémarrez Claude Desktop, puis demandez-lui par exemple : « Range mes onglets Zak par sujet ».':
     'Done. Restart Claude Desktop, then ask it for example: “Sort my Zak tabs by topic”.',
   'C’est fait. Dans {name}, demandez par exemple : « Range mes onglets Zak par sujet ».': 'Done. In {name}, ask for example: “Sort my Zak tabs by topic”.',
-  'Configuration manuelle': 'Manual setup'
+  'Configuration manuelle': 'Manual setup',
+  '« {text} »': '“{text}”',
+  'En savoir plus sur Wikipédia': 'Read more on Wikipedia',
+  'Sous le logo': 'Under the logo',
+  'Récupéré sur Wikipédia, dans la langue de Zak. Un nouveau à chaque onglet.': 'From Wikipedia, in Zak’s language. A new one with each tab.',
+  'Une nouvelle à chaque onglet, sans connexion.': 'A new one with each tab, offline.',
+  '« Un peu d’espace. »': '“A little space.”',
+  'Mon texte': 'My own text',
+  'Une citation': 'A quote',
+  'Un proverbe': 'A proverb',
+  'Ce jour dans l’histoire': 'On this day in history',
+  'Le saviez-vous ?': 'Did you know?',
+  'Rien': 'Nothing'
 }

@@ -1,6 +1,6 @@
 import { app } from 'electron'
 import Store from 'electron-store'
-import type { ExtensionBarSettings, GeneralSettings, PipSettings, SidebarLayout } from '@shared/types'
+import { NEWTAB_HEADLINE_SOURCES, type ExtensionBarSettings, type GeneralSettings, type PipSettings, type SidebarLayout } from '@shared/types'
 import { DEFAULT_EXTENSION_BAR, normalizeExtensionBar } from '@shared/extensionBar'
 import { SEARCH_ENGINES } from '@shared/url'
 import { LANG_SETTINGS } from '@shared/languages'
@@ -186,6 +186,9 @@ export function normalizeGeneral(raw: Partial<GeneralSettings>): GeneralSettings
     askWhereToSave: raw.askWhereToSave === true,
     safeBrowsing: raw.safeBrowsing !== false,
     savePasswords: raw.savePasswords !== false,
-    sleepTabsAfter: [0, 15, 30, 60, 120].includes(raw.sleepTabsAfter as number) ? (raw.sleepTabsAfter as number) : 0
+    sleepTabsAfter: [0, 15, 30, 60, 120].includes(raw.sleepTabsAfter as number) ? (raw.sleepTabsAfter as number) : 0,
+    newtabHeadline: pick(raw.newtabHeadline, NEWTAB_HEADLINE_SOURCES, 'zak'),
+    newtabTitle: typeof raw.newtabTitle === 'string' ? raw.newtabTitle.slice(0, 80) : '',
+    newtabSubtitle: typeof raw.newtabSubtitle === 'string' ? raw.newtabSubtitle.slice(0, 120) : ''
   }
 }

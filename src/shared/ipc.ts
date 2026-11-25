@@ -2,6 +2,7 @@ import type { Appearance, AppearancePatch } from './appearance'
 import type { Lang } from './languages'
 import type {
   PageScroll,
+  NewtabHeadline,
   AgentId,
   AgentStatus,
   ImportSource,
@@ -332,6 +333,8 @@ export interface InternalApiRoutes {
   /** New tab page: « Reprendre la navigation » available, and « Récemment ». */
   'newtab/state': { body: null; result: { canReopenSession: boolean; recent: HistoryEntry[] } }
   'newtab/reopenSession': { body: null; result: null }
+  /** What to show under the logo (null: Zak's own words). */
+  'newtab/headline': { body: null; result: NewtabHeadline | null }
   /** The page's « Où voulez-vous aller ? » field: same suggestions as the omnibox. */
   'newtab/suggest': { body: { text: string }; result: OmniboxSuggestion[] }
   /** zak://passwords. `reveal` asks the system (Touch ID…) first, null when refused. */
@@ -406,6 +409,7 @@ export const INTERNAL_API_ROUTES = [
   'downloads/openFolder',
   'newtab/state',
   'newtab/reopenSession',
+  'newtab/headline',
   'newtab/suggest',
   'passwords/list',
   'passwords/reveal',
