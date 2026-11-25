@@ -111,7 +111,6 @@ export const ES: Record<string, string> = {
   'Déplacer vers': 'Mover a',
   'Copier l\'adresse': 'Copiar dirección',
   'Ouvrir tous dans des onglets': 'Abrir todo en pestañas',
-  'Renommer…': 'Cambiar nombre…',
   'Supprimer le dossier (garder ses favoris)': 'Eliminar carpeta (conservar sus favoritos)',
   'Supprimer le dossier': 'Eliminar carpeta',
   'Importer des favoris': 'Importar favoritos',
@@ -322,7 +321,6 @@ export const ES: Record<string, string> = {
   'Adresse': 'URL',
   'Dossier': 'Carpeta',
   'Aucun (racine)': 'Ninguna (nivel superior)',
-  'Renommer le dossier': 'Cambiar nombre de la carpeta',
   'Nom': 'Nombre',
   'Travail, À lire…': 'Trabajo, Para leer…',
   'Créer': 'Crear',
@@ -561,5 +559,8 @@ export const ES: Record<string, string> = {
   'Faites de Zak votre navigateur par défaut': 'Haz de Zak tu navegador predeterminado',
   'Celle du système': 'Igual que el sistema',
   'Commencer': 'Empezar',
-  'Traduire cette page': 'Traducir esta página'
+  'Traduire cette page': 'Traducir esta página',
+  'Modifier le nom et l’icône…': 'Editar nombre e icono…',
+  'Nouvelle ligne': 'Nueva fila',
+  'Modifier le dossier': 'Editar carpeta'
 }

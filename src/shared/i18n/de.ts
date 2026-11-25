@@ -111,7 +111,6 @@ export const DE: Record<string, string> = {
   'Déplacer vers': 'Verschieben nach',
   'Copier l\'adresse': 'Adresse kopieren',
   'Ouvrir tous dans des onglets': 'Alle in Tabs öffnen',
-  'Renommer…': 'Umbenennen…',
   'Supprimer le dossier (garder ses favoris)': 'Ordner löschen (Favoriten behalten)',
   'Supprimer le dossier': 'Ordner löschen',
   'Importer des favoris': 'Favoriten importieren',
@@ -322,7 +321,6 @@ export const DE: Record<string, string> = {
   'Adresse': 'Adresse',
   'Dossier': 'Ordner',
   'Aucun (racine)': 'Keiner (oberste Ebene)',
-  'Renommer le dossier': 'Ordner umbenennen',
   'Nom': 'Name',
   'Travail, À lire…': 'Arbeit, Zum Lesen…',
   'Créer': 'Erstellen',
@@ -561,5 +559,8 @@ export const DE: Record<string, string> = {
   'Faites de Zak votre navigateur par défaut': 'Machen Sie Zak zu Ihrem Standardbrowser',
   'Celle du système': 'Wie im System',
   'Commencer': 'Los geht’s',
-  'Traduire cette page': 'Seite übersetzen'
+  'Traduire cette page': 'Seite übersetzen',
+  'Modifier le nom et l’icône…': 'Name und Symbol bearbeiten…',
+  'Nouvelle ligne': 'Neue Zeile',
+  'Modifier le dossier': 'Ordner bearbeiten'
 }

@@ -111,7 +111,6 @@ export const IT: Record<string, string> = {
   'Déplacer vers': 'Sposta in',
   'Copier l\'adresse': 'Copia indirizzo',
   'Ouvrir tous dans des onglets': 'Apri tutti in schede',
-  'Renommer…': 'Rinomina…',
   'Supprimer le dossier (garder ses favoris)': 'Elimina cartella (mantieni i preferiti)',
   'Supprimer le dossier': 'Elimina cartella',
   'Importer des favoris': 'Importa preferiti',
@@ -322,7 +321,6 @@ export const IT: Record<string, string> = {
   'Adresse': 'Indirizzo',
   'Dossier': 'Cartella',
   'Aucun (racine)': 'Nessuna (livello principale)',
-  'Renommer le dossier': 'Rinomina cartella',
   'Nom': 'Nome',
   'Travail, À lire…': 'Lavoro, Da leggere…',
   'Créer': 'Crea',
@@ -561,5 +559,8 @@ export const IT: Record<string, string> = {
   'Faites de Zak votre navigateur par défaut': 'Rendi Zak il tuo browser predefinito',
   'Celle du système': 'Uguale al sistema',
   'Commencer': 'Inizia',
-  'Traduire cette page': 'Traduci questa pagina'
+  'Traduire cette page': 'Traduci questa pagina',
+  'Modifier le nom et l’icône…': 'Modifica nome e icona…',
+  'Nouvelle ligne': 'Nuova riga',
+  'Modifier le dossier': 'Modifica cartella'
 }

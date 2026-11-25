@@ -111,7 +111,6 @@ export const PT: Record<string, string> = {
   'Déplacer vers': 'Mover para',
   'Copier l\'adresse': 'Copiar endereço',
   'Ouvrir tous dans des onglets': 'Abrir todos em guias',
-  'Renommer…': 'Renomear…',
   'Supprimer le dossier (garder ses favoris)': 'Excluir pasta (manter os favoritos)',
   'Supprimer le dossier': 'Excluir pasta',
   'Importer des favoris': 'Importar favoritos',
@@ -322,7 +321,6 @@ export const PT: Record<string, string> = {
   'Adresse': 'Endereço',
   'Dossier': 'Pasta',
   'Aucun (racine)': 'Nenhuma (nível superior)',
-  'Renommer le dossier': 'Renomear pasta',
   'Nom': 'Nome',
   'Travail, À lire…': 'Trabalho, Para ler…',
   'Créer': 'Criar',
@@ -561,5 +559,8 @@ export const PT: Record<string, string> = {
   'Faites de Zak votre navigateur par défaut': 'Torne o Zak seu navegador padrão',
   'Celle du système': 'Igual ao do sistema',
   'Commencer': 'Começar',
-  'Traduire cette page': 'Traduzir esta página'
+  'Traduire cette page': 'Traduzir esta página',
+  'Modifier le nom et l’icône…': 'Editar nome e ícone…',
+  'Nouvelle ligne': 'Nova linha',
+  'Modifier le dossier': 'Editar pasta'
 }
