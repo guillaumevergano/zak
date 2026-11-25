@@ -24,7 +24,8 @@ export function TabStrip(): JSX.Element {
   const groups = useBrowserStore((s) => s.groups)
   const splits = useBrowserStore((s) => s.splits)
   const merging = useBrowserStore((s) => s.mergeTarget !== null)
-  const pinned = tabs.filter((t) => t.pinned)
+  // The favorites' tabs aren't in the strip: their tiles are (CLAUDE.md §6.2).
+  const pinned = tabs.filter((t) => t.pinned && t.favoriteId === null)
   const regular = tabs.filter((t) => !t.pinned)
 
   return (

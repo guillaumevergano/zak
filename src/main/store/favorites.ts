@@ -10,6 +10,7 @@ interface FavoriteRow {
   favicon: string | null
   folder_id: string | null
   position: number
+  row: number
 }
 
 interface FolderRow {
@@ -22,7 +23,8 @@ interface FolderRow {
 
 /**
  * Sidebar favorites and folders (CLAUDE.md §6.2), persisted immediately. Positions are dense
- * (0..n-1) within each container: the root, or a folder. One folder level only.
+ * (0..n-1) within each container: the root, or a folder. One folder level only. The root is also
+ * cut in rows (`row`, dense from 0, never empty): positions follow the rows, then the order in a row.
  */
 export class FavoritesStore {
   constructor(private readonly db: Db) {}
@@ -34,7 +36,7 @@ export class FavoritesStore {
 
   favorites(): FavoriteInfo[] {
     const rows = this.db
-      .prepare('SELECT * FROM favorites ORDER BY folder_id IS NOT NULL, folder_id, position')
+      .prepare('SELECT * FROM favorites ORDER BY folder_id IS NOT NULL, folder_id, row, position')
       .all() as FavoriteRow[]
     return rows.map((r) => ({
       id: r.id,
@@ -43,12 +45,13 @@ export class FavoritesStore {
       emoji: r.emoji,
       favicon: r.favicon,
       folderId: r.folder_id,
-      position: r.position
+      position: r.position,
+      row: r.folder_id === null ? r.row : 0
     }))
   }
 
-  /** Appends to the container, or inserts at `index`. */
-  addFavorite(input: FavoriteInput, index?: number): string {
+  /** Appends to the container (the root's last row), or inserts at `index` (in `row`, for the root). */
+  addFavorite(input: FavoriteInput, index?: number, row?: number): string {
     const id = randomUUID()
     this.db.transaction(() => {
       const folderId = this.existingFolder(input.folderId)
@@ -58,7 +61,7 @@ export class FavoritesStore {
            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
         )
         .run(id, input.title, input.url, input.emoji, input.favicon ?? null, folderId, this.favoriteCount(folderId), Date.now())
-      if (index !== undefined) this.placeFavorite(id, folderId, index)
+      this.placeFavorite(id, folderId, index ?? Number.MAX_SAFE_INTEGER, row)
     })()
     return id
   }
@@ -85,9 +88,12 @@ export class FavoritesStore {
     })()
   }
 
-  /** Drag & drop: to `folderId` (null = root) at `index`. */
-  moveFavorite(id: string, folderId: string | null, index: number): void {
-    this.db.transaction(() => this.placeFavorite(id, this.existingFolder(folderId), index))()
+  /**
+   * Drag & drop: to `folderId` (null = root) at `index`. In the root, `index` is within `row`; a row
+   * past the last one starts a new line. Without a row: the last one.
+   */
+  moveFavorite(id: string, folderId: string | null, index: number, row?: number): void {
+    this.db.transaction(() => this.placeFavorite(id, this.existingFolder(folderId), index, row))()
   }
 
   /** Remembers the favicon of pages whose URL starts with a favorite's origin. */
@@ -140,8 +146,9 @@ export class FavoritesStore {
       const inside = this.db.prepare('SELECT id FROM favorites WHERE folder_id = ? ORDER BY position').all(id) as {
         id: string
       }[]
-      const update = this.db.prepare('UPDATE favorites SET folder_id = NULL, position = ? WHERE id = ?')
-      inside.forEach((row, i) => update.run(base + i, row.id))
+      const lastRow = this.rootRows().length - 1
+      const update = this.db.prepare('UPDATE favorites SET folder_id = NULL, position = ?, row = ? WHERE id = ?')
+      inside.forEach((row, i) => update.run(base + i, Math.max(0, lastRow), row.id))
       this.db.prepare('DELETE FROM folders WHERE id = ?').run(id)
       this.renumberFolders()
     })()
@@ -159,18 +166,49 @@ export class FavoritesStore {
     })()
   }
 
-  private placeFavorite(id: string, folderId: string | null, index: number): void {
+  private placeFavorite(id: string, folderId: string | null, index: number, rowIndex?: number): void {
     const row = this.favoriteRow(id)
     if (!row) return
+    if (folderId === null) {
+      const rows = this.rootRows().map((ids) => ids.filter((other) => other !== id))
+      const target = Math.max(0, Math.min(rowIndex ?? rows.length - 1, rows.length))
+      if (target === rows.length) rows.push([])
+      rows[target]!.splice(clamp(index, 0, rows[target]!.length), 0, id)
+      this.db.prepare('UPDATE favorites SET folder_id = NULL WHERE id = ?').run(id)
+      this.writeRoot(rows)
+      if (row.folder_id !== null) this.renumberFavorites(row.folder_id)
+      return
+    }
     const ids = this.containerIds(folderId).filter((other) => other !== id)
     ids.splice(clamp(index, 0, ids.length), 0, id)
-    this.db.prepare('UPDATE favorites SET folder_id = ? WHERE id = ?').run(folderId, id)
+    this.db.prepare('UPDATE favorites SET folder_id = ?, row = 0 WHERE id = ?').run(folderId, id)
     const update = this.db.prepare('UPDATE favorites SET position = ? WHERE id = ?')
     ids.forEach((favoriteId, i) => update.run(i, favoriteId))
     if (row.folder_id !== folderId) this.renumberFavorites(row.folder_id)
   }
 
+  /** The root favorites' ids, row by row. */
+  private rootRows(): string[][] {
+    const rows = this.db.prepare('SELECT id, row FROM favorites WHERE folder_id IS NULL ORDER BY row, position').all() as { id: string; row: number }[]
+    const out: string[][] = []
+    let last: number | null = null
+    for (const r of rows) {
+      if (r.row !== last) out.push([])
+      last = r.row
+      out[out.length - 1]!.push(r.id)
+    }
+    return out
+  }
+
+  /** Saves the root's rows: empty rows go, rows and positions are renumbered. */
+  private writeRoot(rows: string[][]): void {
+    const update = this.db.prepare('UPDATE favorites SET row = ?, position = ? WHERE id = ?')
+    let position = 0
+    rows.filter((ids) => ids.length > 0).forEach((ids, r) => ids.forEach((id) => update.run(r, position++, id)))
+  }
+
   private renumberFavorites(folderId: string | null): void {
+    if (folderId === null) return this.writeRoot(this.rootRows())
     const update = this.db.prepare('UPDATE favorites SET position = ? WHERE id = ?')
     this.containerIds(folderId).forEach((id, i) => update.run(i, id))
   }
@@ -184,7 +222,7 @@ export class FavoritesStore {
   private containerIds(folderId: string | null): string[] {
     const rows = (
       folderId === null
-        ? this.db.prepare('SELECT id FROM favorites WHERE folder_id IS NULL ORDER BY position').all()
+        ? this.db.prepare('SELECT id FROM favorites WHERE folder_id IS NULL ORDER BY row, position').all()
         : this.db.prepare('SELECT id FROM favorites WHERE folder_id = ? ORDER BY position').all(folderId)
     ) as { id: string }[]
     return rows.map((r) => r.id)

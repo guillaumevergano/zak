@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, type MouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
-import { useDroppable } from '@dnd-kit/core'
+import { useDndContext, useDroppable } from '@dnd-kit/core'
 import { rectSortingStrategy, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { FavoriteInfo, FolderInfo, OpenDisposition, SidebarSide } from '@shared/types'
 import { SETTINGS_PAGE_URL } from '@shared/ipc'
 import { selectActiveTab, useBrowserStore } from '../store/useBrowserStore'
-import { dndId, ROOT_ZONE } from '../lib/dnd'
-import { matchFavorite, rectOf } from '../lib/favorites'
+import { dndId, NEW_ROW, parseDndId, ROOT_ZONE } from '../lib/dnd'
+import { rectOf } from '../lib/favorites'
 import { ChevronIcon, GearIcon, GlobeIcon, PlusIcon, SidebarIcon } from './Icons'
 import { SidebarTabs } from './SidebarTabs'
 import { t } from '@shared/i18n'
@@ -75,7 +75,8 @@ export function Sidebar(): JSX.Element {
     opacity: fading ? 0 : 1,
     transition: `opacity ${fading ? FADE_OUT_MS : FADE_IN_MS}ms var(--ease-calm)`
   }
-  const activeId = activeTab?.url ? matchFavorite(activeTab.url, favorites)?.id : undefined
+  // The favorite whose own tab is shown (CLAUDE.md §6.2).
+  const activeId = activeTab?.favoriteId ?? undefined
   const inFolder = (folderId: string | null): FavoriteInfo[] => favorites.filter((f) => f.folderId === folderId)
 
   const newFolder = (e: MouseEvent<HTMLButtonElement>): void =>
@@ -100,7 +101,7 @@ export function Sidebar(): JSX.Element {
       className="no-drag relative flex shrink-0 flex-col bg-frame text-frame-text"
     >
       <div style={content} className={`no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto pt-4 ${collapsed ? 'px-2.5' : 'px-4'}`}>
-        <Mosaic zone={ROOT_ZONE} favorites={inFolder(null)} activeId={activeId} collapsed={collapsed} folderId={null} showAdd />
+        <RootMosaic favorites={inFolder(null)} activeId={activeId} collapsed={collapsed} />
 
         <div className="my-4 h-px shrink-0 bg-frame-line" />
 
@@ -292,6 +293,89 @@ function FolderList(props: { folderId: string; favorites: FavoriteInfo[]; active
   )
 }
 
+/**
+ * The root favorites, in rows you choose (CLAUDE.md §6.2): each row is a grid of 5 square tiles
+ * (1 when the sidebar is collapsed), the rows one under the other. While a favorite or a tab is
+ * dragged, « Nouvelle ligne » under the last row starts another one (over the gap before the
+ * folders: nothing moves when it shows up); a row emptied goes away.
+ */
+function RootMosaic(props: { favorites: FavoriteInfo[]; activeId: string | undefined; collapsed: boolean }): JSX.Element {
+  const { setNodeRef } = useDroppable({ id: dndId('zone', ROOT_ZONE) })
+  const { active } = useDndContext()
+  const dragged = active ? parseDndId(active.id).kind : null
+  const add = useAddCurrentPage(null)
+  const rows: FavoriteInfo[][] = []
+  for (const favorite of props.favorites) (rows[favorite.row] ??= []).push(favorite)
+  const lines = rows.filter((row) => row !== undefined)
+  const addButton = !props.collapsed && (
+    <button
+      data-testid="add-favorite"
+      title={t('Ajouter un favori')}
+      onClick={add}
+      className="grid aspect-square place-items-center rounded-[10px] border border-dashed border-frame-line text-frame-sub hover:border-frame-sub hover:text-frame-text"
+    >
+      <PlusIcon />
+    </button>
+  )
+
+  return (
+    <div ref={setNodeRef} data-testid="mosaic" className="relative flex flex-col gap-2.5">
+      <SortableContext items={props.favorites.map((f) => dndId('fav', f.id))} strategy={rectSortingStrategy}>
+        {lines.map((row, r) => (
+          <MosaicRow key={r} row={r} collapsed={props.collapsed} divided={r > 0}>
+            {row.map((favorite, i) => (
+              <FavoriteTile
+                key={favorite.id}
+                favorite={favorite}
+                active={favorite.id === props.activeId}
+                column={props.collapsed ? -1 : i % COLUMNS}
+              />
+            ))}
+            {r === lines.length - 1 && addButton}
+          </MosaicRow>
+        ))}
+        {lines.length === 0 && (
+          <MosaicRow row={0} collapsed={props.collapsed} divided={false}>
+            {addButton}
+          </MosaicRow>
+        )}
+      </SortableContext>
+      {(dragged === 'fav' || dragged === 'tab') && lines.length > 0 && <NewRowZone collapsed={props.collapsed} />}
+    </div>
+  )
+}
+
+function MosaicRow(props: { row: number; collapsed: boolean; divided: boolean; children: React.ReactNode }): JSX.Element {
+  const { setNodeRef, isOver } = useDroppable({ id: dndId('row', props.row) })
+  return (
+    <div
+      ref={setNodeRef}
+      data-testid="mosaic-row"
+      className={`grid min-h-4 gap-2.5 rounded-[12px] transition-colors ${props.collapsed ? 'grid-cols-1' : 'grid-cols-5'} ${
+        props.divided ? 'border-t border-frame-line/70 pt-2.5' : ''
+      } ${isOver ? 'bg-frame-2/60' : ''}`}
+    >
+      {props.children}
+    </div>
+  )
+}
+
+/** Under the last row while dragging: drop here to start a new line. */
+function NewRowZone({ collapsed }: { collapsed: boolean }): JSX.Element {
+  const { setNodeRef, isOver } = useDroppable({ id: dndId('row', NEW_ROW) })
+  return (
+    <div
+      ref={setNodeRef}
+      data-testid="new-row"
+      className={`absolute inset-x-0 top-[calc(100%+2px)] z-10 grid h-[30px] place-items-center rounded-[10px] border border-dashed bg-frame text-[12.5px] transition-colors ${
+        isOver ? 'border-iris-ring bg-frame-2 text-frame-text' : 'border-frame-line text-frame-sub'
+      }`}
+    >
+      {collapsed ? <PlusIcon /> : t('Nouvelle ligne')}
+    </div>
+  )
+}
+
 /** A grid of square tiles: 5 per row, 1 when the sidebar is collapsed. Also a drop zone. */
 function Mosaic(props: {
   zone: string
@@ -355,11 +439,15 @@ function favoriteHandlers(favorite: FavoriteInfo): {
   }
 }
 
+/** The favorite's own tab is open (a dot under its tile, CLAUDE.md §6.2). */
+const useFavoriteOpen = (id: string): boolean => useBrowserStore((s) => s.tabs.some((tab) => tab.favoriteId === id))
+
 function FavoriteTile(props: { favorite: FavoriteInfo; active: boolean; column: number }): JSX.Element {
   const { favorite, active, column } = props
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: dndId('fav', favorite.id)
   })
+  const open = useFavoriteOpen(favorite.id)
   // Keep the tooltip inside the sidebar: first column aligned left, last aligned right.
   const tooltipPlace =
     column === 0 ? 'left-0' : column === COLUMNS - 1 || column === -1 ? 'right-0' : 'left-1/2 -translate-x-1/2'
@@ -372,13 +460,16 @@ function FavoriteTile(props: { favorite: FavoriteInfo; active: boolean; column: 
       {...favoriteHandlers(favorite)}
       data-testid="favorite"
       data-favorite-id={favorite.id}
+      data-open={open || undefined}
       aria-label={favorite.title}
+      aria-current={active ? 'page' : undefined}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       className={`group relative grid aspect-square place-items-center rounded-[10px] outline-none ${
         active ? 'bg-frame-3 ring-[1.5px] ring-iris-ring' : 'bg-frame-2 hover:bg-frame-3'
       } ${isDragging ? 'opacity-30' : ''}`}
     >
       <TileIcon favorite={favorite} />
+      {open && !active && <span aria-hidden className="absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-frame-sub" />}
       {!isDragging && (
         <span
           className={`pointer-events-none absolute top-[calc(100%+6px)] z-20 rounded-lg bg-black/85 px-2 py-1 text-xs font-medium whitespace-nowrap text-white opacity-0 transition-opacity delay-300 duration-100 group-hover:opacity-100 ${tooltipPlace}`}
@@ -394,6 +485,7 @@ function FavoriteRow({ favorite, active }: { favorite: FavoriteInfo; active: boo
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: dndId('fav', favorite.id)
   })
+  const open = useFavoriteOpen(favorite.id)
 
   return (
     <button
@@ -414,6 +506,7 @@ function FavoriteRow({ favorite, active }: { favorite: FavoriteInfo; active: boo
         <TileIcon favorite={favorite} small />
       </span>
       <span className="min-w-0 flex-1 truncate">{favorite.title}</span>
+      {open && !active && <span aria-hidden className="mr-1 h-1 w-1 shrink-0 rounded-full bg-frame-sub" />}
     </button>
   )
 }

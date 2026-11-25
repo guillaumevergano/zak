@@ -24,7 +24,8 @@ export function SidebarTabs({ collapsed }: { collapsed: boolean }): JSX.Element 
   const groups = useBrowserStore((s) => s.groups)
   const splits = useBrowserStore((s) => s.splits)
   const merging = useBrowserStore((s) => s.mergeTarget !== null)
-  const pinned = tabs.filter((tab) => tab.pinned)
+  // The favorites' tabs aren't listed: their tiles are (CLAUDE.md §6.2).
+  const pinned = tabs.filter((tab) => tab.pinned && tab.favoriteId === null)
   const regular = tabs.filter((tab) => !tab.pinned)
   const closable = regular.filter((tab) => tab.id !== activeId).length
   const variant = collapsed ? 'icon' : 'row'

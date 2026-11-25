@@ -112,6 +112,7 @@ export const EN_UI: Record<string, string> = {
   'Glisse un favori ou un onglet ici': 'Drag a favorite or a tab here',
   'Ajouter cette page': 'Add this page',
   'Ajouter un favori': 'Add a favorite',
+  'Nouvelle ligne': 'New row',
   Redimensionner: 'Resize',
 
   // lib/format.ts: file sizes

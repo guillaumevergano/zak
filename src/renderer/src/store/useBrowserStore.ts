@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { DownloadInfo, PageScroll, SidebarLayout, SidebarState, TabGroupInfo, TabId, TabInfo, TabSplitInfo, TabsState } from '@shared/types'
+import type { DownloadInfo, FavoriteInfo, PageScroll, SidebarLayout, SidebarState, TabGroupInfo, TabId, TabInfo, TabSplitInfo, TabsState } from '@shared/types'
 
 interface BrowserStore {
   tabs: TabInfo[]
@@ -28,7 +28,8 @@ interface BrowserStore {
 
   setSidebar: (state: SidebarState) => void
   /** Optimistic drag & drop of a favorite while main persists it. */
-  moveFavoriteLocally: (id: string, folderId: string | null, index: number) => void
+  /** Same rules as main's FavoritesStore.moveFavorite (rows in the root). */
+  moveFavoriteLocally: (id: string, folderId: string | null, index: number, row?: number) => void
   /** Local layout change; `persist` saves it (shared by all windows). */
   /** Merged into the current layout; `persist` saves it (every window follows). */
   setSidebarLayout: (patch: Partial<SidebarLayout>, persist: boolean) => void
@@ -77,13 +78,25 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
 
   setSidebar: (sidebar) => set({ sidebar }),
 
-  moveFavoriteLocally: (id, folderId, index) =>
+  moveFavoriteLocally: (id, folderId, index, row) =>
     set(({ sidebar }) => {
       if (!sidebar) return {}
       const moving = sidebar.favorites.find((f) => f.id === id)
       if (!moving) return {}
+      if (folderId === null) {
+        const rows: FavoriteInfo[][] = []
+        for (const f of sidebar.favorites) if (f.folderId === null && f.id !== id) (rows[f.row] ??= []).push(f)
+        const lines = rows.filter((r) => r !== undefined)
+        const at = Math.max(0, Math.min(row ?? lines.length - 1, lines.length))
+        if (at === lines.length) lines.push([])
+        lines[at]!.splice(Math.min(Math.max(index, 0), lines[at]!.length), 0, { ...moving, folderId: null })
+        let position = 0
+        const placed = lines.filter((r) => r.length > 0).flatMap((r, n) => r.map((f) => ({ ...f, row: n, position: position++ })))
+        const others = sidebar.favorites.filter((f) => f.folderId !== null && f.id !== id)
+        return { sidebar: { ...sidebar, favorites: [...placed, ...others] } }
+      }
       const target = sidebar.favorites.filter((f) => f.folderId === folderId && f.id !== id)
-      target.splice(Math.min(Math.max(index, 0), target.length), 0, { ...moving, folderId })
+      target.splice(Math.min(Math.max(index, 0), target.length), 0, { ...moving, folderId, row: 0 })
       const placed = target.map((f, position) => ({ ...f, position }))
       const others = sidebar.favorites.filter((f) => f.folderId !== folderId && f.id !== id)
       return { sidebar: { ...sidebar, favorites: [...others, ...placed] } }

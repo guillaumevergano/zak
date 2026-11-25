@@ -32,7 +32,7 @@ export function zakControl(deps: {
         const { tabs, activeId, groups } = h.tabs.getState()
         return {
           window: i + 1,
-          tabs: tabs.map((t) => ({ id: t.id, title: t.title, url: t.url, pinned: t.pinned, active: t.id === activeId, groupId: t.groupId })),
+          tabs: tabs.map((t) => ({ id: t.id, title: t.title, url: t.url, pinned: t.pinned, active: t.id === activeId, groupId: t.groupId, favoriteId: t.favoriteId })),
           groups
         }
       }),

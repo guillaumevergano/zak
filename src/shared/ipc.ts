@@ -79,10 +79,12 @@ export interface InvokeChannels {
   'sidebar:setLayout': { args: [layout: Partial<SidebarLayout>]; result: void }
   'favorites:add': { args: [input: FavoriteInput]; result: string }
   /** Drag of a tab from the strip into the sidebar: main knows its title, URL and favicon. */
-  'favorites:addFromTab': { args: [tabId: TabId, folderId: string | null, index: number]; result: string }
+  /** `row`: in the root, the row of the mosaic (past the last one: a new row). */
+  'favorites:addFromTab': { args: [tabId: TabId, folderId: string | null, index: number, row?: number]; result: string }
   'favorites:update': { args: [id: string, input: FavoriteInput]; result: void }
   'favorites:remove': { args: [id: string]; result: void }
-  'favorites:move': { args: [id: string, folderId: string | null, index: number]; result: void }
+  /** `index` within `row` in the root (past the last row: a new row). */
+  'favorites:move': { args: [id: string, folderId: string | null, index: number, row?: number]; result: void }
   'favorites:open': { args: [id: string, disposition: OpenDisposition]; result: void }
   'favorites:showContextMenu': { args: [id: string]; result: void }
   'folders:add': { args: [input: FolderInput]; result: string }

@@ -47,6 +47,31 @@ describe('FavoritesStore', () => {
     expect(titles(null)).toEqual(['root', 'in1', 'in2'])
   })
 
+  it('cuts the root into rows: a new line, moves between lines, empty lines go', () => {
+    const rows = (): string[][] => {
+      const out: string[][] = []
+      for (const f of store.favorites().filter((x) => x.folderId === null)) (out[f.row] ??= []).push(f.title)
+      return out
+    }
+    const a = store.addFavorite(fav('a'))
+    const b = store.addFavorite(fav('b'))
+    store.addFavorite(fav('c'))
+    // Dropped under the last line: a new one.
+    store.moveFavorite(b, null, 0, 1)
+    expect(rows()).toEqual([['a', 'c'], ['b']])
+    // A new favorite goes to the last line.
+    store.addFavorite(fav('d'))
+    expect(rows()).toEqual([['a', 'c'], ['b', 'd']])
+    // Within a line, at an index.
+    store.moveFavorite(a, null, 1, 1)
+    expect(rows()).toEqual([['c'], ['b', 'a', 'd']])
+    // The first line emptied: it goes, the others move up.
+    const c = store.favorites().find((f) => f.title === 'c')!.id
+    store.moveFavorite(c, null, 0, 1)
+    expect(rows()).toEqual([['c', 'b', 'a', 'd']])
+    expect(store.favorites().map((f) => f.position)).toEqual([0, 1, 2, 3])
+  })
+
   it('reorders folders', () => {
     const f1 = store.addFolder({ name: '1', emoji: null })
     store.addFolder({ name: '2', emoji: null })

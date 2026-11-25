@@ -57,6 +57,12 @@ interface Tab {
   /** Asleep: the page was swapped for about:blank to free memory; what to show and reload. */
   asleep: { url: string; title: string; favicon: string | null } | null
   groupId: string | null
+  /**
+   * The sidebar favorite this tab belongs to (« onglet de favori », à la Arc), or null. Such a tab
+   * lives in the pinned group (never grouped, split, or closed by « Tout fermer ») and the strip
+   * doesn't show it: its tile does.
+   */
+  favoriteId: string | null
   /** Secret of the scroll reports of this tab's page (scrollScript.ts). */
   scrollNonce: string
 }
@@ -72,6 +78,8 @@ export interface CreateTabOptions {
   /** Position in the strip; defaults to the end. Clamped to the unpinned group. */
   index?: number
   pinned?: boolean
+  /** Makes it the tab of this sidebar favorite (see Tab.favoriteId). */
+  favoriteId?: string
   /** Tab group to put it in (session restore). By default a tab placed inside a group joins it. */
   groupId?: string | null
   /**
@@ -114,6 +122,8 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
   private readonly splits = new Map<string, TabSplitInfo>()
   private order: TabId[] = []
   private activeId: TabId | null = null
+  /** Last active tab shown in the strip: where closing a favorite's tab goes back to. */
+  private lastStripId: TabId | null = null
   /** Tabs whose page is on screen: the active one, and its partner in a split view. */
   private shown = new Set<TabId>()
   /** Tabs zoomed out for their split view (isolated zoom, see syncSplitZoom). */
@@ -219,8 +229,9 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
       }
     })
     const wc = view.webContents
-    const pinned = opts.pinned ?? false
-    const tab: Tab = { id: wc.id, view, wc, favicon: null, pinned, url, setup: Promise.resolve(), lastActive: Date.now(), asleep: null, groupId: null, scrollNonce: randomBytes(12).toString('hex') }
+    const favoriteId = opts.favoriteId ?? null
+    const pinned = favoriteId !== null || (opts.pinned ?? false)
+    const tab: Tab = { id: wc.id, view, wc, favicon: null, pinned, url, setup: Promise.resolve(), lastActive: Date.now(), asleep: null, groupId: null, favoriteId, scrollNonce: randomBytes(12).toString('hex') }
     this.tabs.set(tab.id, tab)
     const [start, end] = this.groupRange(pinned)
     // Never between the two tabs of a split view (a link opened from its left page goes after both).
@@ -273,6 +284,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     }
 
     this.activeId = id
+    if (next.favoriteId === null) this.lastStripId = id
     // Showing a tab of a folded group unfolds it.
     const group = next.groupId ? this.groups.get(next.groupId) : undefined
     if (group?.collapsed) group.collapsed = false
@@ -312,15 +324,18 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
 
   /** Ctrl+Tab / Ctrl+Shift+Tab, wrapping around. */
   activateRelative(delta: number): void {
-    if (this.order.length === 0 || this.activeId === null) return
-    const index = this.order.indexOf(this.activeId)
-    const n = this.order.length
-    this.activate(this.order[(((index + delta) % n) + n) % n]!)
+    const strip = this.stripOrder()
+    if (strip.length === 0 || this.activeId === null) return
+    // From a favorite's tab: as if on the last strip tab shown.
+    const index = strip.indexOf(this.activeId) >= 0 ? strip.indexOf(this.activeId) : Math.max(0, strip.indexOf(this.lastStripId ?? -1))
+    const n = strip.length
+    this.activate(strip[(((index + delta) % n) + n) % n]!)
   }
 
   /** Cmd/Ctrl+1..8 → that tab, Cmd/Ctrl+9 → last tab (like Chrome). */
   activateNumber(n: number): void {
-    const id = n >= 9 ? this.order[this.order.length - 1] : this.order[n - 1]
+    const strip = this.stripOrder()
+    const id = n >= 9 ? strip[strip.length - 1] : strip[n - 1]
     if (id !== undefined) this.activate(id)
   }
 
@@ -337,7 +352,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     if (!tab) return
     const index = this.order.indexOf(id)
     const partner = partnerOf(this.splits, id)
-    this.remember(tab, index)
+    if (tab.favoriteId === null) this.remember(tab, index)
     this.order.splice(index, 1)
     this.tabs.delete(id)
     this.shown.delete(id)
@@ -349,7 +364,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
       repairSplits(this.order, this.tabs, this.splits)
       this.syncSplitZoom()
       // The other page of its split view takes the whole area.
-      const neighbour = partner ?? this.order[Math.min(index, this.order.length - 1)]
+      const neighbour = partner ?? this.neighbourOf(tab, index)
       if (neighbour !== undefined) this.activate(neighbour)
     } else this.afterStripChange()
 
@@ -405,7 +420,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
 
   setPinned(id: TabId, pinned: boolean): void {
     const tab = this.tabs.get(id)
-    if (!tab || tab.pinned === pinned) return
+    if (!tab || tab.pinned === pinned || tab.favoriteId !== null) return
     this.order.splice(this.order.indexOf(id), 1)
     tab.pinned = pinned
     tab.groupId = null // pinned tabs are never in a group, nor in a split view
@@ -723,6 +738,45 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     }
   }
 
+  /** The tabs the strip shows, in order (not the favorites' tabs). */
+  private stripOrder(): TabId[] {
+    return this.order.filter((id) => this.tabs.get(id)?.favoriteId === null)
+  }
+
+  /**
+   * The tab to show once the active one is closed: from a favorite's tab, the strip tab shown
+   * before it; otherwise the next strip tab (or the previous one at the end), like Chrome.
+   */
+  private neighbourOf(closed: Tab, index: number): TabId | undefined {
+    if (closed.favoriteId !== null && this.lastStripId !== null && this.tabs.has(this.lastStripId)) return this.lastStripId
+    const after = this.order.slice(index).find((id) => this.tabs.get(id)?.favoriteId === null)
+    const before = this.order.slice(0, index).reverse().find((id) => this.tabs.get(id)?.favoriteId === null)
+    return after ?? before ?? this.order[Math.min(index, this.order.length - 1)]
+  }
+
+  /** The tab of a sidebar favorite, if it is open. */
+  favoriteTab(favoriteId: string): TabId | null {
+    for (const id of this.order) if (this.tabs.get(id)?.favoriteId === favoriteId) return id
+    return null
+  }
+
+  /**
+   * A click on a favorite (CLAUDE.md §6.2): its own tab, as it was left; opened at `url` the first
+   * time. Clicking the favorite of the tab already shown brings it back to `url`.
+   */
+  openFavorite(favoriteId: string, url: string): void {
+    const id = this.favoriteTab(favoriteId)
+    if (id === null) this.create(url, { favoriteId, active: true })
+    else if (id === this.activeId) this.navigate(id, url)
+    else this.activate(id)
+  }
+
+  /** The favorite was deleted: its tab goes too. */
+  closeFavorite(favoriteId: string): void {
+    const id = this.favoriteTab(favoriteId)
+    if (id !== null) this.close(id)
+  }
+
   /** [first index, one past last index] of the pinned or unpinned group in `order`. */
   private groupRange(pinned: boolean): [number, number] {
     const pinnedCount = this.order.filter((id) => this.tabs.get(id)?.pinned).length
@@ -763,7 +817,8 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
         canGoForward: false,
         zoom: Math.round(wc.getZoomFactor() * 100),
         asleep: true,
-        groupId: tab.groupId
+        groupId: tab.groupId,
+        favoriteId: tab.favoriteId
       }
     }
     // An error page shows the address that failed, like Chrome.
@@ -783,7 +838,8 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
       canGoForward: wc.navigationHistory.canGoForward(),
       zoom: Math.round(wc.getZoomFactor() * 100),
       asleep: false,
-      groupId: tab.groupId
+      groupId: tab.groupId,
+      favoriteId: tab.favoriteId
     }
   }
 

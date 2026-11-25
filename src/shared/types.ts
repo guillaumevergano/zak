@@ -20,6 +20,11 @@ export interface TabInfo {
   asleep: boolean
   /** Tab group it belongs to (TabsState.groups), or null. */
   groupId: string | null
+  /**
+   * The sidebar favorite whose tab this is (opened by its tile, hidden from the strip), or null.
+   * Such a tab is also `pinned`.
+   */
+  favoriteId: string | null
 }
 
 export type TabGroupColor = 'grey' | 'blue' | 'red' | 'yellow' | 'green' | 'pink' | 'purple' | 'cyan' | 'orange'
@@ -86,6 +91,8 @@ export interface FavoriteInfo {
   favicon: string | null
   folderId: string | null
   position: number
+  /** Row of the root mosaic (0, 1, …: a new line of tiles); 0 in a folder. */
+  row: number
 }
 
 export interface FolderInfo {

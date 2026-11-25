@@ -56,7 +56,9 @@ const MIGRATIONS: string[] = [
      state TEXT NOT NULL, received_bytes INTEGER NOT NULL DEFAULT 0, total_bytes INTEGER NOT NULL DEFAULT 0,
      started_at INTEGER NOT NULL, ended_at INTEGER
    );
-   CREATE INDEX downloads_started_at ON downloads(started_at);`
+   CREATE INDEX downloads_started_at ON downloads(started_at);`,
+  // 7 — the root favorites in rows (the mosaic goes to the next line where you want).
+  `ALTER TABLE favorites ADD COLUMN row INTEGER NOT NULL DEFAULT 0;`
 ]
 
 export function openDatabase(dir: string): Db {
