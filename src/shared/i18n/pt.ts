@@ -568,13 +568,12 @@ export const PT: Record<string, string> = {
   '« {text} »': '“{text}”',
   'En savoir plus sur Wikipédia': 'Saiba mais na Wikipédia',
   'Sous le logo': 'Abaixo do logotipo',
-  'Récupéré sur Wikipédia, dans la langue de Zak. Un nouveau à chaque onglet.': 'Da Wikipédia, no idioma do Zak. Um novo a cada guia.',
-  'Une nouvelle à chaque onglet, sans connexion.': 'Um novo a cada guia, sem conexão.',
+  '« Ce jour dans l’histoire » et « Le saviez-vous ? » viennent de Wikipédia, dans la langue de Zak.': '“Neste dia na história” e “Você sabia?” vêm da Wikipédia, no idioma do Zak.',
   '« Un peu d’espace. »': '“Um pouco de espaço.”',
   'Mon texte': 'Meu texto',
   'Une citation': 'Uma citação',
   'Un proverbe': 'Um provérbio',
   'Ce jour dans l’histoire': 'Neste dia na história',
   'Le saviez-vous ?': 'Você sabia?',
-  'Rien': 'Nada'
+  'À chaque nouvel onglet, l’un de ceux cochés, au hasard. Rien de coché : rien ne s’affiche.': 'A cada nova guia, um dos marcados, ao acaso. Nada marcado: nada aparece.'
 }

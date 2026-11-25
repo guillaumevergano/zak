@@ -231,8 +231,11 @@ export interface GeneralSettings {
   savePasswords: boolean
   /** Unload background tabs after this many minutes alone (CLAUDE.md §6.1), 0 = never. */
   sleepTabsAfter: number
-  /** What the new tab page shows under its logo (src/main/newtab/headlines.ts). */
-  newtabHeadline: NewtabHeadlineSource
+  /**
+   * What the new tab page may show under its logo (src/main/newtab/headlines.ts): one picked at
+   * random for each tab; none = nothing.
+   */
+  newtabHeadlines: NewtabHeadlineSource[]
   /** « Mon texte »: the title and the line under it. */
   newtabTitle: string
   newtabSubtitle: string
@@ -241,14 +244,15 @@ export interface GeneralSettings {
 /**
  * Under the new tab page's logo: Zak's « Un peu d'espace. », the user's own text, a quote or a
  * proverb (shipped with Zak), something from Wikipedia (« Ce jour dans l'histoire », « Le
- * saviez-vous ? »), or nothing.
+ * saviez-vous ? »).
  */
-export type NewtabHeadlineSource = 'zak' | 'custom' | 'quote' | 'proverb' | 'history' | 'wikipedia' | 'none'
-export const NEWTAB_HEADLINE_SOURCES = ['zak', 'custom', 'quote', 'proverb', 'history', 'wikipedia', 'none'] as const satisfies readonly NewtabHeadlineSource[]
+export type NewtabHeadlineSource = 'zak' | 'custom' | 'quote' | 'proverb' | 'history' | 'wikipedia'
+export const NEWTAB_HEADLINE_SOURCES = ['zak', 'custom', 'quote', 'proverb', 'history', 'wikipedia'] as const satisfies readonly NewtabHeadlineSource[]
 
 /** One headline, as the page shows it: a big line, a small one, maybe a link to read more. */
 export interface NewtabHeadline {
-  kind: Exclude<NewtabHeadlineSource, 'zak'>
+  /** none: nothing is ticked, the page shows nothing. */
+  kind: Exclude<NewtabHeadlineSource, 'zak'> | 'none'
   title: string
   subtitle: string
   link?: string

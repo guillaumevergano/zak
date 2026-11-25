@@ -1,50 +1,60 @@
 import { expect, test } from '@playwright/test'
 import { forceClose, launch, pageAt, visit } from './helpers'
 
-test('the new tab page shows what was chosen under its logo, a new one each time', async () => {
+test('the new tab page shows one of the sources ticked under its logo, at random', async () => {
   const { app, chrome } = await launch('newtab-headline')
   try {
     const open = async () => {
       await visit(chrome, 'zak://newtab')
-      return pageAt(app, 'zak://newtab')
+      const page = await pageAt(app, 'zak://newtab')
+      await page.getByTestId('newtab-headline').or(page.getByRole('heading', { name: 'Nouvel onglet' })).first().waitFor()
+      return page
     }
+    const settings = async () => {
+      await visit(chrome, 'zak://settings')
+      return pageAt(app, 'zak://settings')
+    }
+    const box = (page: Awaited<ReturnType<typeof settings>>, name: string) =>
+      page.getByRole('group', { name: 'Sous le logo' }).getByRole('checkbox', { name, exact: true })
 
     // Zak's own words by default.
     let page = await open()
-    const headline = page.getByTestId('newtab-headline')
-    await expect(headline).toHaveAttribute('data-kind', 'zak')
-    await expect(headline).toContainText('Un peu d’espace.')
+    await expect(page.getByTestId('newtab-headline')).toHaveAttribute('data-kind', 'zak')
+    await expect(page.getByTestId('newtab-headline')).toContainText('Un peu d’espace.')
 
-    // From the settings page: a quote, with its author.
-    await visit(chrome, 'zak://settings')
-    const settings = await pageAt(app, 'zak://settings')
-    const source = settings.getByRole('combobox', { name: 'Sous le logo' })
-    await source.selectOption('quote')
+    // Quotes only: a quote, with its author.
+    let s = await settings()
+    await box(s, '« Un peu d’espace. »').uncheck()
+    await box(s, 'Une citation').check()
     page = await open()
     await expect(page.getByTestId('newtab-headline')).toHaveAttribute('data-kind', 'quote')
     await expect(page.getByTestId('newtab-headline').locator('p')).toContainText('— ')
 
-    // A proverb each time: two tabs in a row show two different ones.
-    await visit(chrome, 'zak://settings')
-    await source.selectOption('proverb')
-    page = await open()
-    const first = await page.getByTestId('newtab-headline').locator('h1').innerText()
-    page = await open()
-    await expect(page.getByTestId('newtab-headline').locator('h1')).not.toHaveText(first)
+    // Quotes and proverbs: one or the other, at random, tab after tab.
+    s = await settings()
+    await box(s, 'Un proverbe').check()
+    const kinds = new Set<string>()
+    for (let i = 0; i < 12 && kinds.size < 2; i++) {
+      page = await open()
+      kinds.add((await page.getByTestId('newtab-headline').getAttribute('data-kind'))!)
+    }
+    expect([...kinds].sort()).toEqual(['proverb', 'quote'])
 
-    // Own text.
-    await visit(chrome, 'zak://settings')
-    await source.selectOption('custom')
-    await settings.getByRole('textbox', { name: 'Titre', exact: true }).fill('Bonjour.')
-    await settings.getByRole('textbox', { name: 'Sous-titre' }).fill('Belle journée.')
-    await settings.getByRole('textbox', { name: 'Titre', exact: true }).focus()
+    // Own text only.
+    s = await settings()
+    await box(s, 'Une citation').uncheck()
+    await box(s, 'Un proverbe').uncheck()
+    await box(s, 'Mon texte').check()
+    await s.getByRole('textbox', { name: 'Titre', exact: true }).fill('Bonjour.')
+    await s.getByRole('textbox', { name: 'Sous-titre' }).fill('Belle journée.')
+    await s.getByRole('textbox', { name: 'Titre', exact: true }).focus()
     page = await open()
     await expect(page.getByTestId('newtab-headline')).toContainText('Bonjour.')
     await expect(page.getByTestId('newtab-headline')).toContainText('Belle journée.')
 
-    // Nothing at all (the page keeps a title for screen readers).
-    await visit(chrome, 'zak://settings')
-    await source.selectOption('none')
+    // Nothing ticked: nothing (the page keeps a title for screen readers).
+    s = await settings()
+    await box(s, 'Mon texte').uncheck()
     page = await open()
     await expect(page.getByTestId('newtab-headline')).toHaveCount(0)
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Nouvel onglet')

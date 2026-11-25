@@ -568,13 +568,12 @@ export const DE: Record<string, string> = {
   '« {text} »': '„{text}“',
   'En savoir plus sur Wikipédia': 'Mehr auf Wikipedia',
   'Sous le logo': 'Unter dem Logo',
-  'Récupéré sur Wikipédia, dans la langue de Zak. Un nouveau à chaque onglet.': 'Von Wikipedia, in der Sprache von Zak. Bei jedem Tab etwas Neues.',
-  'Une nouvelle à chaque onglet, sans connexion.': 'Bei jedem Tab etwas Neues, offline.',
+  '« Ce jour dans l’histoire » et « Le saviez-vous ? » viennent de Wikipédia, dans la langue de Zak.': '„An diesem Tag in der Geschichte“ und „Schon gewusst?“ kommen von Wikipedia, in der Sprache von Zak.',
   '« Un peu d’espace. »': '„Ein wenig Raum.“',
   'Mon texte': 'Eigener Text',
   'Une citation': 'Ein Zitat',
   'Un proverbe': 'Ein Sprichwort',
   'Ce jour dans l’histoire': 'An diesem Tag in der Geschichte',
   'Le saviez-vous ?': 'Schon gewusst?',
-  'Rien': 'Nichts'
+  'À chaque nouvel onglet, l’un de ceux cochés, au hasard. Rien de coché : rien ne s’affiche.': 'Bei jedem neuen Tab eines der angehakten, zufällig. Nichts angehakt: nichts wird angezeigt.'
 }

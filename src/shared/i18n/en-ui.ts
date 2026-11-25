@@ -488,13 +488,12 @@ export const EN_UI: Record<string, string> = {
   '« {text} »': '“{text}”',
   'En savoir plus sur Wikipédia': 'Read more on Wikipedia',
   'Sous le logo': 'Under the logo',
-  'Récupéré sur Wikipédia, dans la langue de Zak. Un nouveau à chaque onglet.': 'From Wikipedia, in Zak’s language. A new one with each tab.',
-  'Une nouvelle à chaque onglet, sans connexion.': 'A new one with each tab, offline.',
+  '« Ce jour dans l’histoire » et « Le saviez-vous ? » viennent de Wikipédia, dans la langue de Zak.': '“On this day in history” and “Did you know?” come from Wikipedia, in Zak’s language.',
   '« Un peu d’espace. »': '“A little space.”',
   'Mon texte': 'My own text',
   'Une citation': 'A quote',
   'Un proverbe': 'A proverb',
   'Ce jour dans l’histoire': 'On this day in history',
   'Le saviez-vous ?': 'Did you know?',
-  'Rien': 'Nothing'
+  'À chaque nouvel onglet, l’un de ceux cochés, au hasard. Rien de coché : rien ne s’affiche.': 'With each new tab, one of those ticked, at random. Nothing ticked: nothing shows.'
 }
