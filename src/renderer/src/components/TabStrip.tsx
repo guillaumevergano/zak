@@ -41,7 +41,9 @@ export function TabStrip(): JSX.Element {
       )}
       <CloseAllButton closable={regular.filter((t) => t.id !== activeId).length} />
       <SortableContext items={regular.map((t) => dndId('tab', t.id))} strategy={merging ? stayStill : horizontalListSortingStrategy}>
-        <div role="tablist" aria-label={t('Onglets')} className="no-scrollbar flex min-w-0 items-end gap-1.5 overflow-x-auto px-1.5">
+        {/* px-2.5: room for the active tab's 10 px feet, which the scrolling list would clip at its ends
+            (first and last tab); -mx-1 keeps the tabs where they were. */}
+        <div role="tablist" aria-label={t('Onglets')} className="no-scrollbar -mx-1 flex min-w-0 items-end gap-1.5 overflow-x-auto px-2.5">
           {regular.map((tab, i) => {
             const group = tab.groupId ? groups.find((g) => g.id === tab.groupId) : undefined
             const startsGroup = group !== undefined && regular[i - 1]?.groupId !== group.id
