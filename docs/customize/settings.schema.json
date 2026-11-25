@@ -16,7 +16,10 @@
         "askWhereToSave": { "type": "boolean", "default": false, "description": "Ask where to save each download instead of saving it straight into downloadDir." },
         "safeBrowsing": { "type": "boolean", "default": true, "description": "Warn before opening known phishing or malware pages." },
         "savePasswords": { "type": "boolean", "default": true, "description": "Offer to save passwords after a sign-in." },
-        "sleepTabsAfter": { "enum": [0, 15, 30, 60, 120], "default": 0, "description": "Minutes before a background tab is unloaded; 0 = never." }
+        "sleepTabsAfter": { "enum": [0, 15, 30, 60, 120], "default": 0, "description": "Minutes before a background tab is unloaded; 0 = never." },
+        "newtabHeadline": { "enum": ["zak", "custom", "quote", "proverb", "history", "wikipedia", "none"], "default": "zak", "description": "Under the new tab page logo: Zak's words, newtabTitle/newtabSubtitle, a quote, a proverb, on this day in history or a random article (Wikipedia, in Zak's language), or nothing." },
+        "newtabTitle": { "type": "string", "maxLength": 80, "default": "" },
+        "newtabSubtitle": { "type": "string", "maxLength": 120, "default": "" }
       },
       "additionalProperties": false
     },

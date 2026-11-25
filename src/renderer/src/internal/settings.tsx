@@ -223,6 +223,56 @@ function SettingsPage(): JSX.Element {
         onError={fail}
       />
 
+      <Section id="newtab" title={t('Nouvel onglet')}>
+        <Row
+          title={t('Sous le logo')}
+          detail={
+            general.newtabHeadline === 'history' || general.newtabHeadline === 'wikipedia'
+              ? t('Récupéré sur Wikipédia, dans la langue de Zak. Un nouveau à chaque onglet.')
+              : general.newtabHeadline === 'quote' || general.newtabHeadline === 'proverb'
+                ? t('Une nouvelle à chaque onglet, sans connexion.')
+                : undefined
+          }
+        >
+          <select
+            aria-label={t('Sous le logo')}
+            value={general.newtabHeadline}
+            onChange={(e) => saveGeneral({ newtabHeadline: e.target.value as GeneralSettings['newtabHeadline'] })}
+            className={selectClass}
+          >
+            <option value="zak">{t('« Un peu d’espace. »')}</option>
+            <option value="custom">{t('Mon texte')}</option>
+            <option value="quote">{t('Une citation')}</option>
+            <option value="proverb">{t('Un proverbe')}</option>
+            <option value="history">{t('Ce jour dans l’histoire')}</option>
+            <option value="wikipedia">{t('Le saviez-vous ?')}</option>
+            <option value="none">{t('Rien')}</option>
+          </select>
+        </Row>
+        {general.newtabHeadline === 'custom' && (
+          <Row title={t('Mon texte')}>
+            <div className="flex w-[300px] flex-col gap-1.5">
+              <input
+                aria-label={t('Titre')}
+                placeholder={t('Un peu d’espace.')}
+                defaultValue={general.newtabTitle}
+                maxLength={80}
+                onBlur={(e) => e.target.value !== general.newtabTitle && saveGeneral({ newtabTitle: e.target.value })}
+                className="h-9 rounded-[10px] border border-cream-edge bg-cream-2 px-3 text-[13.5px] text-ink focus:border-pink focus:outline-none"
+              />
+              <input
+                aria-label={t('Sous-titre')}
+                placeholder={t('Pour vos prochaines idées.')}
+                defaultValue={general.newtabSubtitle}
+                maxLength={120}
+                onBlur={(e) => e.target.value !== general.newtabSubtitle && saveGeneral({ newtabSubtitle: e.target.value })}
+                className="h-9 rounded-[10px] border border-cream-edge bg-cream-2 px-3 text-[13.5px] text-ink focus:border-pink focus:outline-none"
+              />
+            </div>
+          </Row>
+        )}
+      </Section>
+
       <Section id="downloads" title={t('Téléchargements')}>
         <Row title={t('Dossier de téléchargement')} detail={general.downloadDir}>
           <SmallButton

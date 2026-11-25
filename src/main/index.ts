@@ -17,6 +17,7 @@ import { PasswordStore } from './passwords/PasswordStore'
 import { startCrashReporter } from './support/report'
 import { DEFAULT_PROFILE_ID, Profiles } from './profiles/Profiles'
 import { PasswordManager } from './passwords/PasswordManager'
+import { Headlines } from './newtab/headlines'
 import { keychainCipher, passwordRoutes } from './passwords/routes'
 import type { ImportSource } from '@shared/types'
 
@@ -312,7 +313,10 @@ app.whenReady().then(async () => {
   })
   // The settings file can be edited outside Zak (by hand, Claude Code, Codex): apply it at once.
   settings.markSchema()
+  const headlines = new Headlines(() => settings.getGeneral())
+  headlines.warmUp()
   settings.onChange(() => {
+    headlines.warmUp()
     nativeTheme.themeSource = settings.getGeneral().theme
     sidebar.broadcast()
     const css = appearanceCss(settings.getAppearance())
@@ -572,6 +576,7 @@ app.whenReady().then(async () => {
       return null
     },
     ...downloadRoutes(browsingSession),
+    'newtab/headline': () => headlines.next(),
     'newtab/state': () => ({ canReopenSession: session.canReopenPrevious(), recent: history.recentByHost(4) }),
     'newtab/suggest': ({ text }) => suggest(text, settings.getGeneral().searchEngine, favorites, history),
     'newtab/reopenSession': () => {

@@ -561,5 +561,20 @@ export const IT: Record<string, string> = {
   'Faites de Zak votre navigateur par défaut': 'Rendi Zak il tuo browser predefinito',
   'Celle du système': 'Uguale al sistema',
   'Commencer': 'Inizia',
-  'Traduire cette page': 'Traduci questa pagina'
+  'Traduire cette page': 'Traduci questa pagina',
+  'Proverbe': 'Proverbio',
+  'Ce jour dans l’histoire · {date}': 'Accadde oggi · {date}',
+  'Le saviez-vous ? · {topic}': 'Lo sapevi? · {topic}',
+  '« {text} »': '«{text}»',
+  'En savoir plus sur Wikipédia': 'Scopri di più su Wikipedia',
+  'Sous le logo': 'Sotto il logo',
+  'Récupéré sur Wikipédia, dans la langue de Zak. Un nouveau à chaque onglet.': 'Da Wikipedia, nella lingua di Zak. Uno nuovo a ogni scheda.',
+  'Une nouvelle à chaque onglet, sans connexion.': 'Uno nuovo a ogni scheda, senza connessione.',
+  '« Un peu d’espace. »': '«Un po’ di spazio.»',
+  'Mon texte': 'Il mio testo',
+  'Une citation': 'Una citazione',
+  'Un proverbe': 'Un proverbio',
+  'Ce jour dans l’histoire': 'Accadde oggi nella storia',
+  'Le saviez-vous ?': 'Lo sapevi?',
+  'Rien': 'Niente'
 }

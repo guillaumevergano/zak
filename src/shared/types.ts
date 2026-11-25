@@ -231,6 +231,27 @@ export interface GeneralSettings {
   savePasswords: boolean
   /** Unload background tabs after this many minutes alone (CLAUDE.md §6.1), 0 = never. */
   sleepTabsAfter: number
+  /** What the new tab page shows under its logo (src/main/newtab/headlines.ts). */
+  newtabHeadline: NewtabHeadlineSource
+  /** « Mon texte »: the title and the line under it. */
+  newtabTitle: string
+  newtabSubtitle: string
+}
+
+/**
+ * Under the new tab page's logo: Zak's « Un peu d'espace. », the user's own text, a quote or a
+ * proverb (shipped with Zak), something from Wikipedia (« Ce jour dans l'histoire », « Le
+ * saviez-vous ? »), or nothing.
+ */
+export type NewtabHeadlineSource = 'zak' | 'custom' | 'quote' | 'proverb' | 'history' | 'wikipedia' | 'none'
+export const NEWTAB_HEADLINE_SOURCES = ['zak', 'custom', 'quote', 'proverb', 'history', 'wikipedia', 'none'] as const satisfies readonly NewtabHeadlineSource[]
+
+/** One headline, as the page shows it: a big line, a small one, maybe a link to read more. */
+export interface NewtabHeadline {
+  kind: Exclude<NewtabHeadlineSource, 'zak'>
+  title: string
+  subtitle: string
+  link?: string
 }
 
 /** What zak://settings shows and edits. */

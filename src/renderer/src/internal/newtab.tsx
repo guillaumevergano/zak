@@ -2,7 +2,7 @@ import '../lib/lang'
 import { StrictMode, useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { toUrl, type SearchEngine } from '@shared/url'
-import type { HistoryEntry, OmniboxSuggestion } from '@shared/types'
+import type { HistoryEntry, NewtabHeadline, OmniboxSuggestion } from '@shared/types'
 import { callInternal } from './api'
 import { GlobeIcon, SearchIcon, SparkleIcon } from '../components/Icons'
 import logo from '../assets/brand/zak-logo-color.svg'
@@ -20,6 +20,45 @@ const isMac = navigator.userAgent.includes('Mac')
  * zak://newtab, what "+" and Cmd/Ctrl+T open (CLAUDE.md §7, docs/design/maquette-v2.png).
  * Private windows show neither the previous session nor the history.
  */
+/**
+ * Under the logo (setting « Sous le logo », src/main/newtab/headlines.ts): Zak's words, the user's,
+ * a quote, a proverb, or something to learn from Wikipedia — a new one with each tab. Long lines
+ * get a smaller font; Wikipedia's link to read more.
+ */
+function Headline(): JSX.Element {
+  // undefined: still asking (keeps the place, nothing flashes); null: Zak's own words.
+  const [headline, setHeadline] = useState<NewtabHeadline | null | undefined>(undefined)
+  useEffect(() => {
+    callInternal('newtab/headline', null)
+      .then(setHeadline)
+      .catch(() => setHeadline(null))
+  }, [])
+  if (headline === undefined) return <div aria-hidden className="h-[clamp(96px,11vw,140px)]" />
+  // Nothing to show, but the page keeps its title for screen readers.
+  if (headline?.kind === 'none') return <h1 className="sr-only">{t('Nouvel onglet')}</h1>
+  const title = headline ? headline.title : t('Un peu d’espace.')
+  const subtitle = headline ? headline.subtitle : t('Pour vos prochaines idées.')
+  const long = title.length > 60
+  const quoted = headline?.kind === 'quote'
+  return (
+    <div data-testid="newtab-headline" data-kind={headline?.kind ?? 'zak'} className="mt-4 flex max-w-[880px] flex-col items-center text-center">
+      <h1
+        className={`m-0 font-serif leading-[1.12] font-semibold tracking-[-0.02em] text-balance ${
+          long ? 'text-[clamp(24px,3vw,36px)]' : 'text-[clamp(44px,7vw,84px)] leading-[1.05]'
+        }`}
+      >
+        {quoted ? t('« {text} »', { text: title }) : title}
+      </h1>
+      {subtitle && <p className={`m-0 mt-2 text-blush ${long ? 'text-[clamp(15px,1.6vw,19px)]' : 'text-[clamp(18px,2.2vw,26px)]'}`}>{quoted ? `— ${subtitle}` : subtitle}</p>}
+      {headline?.link && (
+        <a href={headline.link} className="mt-2 text-[13px] text-cream-sub underline-offset-2 hover:text-cream-ink hover:underline">
+          {t('En savoir plus sur Wikipédia')}
+        </a>
+      )}
+    </div>
+  )
+}
+
 function NewTabPage(): JSX.Element {
   const [text, setText] = useState('')
   const [engine, setEngine] = useState<SearchEngine>('google')
@@ -80,10 +119,7 @@ function NewTabPage(): JSX.Element {
   return (
     <main className="flex min-h-full flex-col items-center justify-center px-6 pt-[6vh] pb-[10vh] text-cream-ink">
       <Logo />
-      <h1 className="m-0 mt-4 text-center font-serif text-[clamp(44px,7vw,84px)] leading-[1.05] font-semibold tracking-[-0.02em]">
-        {t('Un peu d’espace.')}
-      </h1>
-      <p className="m-0 mt-2 text-center text-[clamp(18px,2.2vw,26px)] text-blush">{t('Pour vos prochaines idées.')}</p>
+      <Headline />
 
       <div className="relative mt-10 w-full max-w-[680px]">
       <form

@@ -7,6 +7,7 @@ import { z } from 'zod'
 import type { GeneralSettings, SidebarSide, TabGroupColor, TabsPosition } from '@shared/types'
 import { COLOR_TOKENS, type AppearancePatch } from '@shared/appearance'
 import { LANG_SETTINGS } from '@shared/languages'
+import { NEWTAB_HEADLINE_SOURCES } from '@shared/types'
 
 /**
  * What the MCP tools can do with the running Zak (implemented in index.ts). Deliberately limited:
@@ -166,6 +167,15 @@ export class ZakMcpServer {
           savePasswords: z.boolean().optional(),
           askWhereToSave: z.boolean().optional(),
           sleepTabsAfter: z.union([z.literal(0), z.literal(15), z.literal(30), z.literal(60), z.literal(120)]).optional(),
+          newtabHeadline: z
+            .enum(NEWTAB_HEADLINE_SOURCES)
+            .optional()
+            .describe(
+              'Under the new tab page logo: zak (« Un peu d’espace. »), custom (newtabTitle / newtabSubtitle), a quote, a proverb, ' +
+                'history (on this day, from Wikipedia), wikipedia (« did you know », a random article), or none.'
+            ),
+          newtabTitle: z.string().max(80).optional(),
+          newtabSubtitle: z.string().max(120).optional(),
           sidebarSide: z.enum(['left', 'right']).optional(),
           tabsPosition: z.enum(['top', 'sidebar']).optional()
         }
