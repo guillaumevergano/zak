@@ -1,8 +1,8 @@
 (() => {
   'use strict';
   const $ = (selector, parent = document) => parent.querySelector(selector);
-  const EN = document.documentElement.lang === 'en';
-  const tr = (fr, en) => (EN ? en : fr);
+  // The page's texts are French; window.ZAK_I18N (written by site-src/build.mjs) gives the page's language.
+  const tr = fr => (window.ZAK_I18N || {})[fr] ?? fr;
   const $$ = (selector, parent = document) => [...parent.querySelectorAll(selector)];
   const preview = $('#zak-preview');
   const prompt = $('#demo-prompt');
@@ -13,24 +13,24 @@
   const initialFavorites = favorites.innerHTML;
   const modeData = {
     colors: {
-      prompt: tr('Passe Zak dans un thème violet, avec une touche de rose.', 'Give Zak a purple theme, with a touch of pink.'),
-      idle: tr('Un navigateur qui prend tes couleurs. Regarde le résultat.', 'A browser in your colors. See the result.'),
-      result: tr('Le thème violet et les accents roses sont appliqués.', 'The purple theme and pink accents are applied.'),
-      caption: tr('Tes couleurs, dans chaque coin du navigateur.', 'Your colors, in every corner of the browser.'),
+      prompt: tr('Passe Zak dans un thème violet, avec une touche de rose.'),
+      idle: tr('Un navigateur qui prend tes couleurs. Regarde le résultat.'),
+      result: tr('Le thème violet et les accents roses sont appliqués.'),
+      caption: tr('Tes couleurs, dans chaque coin du navigateur.'),
       apply: () => preview.classList.add('theme-violet')
     },
     layout: {
-      prompt: tr('Mets ma barre de favoris à gauche.', 'Move my favorites bar to the left.'),
-      idle: tr('Ton espace suit tes habitudes. Regarde le résultat.', 'Your space follows your habits. See the result.'),
-      result: tr('Ta barre de favoris est maintenant à gauche.', 'Your favorites bar is now on the left.'),
-      caption: tr('Ton organisation, du côté qui te convient.', 'Your layout, on the side that suits you.'),
+      prompt: tr('Mets ma barre de favoris à gauche.'),
+      idle: tr('Ton espace suit tes habitudes. Regarde le résultat.'),
+      result: tr('Ta barre de favoris est maintenant à gauche.'),
+      caption: tr('Ton organisation, du côté qui te convient.'),
       apply: () => preview.classList.add('sidebar-left')
     },
     favorites: {
-      prompt: tr('Ajoute Figma et GitHub à mes favoris.', 'Add Figma and GitHub to my favorites.'),
-      idle: tr('Tes outils habituels, toujours à portée de clic.', 'Your usual tools, always one click away.'),
-      result: tr('Figma et GitHub ont rejoint tes favoris.', 'Figma and GitHub joined your favorites.'),
-      caption: tr('Tes sites préférés trouvent leur place.', 'Your favorite sites find their place.'),
+      prompt: tr('Ajoute Figma et GitHub à mes favoris.'),
+      idle: tr('Tes outils habituels, toujours à portée de clic.'),
+      result: tr('Figma et GitHub ont rejoint tes favoris.'),
+      caption: tr('Tes sites préférés trouvent leur place.'),
       apply: () => {
         const add = $('.add-favorite', favorites);
         const figma = document.createElement('span');
@@ -51,11 +51,11 @@
     favorites.innerHTML = initialFavorites;
     applyButton.disabled = false;
     applyButton.removeAttribute('aria-busy');
-    $('span', applyButton).textContent = tr('Voir la transformation', 'See the transformation');
+    $('span', applyButton).textContent = tr('Voir la transformation');
     $('use', applyButton).setAttribute('href', '#i-play');
     resetButton.hidden = true;
     $('.response-symbol').textContent = '✧';
-    $('#demo-state').textContent = tr('Le navigateur, avant ta demande.', 'The browser, before your request.');
+    $('#demo-state').textContent = tr('Le navigateur, avant ta demande.');
     applied = false;
   }
 
@@ -77,8 +77,8 @@
     const selectedMode = currentMode;
     applyButton.disabled = true;
     applyButton.setAttribute('aria-busy', 'true');
-    $('span', applyButton).textContent = tr('La transformation se prépare…', 'Getting the transformation ready…');
-    response.textContent = tr('Aperçu du changement en cours…', 'Previewing the change…');
+    $('span', applyButton).textContent = tr('La transformation se prépare…');
+    response.textContent = tr('Aperçu du changement en cours…');
     timer = setTimeout(() => {
       if (selectedMode !== currentMode) return;
       modeData[currentMode].apply();
@@ -87,7 +87,7 @@
       $('.response-symbol').textContent = '✓';
       applyButton.disabled = false;
       applyButton.removeAttribute('aria-busy');
-      $('span', applyButton).textContent = tr('Rejouer la transformation', 'Replay the transformation');
+      $('span', applyButton).textContent = tr('Rejouer la transformation');
       $('use', applyButton).setAttribute('href', '#i-check');
       resetButton.hidden = false;
       applied = true;
@@ -105,12 +105,12 @@
 
   const menuButton = $('.menu-toggle');
   const nav = $('#navigation');
-  function closeMenu() { nav.classList.remove('open'); menuButton.setAttribute('aria-expanded', 'false'); menuButton.setAttribute('aria-label', tr('Ouvrir le menu', 'Open the menu')); }
+  function closeMenu() { nav.classList.remove('open'); menuButton.setAttribute('aria-expanded', 'false'); menuButton.setAttribute('aria-label', tr('Ouvrir le menu')); }
   menuButton.addEventListener('click', () => {
     const open = menuButton.getAttribute('aria-expanded') !== 'true';
     nav.classList.toggle('open', open);
     menuButton.setAttribute('aria-expanded', String(open));
-    menuButton.setAttribute('aria-label', open ? tr('Fermer le menu', 'Close the menu') : tr('Ouvrir le menu', 'Open the menu'));
+    menuButton.setAttribute('aria-label', open ? tr('Fermer le menu') : tr('Ouvrir le menu'));
   });
   $$('#navigation a').forEach(link => link.addEventListener('click', closeMenu));
   document.addEventListener('keydown', event => { if (event.key === 'Escape') closeMenu(); });
@@ -130,13 +130,19 @@
   };
   for (const [name, url] of Object.entries(links)) if (url) $$(`[data-${name}]`).forEach(link => { link.href = url; });
   // Under the main button: the other builds.
+  // Language menu: remembered, so that the main page stops sending you to your browser's language.
+  $$('[data-language]').forEach(select => select.addEventListener('change', () => {
+    const option = select.selectedOptions[0];
+    try { localStorage.setItem('zak-lang', option.value); } catch {}
+    location.href = option.dataset.href;
+  }));
   const others = $('#other-builds');
   if (others && os !== 'all') {
     const names = { macArm: 'Mac Apple Silicon', macIntel: 'Mac Intel', win: 'Windows' };
     const rest = Object.keys(names).filter(key => key !== os && safeExternal(builds[key]));
-    others.append(tr('Aussi pour ', 'Also for '));
+    others.append(tr('Aussi pour '));
     rest.forEach((key, i) => {
-      if (i > 0) others.append(tr(' et ', ' and '));
+      if (i > 0) others.append(tr(' et '));
       const a = document.createElement('a');
       a.href = safeExternal(builds[key]); a.textContent = names[key];
       others.append(a);

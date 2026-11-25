@@ -72,3 +72,10 @@
 .other-builds{flex-basis:100%;margin:0;font-size:13px;color:#806b78}
 .other-builds a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .other-builds a:hover{color:#2e1f2d}
+
+/* Language menu, in the footer. */
+.language-select{position:relative;display:inline-flex;align-items:center;gap:6px;color:#6f5b68;font-size:14px}
+.language-select .icon{width:16px;height:16px}
+.language-select select{appearance:none;border:1px solid #2e1f2d26;border-radius:999px;background:transparent;color:inherit;font:inherit;padding:6px 12px;cursor:pointer}
+.language-select select:hover{border-color:#9b7fa3;color:#2e1f2d}
+.language-select select:focus-visible{outline:2px solid #c67afb;outline-offset:2px}

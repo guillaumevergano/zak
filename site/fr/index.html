@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F3EDE3">
+  <title>Zak — Ton navigateur, à ta façon</title>
+  <meta name="description" content="Zak, le navigateur simple et léger que tu personnalises depuis Claude ou ChatGPT. Couleurs, disposition, favoris : exprime tes envies, le MCP fait le lien.">
+  <meta property="og:title" content="Zak — Ton navigateur, à ta façon">
+  <meta property="og:description" content="Simple au quotidien. Personnalisable avec Claude ou ChatGPT. Découvre Zak et son MCP intégré.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://hellozak.com/assets/og-zak-beige.png">
+  <meta property="og:url" content="https://hellozak.com/fr/">
+  <meta property="og:locale" content="fr_FR">
+  <link rel="canonical" href="https://hellozak.com/fr/">
+  <link rel="alternate" hreflang="en" href="https://hellozak.com/">
+  <link rel="alternate" hreflang="fr" href="https://hellozak.com/fr/">
+  <link rel="alternate" hreflang="es" href="https://hellozak.com/es/">
+  <link rel="alternate" hreflang="de" href="https://hellozak.com/de/">
+  <link rel="alternate" hreflang="it" href="https://hellozak.com/it/">
+  <link rel="alternate" hreflang="pt" href="https://hellozak.com/pt/">
+  <link rel="alternate" hreflang="x-default" href="https://hellozak.com/">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+  <link rel="preload" href="../assets/dm-sans.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../theme-beige.css">
+  <link rel="stylesheet" href="../motion.css">
+  <script defer src="../config.js"></script>
+  <script defer src="../app.js"></script>
+  <script defer src="../motion.js"></script>
+</head>
+<body data-assistant="claude">
+  <a class="skip-link" href="#contenu">Aller au contenu</a>
+  <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 2.7 6.3L21 12l-6.3 2.7L12 21l-2.7-6.3L3 12l6.3-2.7Z"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h6m4 0h6M4 17h10m4 0h2M10 4v6m4 4v6"/></symbol>
+    <symbol id="i-layout" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18m-5 0v11"/></symbol>
+    <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6 20V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v15l-6-4Z"/></symbol>
+    <symbol id="i-connection" viewBox="0 0 24 24"><path d="m9 8 7-5 5 5-6 5m-6 0-6 5 5 4 7-5M7 6l11 11M4 9l3-3m11 11 3-3"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="m9 5 10 7-10 7Z"/></symbol>
+    <symbol id="i-branch" viewBox="0 0 24 24"><circle cx="7" cy="5" r="3"/><circle cx="17" cy="7" r="3"/><circle cx="7" cy="19" r="3"/><path d="M7 8v8m10-6c0 5-10 1-10 6"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24"><path d="m7 7-5 5 5 5m10-10 5 5-5 5m-4-13-2 19"/></symbol>
+    <symbol id="i-feather" viewBox="0 0 24 24"><path d="M5 19 19 5M9 15H4v-4L15 2l7 7-9 11H9Z"/></symbol>
+    <symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M4 9V4h5a3 3 0 1 1 6 0h5v5a3 3 0 1 0 0 6v5h-5a3 3 0 1 0-6 0H4v-5a3 3 0 1 1 0-6Z"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3Z"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="3"/><path d="M16 8V4H4v12h4"/></symbol>
+  </svg>
+
+  <header class="site-header">
+    <div class="nav-wrap wrap">
+      <a class="brand" href="#" aria-label="Zak, accueil"><img src="../assets/zak-logo-dark.svg" alt="Zak" width="105" height="50"></a>
+      <nav class="main-nav" aria-label="Navigation principale" id="navigation">
+        <a href="#experience">L’expérience Zak</a><a href="#claude">Zak + <span class="assistant-switch"><span class="assistant-state assistant-claude" aria-hidden="true">Claude</span><span class="assistant-state assistant-chatgpt" aria-hidden="true">ChatGPT</span><span class="sr-only">Claude ou ChatGPT</span></span></a><a href="#open-source">Open source</a><a href="#questions">Questions</a>
+      </nav>
+      <a class="button button-small button-cream header-cta" data-download href="#">Télécharger Zak</a>
+      <button class="menu-toggle" aria-label="Ouvrir le menu" aria-controls="navigation" aria-expanded="false"><span></span><span></span></button>
+    </div>
+  </header>
+
+  <main id="contenu">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap hero-content">
+        <div class="hero-intro">
+          <div class="character-stage" id="character-stage">
+        <button class="bird-button" id="bird-button" aria-label="Faire un clin d’œil avec le logo Zak"><span class="bird-mark"><svg class="living-bird" viewBox="0 0 1260 600" aria-hidden="true"><defs><mask id="zak-eye-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="1260" height="600"><rect width="1260" height="600" fill="white"/><ellipse class="bird-eye" cx="473.3" cy="122.6" rx="14.4" ry="14.4" fill="black"/></mask></defs><path id="living-beak" d="M531.497 142.712C530.835 132.388 527.754 123.136 522.301 115.102C519.194 110.522 518.557 109.000 519.924 109.416C529.890 112.453 578.412 130.779 578.706 131.617C578.921 132.232 570.422 136.027 559.365 140.254C548.516 144.401 537.926 148.498 535.831 149.359L532.024 150.924L531.497 142.712Z" fill="#FF0082" fill-rule="evenodd"/><path id="living-silhouette" d="M568.000 529.983 C520.488 526.905 477.865 519.810 406.313 503.069 C325.124 484.074 300.833 480.543 251.500 480.565 C194.083 480.591 148.738 489.095 76.029 513.472 C51.413 521.725 47.163 521.872 45.138 514.537 C42.384 504.564 53.838 486.109 87.368 446.500 C141.209 382.896 213.333 311.004 295.000 239.536 C323.989 214.167 342.250 195.806 344.497 189.768 C350.602 173.363 333.433 170.544 261.000 176.057 C230.297 178.393 201.377 178.573 187.697 176.511 C155.177 171.609 131.804 154.896 121.382 129.093 C116.016 115.809 115.326 96.907 120.338 100.500 C121.105 101.050 125.281 104.080 129.617 107.232 C150.387 122.335 175.727 130.027 204.500 129.961 L216.500 129.933 206.500 126.588 C166.483 113.201 144.996 86.921 146.167 52.798 C146.614 39.785 147.594 38.912 153.765 46.031 C170.356 65.171 192.020 77.864 221.000 85.427 C253.801 93.986 283.459 93.647 353.000 83.914 C389.512 78.804 404.062 77.221 422.000 76.409 C482.436 73.674 522.602 94.413 532.491 133.460 C535.228 144.268 534.631 148.998 529.620 156.202 C524.082 164.164 520.194 171.974 510.553 194.500 C471.018 286.876 420.052 354.545 359.859 394.582 C346.932 403.180 346.000 404.143 346.000 408.910 C346.000 419.190 372.015 440.990 389.763 445.584 C448.103 460.683 451.053 461.281 467.000 461.254 C496.494 461.203 513.514 450.700 544.577 413.380 C570.656 382.047 592.740 365.256 627.000 350.711 C655.513 338.605 686.027 331.904 721.500 329.957 C752.777 328.240 755.467 326.475 757.965 306.026 C762.671 267.499 751.561 247.643 722.721 243.035 C698.860 239.224 677.190 250.726 654.024 279.500 C634.562 303.674 624.371 311.294 609.663 312.667 C591.027 314.407 578.136 301.376 581.891 284.595 C587.148 261.107 620.851 235.417 666.500 220.104 C730.712 198.564 796.142 207.277 824.527 241.147 C839.864 259.447 842.691 279.695 836.097 324.000 C822.832 413.126 825.880 449.254 847.500 459.129 C863.466 466.422 881.497 454.857 891.633 430.824 C899.985 411.022 902.534 392.293 905.494 329.000 C907.638 283.158 910.636 239.498 914.078 204.000 C917.839 165.211 918.674 146.698 917.077 137.495 C914.142 120.583 907.557 113.500 892.398 110.950 C876.896 108.342 876.142 102.465 889.712 90.023 C926.463 56.327 986.273 43.087 1008.997 63.617 C1022.977 76.246 1022.561 94.183 1006.959 151.563 C992.248 205.667 987.622 226.739 983.537 258.248 C980.104 284.731 976.729 341.553 978.712 339.500 C979.243 338.950 988.162 329.500 998.532 318.500 C1059.252 254.092 1079.327 235.103 1103.939 218.794 C1126.041 204.148 1146.657 197.035 1167.000 197.035 C1193.868 197.035 1214.000 208.778 1214.000 224.451 C1214.000 237.228 1204.530 243.468 1173.000 251.468 C1112.467 266.827 1073.342 286.625 1034.760 321.421 C1031.053 324.765 1028.020 327.725 1028.020 328.000 C1028.020 328.275 1031.953 328.604 1036.760 328.731 C1065.258 329.485 1086.612 344.864 1124.629 392.015 C1134.600 404.382 1146.670 418.652 1151.452 423.727 C1175.746 449.514 1203.018 464.370 1230.224 466.639 C1239.695 467.429 1241.466 468.681 1240.498 473.904 C1239.435 479.640 1235.003 486.904 1228.000 494.385 C1193.554 531.184 1128.430 528.655 1088.930 488.984 C1078.428 478.437 1070.516 466.675 1055.980 440.000 C1042.630 415.503 1039.316 409.872 1032.399 399.943 C1010.674 368.758 986.950 364.042 977.346 389.000 C974.560 396.241 974.826 426.524 977.779 438.298 C981.650 453.732 985.898 460.260 999.716 472.005 C1006.228 477.541 1006.668 485.957 1000.676 490.404 C997.957 492.423 996.702 492.503 966.676 492.575 C927.466 492.669 915.645 494.456 884.500 505.000 C842.412 519.248 811.276 519.838 785.000 506.885 C773.747 501.337 762.012 489.836 757.061 479.500 C755.216 475.650 753.604 472.368 753.478 472.207 C753.351 472.046 750.380 474.913 746.874 478.578 C708.674 518.508 650.212 535.309 568.000 529.983 Z M681.000 476.567 C713.416 470.674 742.589 444.200 750.473 413.520 C753.967 399.925 754.540 373.946 751.478 368.000 C742.618 350.800 693.785 354.345 661.383 374.540 C617.597 401.831 611.081 461.937 650.500 474.926 C660.475 478.213 669.324 478.689 681.000 476.567 Z M338.128 432.239 C336.102 428.453 320.409 418.987 316.196 419.009 C314.499 419.018 288.282 427.385 287.499 428.167 C287.271 428.396 293.928 429.156 302.292 429.857 C310.656 430.559 321.100 431.715 325.500 432.427 C337.610 434.387 339.264 434.362 338.128 432.239 Z" fill="#2E1F2D" fill-rule="evenodd" mask="url(#zak-eye-mask)"/><path id="living-wing" d="M191.250 418.370 C189.287 417.528 189.696 415.978 194.474 406.163 C215.395 363.179 270.487 303.499 321.046 269.051 C367.109 237.666 414.806 222.033 452.647 225.916 C471.611 227.862 472.078 228.339 466.811 240.397 C434.150 315.176 370.358 371.914 287.500 399.881 C258.020 409.832 198.152 421.332 191.250 418.370 Z" fill="#C67AFB" fill-rule="evenodd"/></svg></span></button>
+      </div>
+          <div class="hero-copy">
+        <a class="eyebrow-pill" href="#claude"><svg class="icon"><use href="#i-connection"/></svg> Personnalisable avec <span class="assistant-switch"><span class="assistant-state assistant-claude" aria-hidden="true">Claude</span><span class="assistant-state assistant-chatgpt" aria-hidden="true">ChatGPT</span><span class="sr-only">Claude ou ChatGPT</span></span> <span class="pill-protocol">MCP</span></a>
+        <h1 id="hero-title">Simple par nature.<br><span>Libre par caractère.</span></h1>
+        <p class="hero-description">Un navigateur qui va tranquillement à l’essentiel.<br>  Et <span class="assistant-switch"><span class="assistant-state assistant-claude" aria-hidden="true">Claude</span><span class="assistant-state assistant-chatgpt" aria-hidden="true">ChatGPT</span><span class="sr-only">Claude ou ChatGPT</span></span> pour l’adapter à tes envies.</p>
+        <div class="hero-actions"><a class="button button-primary" data-download href="#">Télécharger Zak</a><p class="other-builds" id="other-builds" hidden></p></div>
+          </div>
+        </div>
+
+        <div class="demo" id="demo" aria-labelledby="demo-title">
+          <div class="demo-toolbar">
+            <div><span class="section-tag" id="demo-title">À TOI D’ESSAYER</span><span class="demo-disclaimer">Simulation interactive</span></div>
+            <div class="scenario-controls" role="group" aria-label="Choisir un exemple de personnalisation">
+              <button class="scenario active" data-scenario="colors" aria-pressed="true"><svg class="icon"><use href="#i-sliders"/></svg> Couleurs</button>
+              <button class="scenario" data-scenario="layout" aria-pressed="false"><svg class="icon"><use href="#i-layout"/></svg> Disposition</button>
+              <button class="scenario" data-scenario="favorites" aria-pressed="false"><svg class="icon"><use href="#i-bookmark"/></svg> Favoris</button>
+            </div>
+          </div>
+          <div class="demo-stage">
+            <div class="browser-frame" id="zak-preview" aria-label="Aperçu illustré de l’interface de Zak">
+              <div class="browser-tabs"><div class="traffic-lights" aria-hidden="true"><i></i><i></i><i></i></div><div class="browser-tab inactive">✉️ <span>Messages</span></div><div class="browser-tab active"><span class="tab-spark">✧</span> Nouvel onglet <span class="tab-close">×</span></div><span class="new-tab">+</span><span class="window-pin">⌘</span></div>
+              <div class="browser-toolbar"><span class="history-controls" aria-hidden="true">‹ <span>›</span> ⟳</span><div class="url-bar"><svg class="tiny-search" viewBox="0 0 20 20" aria-hidden="true"><circle cx="8" cy="8" r="5"/><path d="m12 12 5 5"/></svg><span>Rechercher ou saisir une adresse</span><span class="url-shortcut">⌘ L</span></div><div class="extensions" aria-label="Extensions illustrées"><span>◈</span><span>⚿</span></div></div>
+              <div class="browser-body">
+                <div class="browser-page">
+                  <div class="page-orb" aria-hidden="true"></div>
+                  <img class="page-logo" src="../assets/zak-logo-dark.svg" alt="" width="120" height="57">
+                  <h2>Un peu d’espace.</h2><p>Pour tes prochaines idées.</p>
+                  <div class="mock-search"><span>✧</span> Où veux-tu aller ? <kbd>⌘ K</kbd></div>
+                  <div class="page-shortcuts"><span>⌘ T <small>Nouvel onglet</small></span><span>⌘ K <small>Rechercher</small></span></div>
+                </div>
+                <aside class="browser-sidebar" aria-label="Aperçu de la barre latérale">
+                  <div class="favorite-grid" id="demo-favorites"><span title="Messages">📮</span><span title="Musique">🎧</span><span title="Notes">📝</span><span title="Photos">📷</span><span title="Lecture">📚</span><span title="Calendrier">📅</span><span title="Idées">💡</span><span class="add-favorite">+</span></div>
+                  <div class="sidebar-divider"></div>
+                  <div class="folder"><span>⌄</span> 🗂️ <span>Travail</span><small>6</small></div><div class="folder"><span>›</span> 🌿 <span>Perso</span><small>4</small></div><div class="folder"><span>›</span> ✨ <span>Inspirations</span><small>8</small></div>
+                  <div class="new-folder">＋ <span>Nouveau dossier</span></div>
+                  <div class="sidebar-bottom"><span>◐</span><span>⚙</span></div>
+                </aside>
+              </div>
+            </div>
+            <div class="claude-panel">
+              <div class="claude-heading"><span class="assistant-icon" aria-hidden="true"><span class="assistant-state assistant-claude claude-star">✳</span><img class="assistant-state assistant-chatgpt" src="../assets/chatgpt-symbol.svg" alt="" width="29" height="29"></span><strong><span class="assistant-switch"><span class="assistant-state assistant-claude" aria-hidden="true">Claude</span><span class="assistant-state assistant-chatgpt" aria-hidden="true">ChatGPT</span><span class="sr-only">Claude ou ChatGPT</span></span></strong><span class="mcp-badge">MCP Zak</span></div>
+              <div class="assistant-controls"><span>Même liberté, à toi de choisir.</span><button id="change-assistant" aria-label="Changer d’assistant, Claude ou ChatGPT" title="Changer d’assistant"><svg class="icon" aria-hidden="true"><use href="#i-connection"/></svg></button></div>
+              <div class="conversation">
+                <span class="message-label">Ta demande</span>
+                <div class="user-message" id="demo-prompt">Passe Zak dans un thème violet, avec une touche de rose.</div>
+                <div class="connection-line"><svg class="icon"><use href="#i-connection"/></svg><span><span class="assistant-switch"><span class="assistant-state assistant-claude" aria-hidden="true">Claude</span><span class="assistant-state assistant-chatgpt" aria-hidden="true">ChatGPT</span><span class="sr-only">Claude ou ChatGPT</span></span> <i></i> MCP <i></i> Zak</span></div>
+                <div class="response" id="demo-response" aria-live="polite"><span class="response-symbol">✧</span><p>Un navigateur qui prend tes couleurs. Regarde le résultat.</p></div>
+              </div>
+              <button class="button button-primary demo-apply" id="apply-demo"><svg class="icon"><use href="#i-play"/></svg><span>Voir la transformation</span></button>
+              <button class="reset-demo" id="reset-demo" hidden>Revenir à l’original</button>
+            </div>
+          </div>
+          <div class="demo-caption"><span id="demo-state">Le navigateur, avant ta demande.</span><span>Exemples simulés · aucune connexion à <span class="assistant-switch"><span class="assistant-state assistant-claude" aria-hidden="true">Claude</span><span class="assistant-state assistant-chatgpt" aria-hidden="true">ChatGPT</span><span class="sr-only">Claude ou ChatGPT</span></span></span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="essentials wrap" id="experience" aria-labelledby="essentials-title">
+      <div class="section-heading"><p class="section-tag">L’EXPÉRIENCE ZAK</p><h2 id="essentials-title">L’essentiel.<br> <span class="muted-heading">Et de la place pour toi.</span></h2></div>
+      <div class="benefits">
+        <article><div class="feature-icon"><svg class="icon"><use href="#i-feather"/></svg></div><h3>Léger au quotidien.</h3><p>Une interface épurée qui laisse toute la place à ce que tu as envie de faire.</p><span class="feature-detail">Le web au premier plan</span></article>
+        <article><div class="feature-icon"><svg class="icon"><use href="#i-layout"/></svg></div><h3>Tout tombe sous la main.</h3><p>Tes onglets en haut, tes favoris en emojis, tes dossiers bien rangés.</p><span class="feature-detail">Une organisation qui s’apprécie</span></article>
+        <article><div class="feature-icon"><svg class="icon"><use href="#i-connection"/></svg></div><h3>Tu demandes. Zak s’adapte.</h3><p>Décris à <span class="assistant-switch"><span class="assistant-state assistant-claude" aria-hidden="true">Claude</span><span class="assistant-state assistant-chatgpt" aria-hidden="true">ChatGPT</span><span class="sr-only">Claude ou ChatGPT</span></span> les couleurs, la disposition ou les favoris que tu souhaites.</p><span class="feature-detail">La personnalisation via MCP</span></article>
+      </div>
+    </section>
+
+    <section class="mcp-section" id="claude" aria-labelledby="mcp-title">
+      <div class="wrap mcp-layout">
+        <div class="mcp-copy"><p class="section-tag">ZAK + <span class="assistant-switch"><span class="assistant-state assistant-claude" aria-hidden="true">Claude</span><span class="assistant-state assistant-chatgpt" aria-hidden="true">ChatGPT</span><span class="sr-only">Claude ou ChatGPT</span></span></p><h2 id="mcp-title">Tes envies,<br> <em>en toutes lettres.</em></h2><p>Le MCP fait le lien entre <span class="assistant-switch"><span class="assistant-state assistant-claude" aria-hidden="true">Claude</span><span class="assistant-state assistant-chatgpt" aria-hidden="true">ChatGPT</span><span class="sr-only">Claude ou ChatGPT</span></span> et Zak. Une fois connectés, tu peux personnaliser ton navigateur avec tes propres mots.</p><p class="mcp-emphasis">Une couleur à changer ? Des favoris à ajouter ?<br>  Il suffit de le demander.</p><a class="text-link" href="#mcp-definition">Au fait, c’est quoi le MCP ? <svg class="icon"><use href="#i-chevron"/></svg></a></div>
+        <div class="prompt-examples">
+          <p class="prompt-examples-label">ÇA COMMENCE PAR UNE PHRASE.</p>
+          <button class="prompt-card" data-try="colors"><span class="prompt-icon"><svg class="icon"><use href="#i-sliders"/></svg></span><span><small>TON AMBIANCE</small><strong>« Passe le navigateur en violet,<br>  avec une touche de rose. »</strong></span><span class="try-label">Essayer</span></button>
+          <button class="prompt-card" data-try="layout"><span class="prompt-icon"><svg class="icon"><use href="#i-layout"/></svg></span><span><small>TA DISPOSITION</small><strong>« Mets ma barre de favoris<br> à gauche. »</strong></span><span class="try-label">Essayer</span></button>
+          <button class="prompt-card" data-try="favorites"><span class="prompt-icon"><svg class="icon"><use href="#i-bookmark"/></svg></span><span><small>TES RACCOURCIS</small><strong>« Ajoute Figma et GitHub<br> à mes favoris. »</strong></span><span class="try-label">Essayer</span></button>
+          <div class="mcp-path" aria-label="Claude ou ChatGPT se connecte à Zak via le MCP"><span class="claude-name"><span class="assistant-icon" aria-hidden="true"><span class="assistant-state assistant-claude claude-star">✳</span><img class="assistant-state assistant-chatgpt" src="../assets/chatgpt-symbol.svg" alt="" width="29" height="29"></span> <span class="assistant-switch"><span class="assistant-state assistant-claude" aria-hidden="true">Claude</span><span class="assistant-state assistant-chatgpt" aria-hidden="true">ChatGPT</span><span class="sr-only">Claude ou ChatGPT</span></span></span><span class="path-line"></span><span class="protocol-name">MCP</span><span class="path-line"></span><img src="../assets/zak-logo-dark.svg" width="70" height="33" alt="Zak"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="everyday wrap" aria-labelledby="everyday-title">
+      <div class="favorites-art" aria-label="Illustration de favoris organisés avec des emojis">
+        <div class="favorites-art-top"><span>TON PETIT COIN DU WEB</span><svg class="icon"><use href="#i-spark"/></svg></div>
+        <div class="large-favorites"><span>🎧</span><span>📮</span><span>🎨</span><span>📷</span><span>📚</span><span>💡</span><span>🌍</span><span class="large-favorite-add">+</span></div>
+        <div class="art-folders"><div><span>🗂️ &nbsp; Travail</span><small>6 sites</small></div><div><span>✨ &nbsp; Inspirations</span><small>8 sites</small></div><div><span>🌿 &nbsp; Pour plus tard</span><small>4 sites</small></div></div>
+        <p>Un emoji. Un repère. Un clic.</p>
+      </div>
+      <div class="everyday-copy"><p class="section-tag">TOUT À PORTÉE DE CLIC</p><h2 id="everyday-title">Ton web.<br>  À portée de main.</h2><div class="everyday-item"><svg class="icon"><use href="#i-bookmark"/></svg><div><h3>Tes favoris en un clic</h3><p>Des emojis pour tes sites, des dossiers pour tes envies. Ta barre latérale devient ton point de départ.</p></div></div><div class="everyday-item"><svg class="icon"><use href="#i-puzzle"/></svg><div><h3>Tes extensions</h3><p>Retrouve les outils que tu utilises déjà dans une interface qui te laisse respirer.</p></div></div><div class="everyday-item"><svg class="icon"><use href="#i-sliders"/></svg><div><h3>Des réglages à ta mesure.</h3><p>La personnalisation reste à ta portée. <span class="assistant-switch"><span class="assistant-state assistant-claude" aria-hidden="true">Claude</span><span class="assistant-state assistant-chatgpt" aria-hidden="true">ChatGPT</span><span class="sr-only">Claude ou ChatGPT</span></span> t’aide à donner à Zak l’allure et l’organisation qui te conviennent.</p></div></div></div>
+    </section>
+
+    <section class="open-source wrap" id="open-source" aria-labelledby="open-source-title">
+      <div class="open-source-heading"><p class="section-tag">LE CODE EST OUVERT. LES IDÉES AUSSI.</p><h2 id="open-source-title">Libre, jusque dans<br><em>son code.</em></h2><div class="contribution-grid" aria-hidden="true"><i class="level-0"></i><i class="level-2"></i><i class="level-4"></i><i class="level-1"></i><i class="level-3"></i><i class="level-3"></i><i class="level-0"></i><i class="level-2"></i><i class="level-4"></i><i class="level-1"></i><i class="level-1"></i><i class="level-3"></i><i class="level-0"></i><i class="level-2"></i><i class="level-4"></i><i class="level-4"></i><i class="level-1"></i><i class="level-3"></i><i class="level-0"></i><i class="level-2"></i><i class="level-2"></i><i class="level-4"></i><i class="level-1"></i><i class="level-3"></i><i class="level-0"></i><i class="level-0"></i><i class="level-2"></i><i class="level-4"></i><i class="level-1"></i><i class="level-3"></i><i class="level-3"></i><i class="level-0"></i><i class="level-2"></i><i class="level-4"></i><i class="level-1"></i><i class="level-1"></i><i class="level-3"></i><i class="level-0"></i><i class="level-2"></i><i class="level-4"></i><i class="level-4"></i><i class="level-1"></i><i class="level-3"></i><i class="level-0"></i><i class="level-2"></i><i class="level-2"></i><i class="level-4"></i><i class="level-1"></i><i class="level-3"></i><i class="level-0"></i><i class="level-0"></i><i class="level-2"></i><i class="level-4"></i><i class="level-1"></i><i class="level-3"></i><i class="level-3"></i><i class="level-0"></i><i class="level-2"></i><i class="level-4"></i><i class="level-1"></i><i class="level-1"></i><i class="level-3"></i><i class="level-0"></i><i class="level-2"></i><i class="level-4"></i><i class="level-4"></i><i class="level-1"></i><i class="level-3"></i><i class="level-0"></i><i class="level-2"></i><i class="level-2"></i><i class="level-4"></i><i class="level-1"></i><i class="level-3"></i><i class="level-0"></i><i class="level-0"></i><i class="level-2"></i><i class="level-4"></i><i class="level-1"></i><i class="level-3"></i><i class="level-3"></i><i class="level-0"></i><i class="level-2"></i><i class="level-4"></i><i class="level-1"></i><i class="level-1"></i><i class="level-3"></i><i class="level-0"></i><i class="level-2"></i><i class="level-4"></i><i class="level-4"></i><i class="level-1"></i><i class="level-3"></i><i class="level-0"></i><i class="level-2"></i><i class="level-2"></i><i class="level-4"></i><i class="level-1"></i><i class="level-3"></i><i class="level-0"></i></div></div>
+      <div class="open-source-copy"><div class="source-repository"><svg class="icon" aria-hidden="true"><use href="#i-branch"/></svg><span>GitHub <span class="repository-slash">/</span> <span class="repository-kind">open source</span></span></div><p>Zak est open source. Tu peux explorer son code, proposer une idée, signaler un bug ou contribuer à la suite.</p><p class="open-source-note">Un navigateur qui avance aussi avec toi.</p><a class="button source-cta" data-github href="#open-source"><svg class="icon" aria-hidden="true"><use href="#i-branch"/></svg>Contribuer sur GitHub</a></div>
+    </section>
+
+    <section class="faq wrap" id="questions" aria-labelledby="faq-title">
+      <div class="section-heading"><p class="section-tag">QUELQUES RÉPONSES</p><h2 id="faq-title">Ça mérite une explication.</h2></div>
+      <div class="faq-list">
+        <details id="mcp-definition"><summary><span>C’est quoi, le MCP ?</span><svg class="icon"><use href="#i-chevron"/></svg></summary><p>Le Model Context Protocol est le lien qui permet ici à <span class="assistant-switch"><span class="assistant-state assistant-claude" aria-hidden="true">Claude</span><span class="assistant-state assistant-chatgpt" aria-hidden="true">ChatGPT</span><span class="sr-only">Claude ou ChatGPT</span></span> d’agir sur Zak. Tu formules ta demande dans <span class="assistant-switch"><span class="assistant-state assistant-claude" aria-hidden="true">Claude</span><span class="assistant-state assistant-chatgpt" aria-hidden="true">ChatGPT</span><span class="sr-only">Claude ou ChatGPT</span></span>, puis le MCP de Zak permet d’appliquer les réglages concernés au navigateur.</p></details>
+        <details><summary><span>Que peut-on personnaliser depuis <span class="assistant-switch"><span class="assistant-state assistant-claude" aria-hidden="true">Claude</span><span class="assistant-state assistant-chatgpt" aria-hidden="true">ChatGPT</span><span class="sr-only">Claude ou ChatGPT</span></span> ?</span><svg class="icon"><use href="#i-chevron"/></svg></summary><p>Tu peux notamment demander de changer les couleurs, d’adapter la disposition de l’interface ou d’ajouter des sites à tes favoris. La démonstration de cette page illustre ces trois usages.</p></details>
+        <details><summary><span>Faut-il utiliser <span class="assistant-switch"><span class="assistant-state assistant-claude" aria-hidden="true">Claude</span><span class="assistant-state assistant-chatgpt" aria-hidden="true">ChatGPT</span><span class="sr-only">Claude ou ChatGPT</span></span> pour naviguer avec Zak ?</span><svg class="icon"><use href="#i-chevron"/></svg></summary><p>Non. Zak est un navigateur que tu peux utiliser normalement. La connexion à <span class="assistant-switch"><span class="assistant-state assistant-claude" aria-hidden="true">Claude</span><span class="assistant-state assistant-chatgpt" aria-hidden="true">ChatGPT</span><span class="sr-only">Claude ou ChatGPT</span></span> est un moyen supplémentaire de le personnaliser, quand tu en as envie.</p></details>
+        <details><summary><span>La démonstration modifie-t-elle mon navigateur ?</span><svg class="icon"><use href="#i-chevron"/></svg></summary><p>Non. Il s’agit d’une simulation dans cette page. Elle ne se connecte pas à ton compte <span class="assistant-switch"><span class="assistant-state assistant-claude" aria-hidden="true">Claude</span><span class="assistant-state assistant-chatgpt" aria-hidden="true">ChatGPT</span><span class="sr-only">Claude ou ChatGPT</span></span> et ne change aucun réglage sur ton ordinateur. Elle te permet simplement de visualiser les possibilités.</p></details>
+        <details><summary><span>Comment commencer à personnaliser Zak avec <span class="assistant-switch"><span class="assistant-state assistant-claude" aria-hidden="true">Claude</span><span class="assistant-state assistant-chatgpt" aria-hidden="true">ChatGPT</span><span class="sr-only">Claude ou ChatGPT</span></span> ?</span><svg class="icon"><use href="#i-chevron"/></svg></summary><p>Il faut d’abord relier <span class="assistant-switch"><span class="assistant-state assistant-claude" aria-hidden="true">Claude</span><span class="assistant-state assistant-chatgpt" aria-hidden="true">ChatGPT</span><span class="sr-only">Claude ou ChatGPT</span></span> au serveur MCP de Zak. Une fois la connexion configurée, décris le changement souhaité dans <span class="assistant-switch"><span class="assistant-state assistant-claude" aria-hidden="true">Claude</span><span class="assistant-state assistant-chatgpt" aria-hidden="true">ChatGPT</span><span class="sr-only">Claude ou ChatGPT</span></span>. Tu peux commencer par l’un des exemples présentés sur cette page.</p></details>
+      </div>
+    </section>
+
+    <section class="finale" id="finale" aria-labelledby="final-title">
+      <div class="finale-sticky">
+        <div class="landing-composition">
+          <div class="landing-bird" aria-hidden="true"><svg class="landing-symbol" viewBox="0 0 600 600" aria-hidden="true"><defs><clipPath id="landing-notch-clip"><rect x="0" y="418" width="600" height="182"/></clipPath></defs><path id="landing-beak" d="M531.497 142.712C530.835 132.388 527.754 123.136 522.301 115.102C519.194 110.522 518.557 109.000 519.924 109.416C529.890 112.453 578.412 130.779 578.706 131.617C578.921 132.232 570.422 136.027 559.365 140.254C548.516 144.401 537.926 148.498 535.831 149.359L532.024 150.924L531.497 142.712Z" fill="#FF0082" fill-rule="evenodd"/><path id="landing-silhouette" d="M406.313 503.069 C325.124 484.074 300.833 480.543 251.500 480.565 C194.083 480.591 148.738 489.095 76.029 513.472 C51.413 521.725 47.163 521.872 45.138 514.537 C42.384 504.564 53.838 486.109 87.368 446.500 C141.209 382.896 213.333 311.004 295.000 239.536 C323.989 214.167 342.250 195.806 344.497 189.768 C350.602 173.363 333.433 170.544 261.000 176.057 C230.297 178.393 201.377 178.573 187.697 176.511 C155.177 171.609 131.804 154.896 121.382 129.093 C116.016 115.809 115.326 96.907 120.338 100.500 C121.105 101.050 125.281 104.080 129.617 107.232 C150.387 122.335 175.727 130.027 204.500 129.961 L216.500 129.933 206.500 126.588 C166.483 113.201 144.996 86.921 146.167 52.798 C146.614 39.785 147.594 38.912 153.765 46.031 C170.356 65.171 192.020 77.864 221.000 85.427 C253.801 93.986 283.459 93.647 353.000 83.914 C389.512 78.804 404.062 77.221 422.000 76.409 C482.436 73.674 522.602 94.413 532.491 133.460 C535.228 144.268 534.631 148.998 529.620 156.202 C524.082 164.164 520.194 171.974 510.553 194.500 C471.018 286.876 420.052 354.545 359.859 394.582 C346.932 403.180 346.000 404.143 346.000 408.910 C346.000 419.190 372.015 440.990 389.763 445.584 C448.103 460.683 451.053 461.281 467.000 461.254 C505 461 536 441 564 418 C561 455 548 484 523 499 C493 517 454 514 406.313 503.069 Z M480.696 135.044 C490.502 129.065 489.900 115.035 479.624 110.060 C474.400 107.531 472.660 107.517 467.271 109.964 C457.101 114.580 455.941 129.335 465.299 135.040 C469.490 137.596 476.508 137.598 480.696 135.044 Z M338.128 432.239 C336.102 428.453 320.409 418.987 316.196 419.009 C314.499 419.018 288.282 427.385 287.499 428.167 C287.271 428.396 293.928 429.156 302.292 429.857 C310.656 430.559 321.100 431.715 325.500 432.427 C337.610 434.387 339.264 434.362 338.128 432.239 Z" fill="#2E1F2D" fill-rule="evenodd"/><path id="landing-wing" d="M191.250 418.370 C189.287 417.528 189.696 415.978 194.474 406.163 C215.395 363.179 270.487 303.499 321.046 269.051 C367.109 237.666 414.806 222.033 452.647 225.916 C471.611 227.862 472.078 228.339 466.811 240.397 C434.150 315.176 370.358 371.914 287.500 399.881 C258.020 409.832 198.152 421.332 191.250 418.370 Z" fill="#C67AFB" fill-rule="evenodd"/><path class="landing-cutout" d="M346 300H600V418H564C536 441 505 461 467 461.254C451.053 461.281 448.103 460.683 389.763 445.584C372.015 440.990 346 419.190 346 408.910Z" clip-path="url(#landing-notch-clip)"/><path class="landing-cutout" d="M338.128 432.239 C336.102 428.453 320.409 418.987 316.196 419.009 C314.499 419.018 288.282 427.385 287.499 428.167 C287.271 428.396 293.928 429.156 302.292 429.857 C310.656 430.559 321.100 431.715 325.500 432.427 C337.610 434.387 339.264 434.362 338.128 432.239 Z"/></svg></div>
+          <div class="final-cta final-panel">
+            <div class="final-copy wrap"><p class="section-tag">CALME, SIMPLE — À TOI.</p><h2 id="final-title">Fais de la place<br> à ta façon de naviguer.</h2><a class="button button-primary" data-download href="#">Télécharger Zak</a></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer wrap"><a href="#" class="brand" aria-label="Zak, retour en haut"><img src="../assets/zak-logo-dark.svg" alt="Zak" width="93" height="44"></a><p>Le navigateur selon toi</p><nav aria-label="Navigation de pied de page"><a href="#experience">L’expérience</a><a href="#claude">Zak + <span class="assistant-switch"><span class="assistant-state assistant-claude" aria-hidden="true">Claude</span><span class="assistant-state assistant-chatgpt" aria-hidden="true">ChatGPT</span><span class="sr-only">Claude ou ChatGPT</span></span></a><a href="#open-source">Open source</a><a href="#questions">Questions</a><a href="mods/">Mods</a><a data-releases href="#">Toutes les versions</a><a id="github-link" data-github href="#open-source">GitHub</a></nav><label class="language-select"><span class="sr-only">Langue</span><svg class="icon" aria-hidden="true"><use href="#i-globe"/></svg><select data-language aria-label="Langue"><option value="en" data-href=".././" lang="en">English</option><option value="fr" data-href="../fr/" selected lang="fr">Français</option><option value="es" data-href="../es/" lang="es">Español</option><option value="de" data-href="../de/" lang="de">Deutsch</option><option value="it" data-href="../it/" lang="it">Italiano</option><option value="pt" data-href="../pt/" lang="pt">Português</option></select></label></footer>
+  <button class="motion-toggle" id="motion-toggle" aria-label="Mettre les animations en pause" aria-pressed="false" title="Mettre les animations en pause"><svg class="icon" aria-hidden="true"><use href="#i-pause"/></svg></button>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

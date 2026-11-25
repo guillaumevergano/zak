@@ -15,6 +15,7 @@
     "build:mac": "electron-vite build && electron-builder --mac",
     "build:win": "electron-vite build && electron-builder --win",
     "build:dir": "electron-vite build && electron-builder --dir",
+    "site:build": "node site-src/build.mjs",
     "test": "vitest run",
     "test:e2e": "electron-vite build && playwright test",
     "release:check": "node scripts/release-check.js",

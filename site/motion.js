@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const EN = document.documentElement.lang === 'en';
+  const tr = fr => (window.ZAK_I18N || {})[fr] ?? fr;
   const body = document.body;
   const header = document.querySelector('.site-header');
   const navigation = document.querySelector('#navigation');
@@ -61,7 +61,7 @@
     if (!showHeader) {
       navigation.classList.remove('open');
       menuButton.setAttribute('aria-expanded', 'false');
-      menuButton.setAttribute('aria-label', (EN ? 'Open the menu' : 'Ouvrir le menu'));
+      menuButton.setAttribute('aria-label', tr('Ouvrir le menu'));
     }
     const rect = finale.getBoundingClientRect();
     const travel = Math.max(1, finale.offsetHeight - finalSticky.offsetHeight);
@@ -112,7 +112,7 @@
     body.classList.toggle('finale-enhanced', !reducedMotion.matches);
     toggle.hidden = reducedMotion.matches;
     toggle.setAttribute('aria-pressed', String(!enabled));
-    const label = enabled ? (EN ? 'Pause the animations' : 'Mettre les animations en pause') : (EN ? 'Resume the animations' : 'Réactiver les animations');
+    const label = enabled ? tr('Mettre les animations en pause') : tr('Réactiver les animations');
     toggle.setAttribute('aria-label', label);
     toggle.title = label;
     toggle.querySelector('use').setAttribute('href', enabled ? '#i-pause' : '#i-play');
