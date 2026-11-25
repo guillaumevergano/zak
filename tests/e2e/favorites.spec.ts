@@ -87,6 +87,18 @@ test('favorites go in rows: drop one under the last row to start a new line', as
   await expect(rows.nth(1).getByRole('button', { name: 'Musique', exact: true })).toBeVisible()
   await expect(sidebar.getByTestId('new-row')).toHaveCount(0)
 
+  // The « + » shows only in the row under the pointer.
+  const plus = (row: number) => rows.nth(row).getByTestId('add-favorite')
+  await chrome.mouse.move(5, 5)
+  await expect(plus(0)).toHaveCSS('opacity', '0')
+  await expect(plus(1)).toHaveCSS('opacity', '0')
+  await rows.nth(1).hover({ position: { x: 5, y: 5 } })
+  await expect(plus(1)).toHaveCSS('opacity', '1')
+  await expect(plus(0)).toHaveCSS('opacity', '0')
+  await rows.nth(0).hover({ position: { x: 5, y: 5 } })
+  await expect(plus(0)).toHaveCSS('opacity', '1')
+  await expect(plus(1)).toHaveCSS('opacity', '0')
+
   // Back onto the first row: the second one goes away.
   await dragTo(sidebar.getByRole('button', { name: 'Musique', exact: true }), () => rows.first())
   await expect(rows).toHaveCount(1)

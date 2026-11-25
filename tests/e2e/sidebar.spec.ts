@@ -104,6 +104,8 @@ test('drag favorites into an empty folder and onto a folder title', async () => 
   await expect(folder.getByRole('button', { name: 'Un', exact: true })).toBeVisible()
 
   // Onto the folder's title.
+  // (once the tiles have slid into place after the first drop, as a person would)
+  await chrome.waitForTimeout(500)
   await drag(sidebar.getByRole('button', { name: 'Deux', exact: true }), folder.getByRole('button', { name: /Cible/ }))
   await expect(folder.getByRole('button', { name: 'Deux', exact: true })).toBeVisible()
 })

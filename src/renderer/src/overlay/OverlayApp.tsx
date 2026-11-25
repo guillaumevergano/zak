@@ -90,7 +90,8 @@ function FavoriteEditor(props: {
   const submit = (e: FormEvent): void => {
     e.preventDefault()
     if (!url.trim()) return
-    const input = { title: title.trim() || url.trim(), url: normalizeUrl(url), emoji, folderId, favicon: draft.favicon ?? null }
+    // Added from a row's « + »: that row (unless filed in a folder instead).
+    const input = { title: title.trim() || url.trim(), url: normalizeUrl(url), emoji, folderId, favicon: draft.favicon ?? null, row: folderId === null ? draft.row : undefined }
     void (favoriteId ? api.invoke('favorites:update', favoriteId, input) : api.invoke('favorites:add', input)).then(props.onDone)
   }
 

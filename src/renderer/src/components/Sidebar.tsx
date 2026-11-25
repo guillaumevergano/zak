@@ -253,7 +253,7 @@ function FolderSection(props: {
 }
 
 /** Opens the favorite editor for the current page, filed in `folderId`. */
-function useAddCurrentPage(folderId: string | null): (e: MouseEvent<HTMLButtonElement>) => void {
+function useAddCurrentPage(folderId: string | null, row?: number): (e: MouseEvent<HTMLButtonElement>) => void {
   const tab = useBrowserStore(selectActiveTab)
   return (e) =>
     void api.invoke('overlay:open', {
@@ -265,7 +265,8 @@ function useAddCurrentPage(folderId: string | null): (e: MouseEvent<HTMLButtonEl
         url: tab?.url ?? '',
         emoji: null,
         folderId,
-        favicon: tab?.favicon ?? null
+        favicon: tab?.favicon ?? null,
+        row
       }
     })
 }
@@ -323,37 +324,26 @@ function RootMosaic(props: { favorites: FavoriteInfo[]; activeId: string | undef
   const { setNodeRef } = useDroppable({ id: dndId('zone', ROOT_ZONE) })
   const { active } = useDndContext()
   const dragged = active ? parseDndId(active.id).kind : null
-  const add = useAddCurrentPage(null)
+  // The row under the pointer shows a « + » in its next free place (adds the current page there).
+  const [hovered, setHovered] = useState<number | null>(null)
   const rows: FavoriteInfo[][] = []
   for (const favorite of props.favorites) (rows[favorite.row] ??= []).push(favorite)
   const lines = rows.filter((row) => row !== undefined)
-  // While a favorite or a tab is dragged, the free places of each row show as dotted squares. The
-  // last row gives its « + » cell to a slot, so no row grows or shrinks when the drag starts.
+  // While a favorite or a tab is dragged, the free places of each row show as dotted squares.
   const dragging = dragged === 'fav' || dragged === 'tab'
-  const freeSlots = (count: number, last: boolean): number => {
-    if (!dragging) return 0
-    const plus = last && !props.collapsed ? 1 : 0
-    return ((props.columns - ((count + plus) % props.columns)) % props.columns) + plus
-  }
-  const addButton = !props.collapsed && !dragging && (
-    <button
-      data-testid="add-favorite"
-      title={t('Ajouter un favori')}
-      onClick={add}
-      className="grid aspect-square place-items-center rounded-[10px] border border-dashed border-frame-line text-frame-sub hover:border-frame-sub hover:text-frame-text"
-    >
-      <PlusIcon />
-    </button>
-  )
+  const free = (count: number): number => (props.columns - (count % props.columns)) % props.columns
+  // The « + » only takes a free place: showing it never adds a line (an empty mosaic always shows it).
+  const addButton = (row: number, count: number): React.ReactNode =>
+    !props.collapsed && !dragging && (free(count) > 0 || count === 0) && <AddTile row={row} shown={hovered === row || lines.length === 0} />
 
   return (
-    <div ref={setNodeRef} data-testid="mosaic" className="relative flex flex-col gap-2.5">
+    <div ref={setNodeRef} data-testid="mosaic" className="relative flex flex-col gap-2.5" onMouseLeave={() => setHovered(null)}>
       {/* One sortable list per row: tiles make room within their own row only, so the preview shows where it lands. */}
       {lines.map((row, r) => (
         <Fragment key={r}>
           {/* A straight hairline between rows (not the rounded edge of a row). */}
           {r > 0 && <div aria-hidden className="h-px shrink-0 bg-frame-line/70" />}
-          <MosaicRow row={r} columns={props.columns} slots={freeSlots(row.length, r === lines.length - 1)}>
+          <MosaicRow row={r} columns={props.columns} slots={dragging ? free(row.length) : 0} onHover={setHovered}>
             <SortableContext items={row.map((f) => dndId('fav', f.id))} strategy={rectSortingStrategy}>
               {row.map((favorite, i) => (
                 <FavoriteTile
@@ -365,13 +355,13 @@ function RootMosaic(props: { favorites: FavoriteInfo[]; activeId: string | undef
                 />
               ))}
             </SortableContext>
-            {r === lines.length - 1 && addButton}
+            {addButton(r, row.length)}
           </MosaicRow>
         </Fragment>
       ))}
       {lines.length === 0 && (
-        <MosaicRow row={0} columns={props.columns} slots={freeSlots(0, true)}>
-          {addButton}
+        <MosaicRow row={0} columns={props.columns} slots={dragging ? props.columns : 0} onHover={setHovered}>
+          {addButton(0, 0)}
         </MosaicRow>
       )}
       {dragging && lines.length > 0 && <NewRowZone collapsed={props.collapsed} />}
@@ -380,11 +370,18 @@ function RootMosaic(props: { favorites: FavoriteInfo[]; activeId: string | undef
 }
 
 /** A row of the root mosaic; `slots`: free places shown as dotted squares while dragging. */
-function MosaicRow(props: { row: number; columns: number; slots: number; children: React.ReactNode }): JSX.Element {
+function MosaicRow(props: {
+  row: number
+  columns: number
+  slots: number
+  onHover: (row: number) => void
+  children: React.ReactNode
+}): JSX.Element {
   const { setNodeRef, isOver } = useDroppable({ id: dndId('row', props.row) })
   return (
     <div
       ref={setNodeRef}
+      onMouseEnter={() => props.onHover(props.row)}
       data-testid="mosaic-row"
       style={{ gridTemplateColumns: `repeat(${props.columns}, minmax(0, 1fr))` }}
       className="grid min-h-4 gap-2.5"
@@ -401,6 +398,25 @@ function MosaicRow(props: { row: number; columns: number; slots: number; childre
         />
       ))}
     </div>
+  )
+}
+
+/** « + » in a row's next free place, shown while the pointer is over that row: adds the current page to it. */
+function AddTile({ row, shown }: { row: number; shown: boolean }): JSX.Element {
+  const add = useAddCurrentPage(null, row)
+  return (
+    <button
+      data-testid="add-favorite"
+      title={t('Ajouter un favori')}
+      onClick={add}
+      tabIndex={shown ? 0 : -1}
+      aria-hidden={!shown || undefined}
+      className={`grid aspect-square place-items-center rounded-[10px] border border-dashed border-frame-line text-frame-sub transition-opacity duration-200 hover:border-frame-sub hover:text-frame-text focus-visible:opacity-100 ${
+        shown ? 'opacity-100' : 'pointer-events-none opacity-0'
+      }`}
+    >
+      <PlusIcon />
+    </button>
   )
 }
 

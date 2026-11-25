@@ -182,7 +182,7 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
   handle('sidebar:setLayout', (_e, layout) => {
     sidebar.setLayout(layout)
   })
-  handle('favorites:add', (_e, input) => sidebar.change(() => favorites.addFavorite(input)))
+  handle('favorites:add', (_e, input) => sidebar.change(() => favorites.addFavorite(input, undefined, input.row)))
   handle('favorites:addFromTab', (e, tabId, folderId, index, row) => sidebar.addFromTab(windowOf(e), tabId, folderId, index, row))
   handle('favorites:update', (_e, id, input) => sidebar.change(() => favorites.updateFavorite(id, input)))
   handle('favorites:remove', (_e, id) => sidebar.removeFavorite(id))

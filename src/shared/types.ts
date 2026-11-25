@@ -139,6 +139,8 @@ export interface FavoriteInput {
   emoji: string | null
   folderId: string | null
   favicon?: string | null
+  /** A new favorite of the root: the mosaic row it goes to (default: the last one). */
+  row?: number
 }
 
 export interface FolderInput {
