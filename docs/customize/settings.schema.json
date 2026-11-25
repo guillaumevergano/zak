@@ -17,7 +17,7 @@
         "safeBrowsing": { "type": "boolean", "default": true, "description": "Warn before opening known phishing or malware pages." },
         "savePasswords": { "type": "boolean", "default": true, "description": "Offer to save passwords after a sign-in." },
         "sleepTabsAfter": { "enum": [0, 15, 30, 60, 120], "default": 0, "description": "Minutes before a background tab is unloaded; 0 = never." },
-        "newtabHeadline": { "enum": ["zak", "custom", "quote", "proverb", "history", "wikipedia", "none"], "default": "zak", "description": "Under the new tab page logo: Zak's words, newtabTitle/newtabSubtitle, a quote, a proverb, on this day in history or a random article (Wikipedia, in Zak's language), or nothing." },
+        "newtabHeadlines": { "type": "array", "items": { "enum": ["zak", "custom", "quote", "proverb", "history", "wikipedia"] }, "uniqueItems": true, "default": ["zak"], "description": "What may show under the new tab page logo, one picked at random for each tab: Zak's words, newtabTitle/newtabSubtitle, a quote, a proverb, on this day in history or a random article (Wikipedia, in Zak's language). Empty: nothing." },
         "newtabTitle": { "type": "string", "maxLength": 80, "default": "" },
         "newtabSubtitle": { "type": "string", "maxLength": 120, "default": "" }
       },

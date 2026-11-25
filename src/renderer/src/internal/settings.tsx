@@ -12,6 +12,7 @@ import type {
   GeneralSettings,
   ImportSource,
   McpState,
+  NewtabHeadlineSource,
   ModInfo,
   PipSettings,
   ProfileInfo,
@@ -227,29 +228,33 @@ function SettingsPage(): JSX.Element {
         <Row
           title={t('Sous le logo')}
           detail={
-            general.newtabHeadline === 'history' || general.newtabHeadline === 'wikipedia'
-              ? t('Récupéré sur Wikipédia, dans la langue de Zak. Un nouveau à chaque onglet.')
-              : general.newtabHeadline === 'quote' || general.newtabHeadline === 'proverb'
-                ? t('Une nouvelle à chaque onglet, sans connexion.')
-                : undefined
+            t('À chaque nouvel onglet, l’un de ceux cochés, au hasard. Rien de coché : rien ne s’affiche.') +
+            (general.newtabHeadlines.includes('history') || general.newtabHeadlines.includes('wikipedia')
+              ? ` ${t('« Ce jour dans l’histoire » et « Le saviez-vous ? » viennent de Wikipédia, dans la langue de Zak.')}`
+              : '')
           }
         >
-          <select
-            aria-label={t('Sous le logo')}
-            value={general.newtabHeadline}
-            onChange={(e) => saveGeneral({ newtabHeadline: e.target.value as GeneralSettings['newtabHeadline'] })}
-            className={selectClass}
-          >
-            <option value="zak">{t('« Un peu d’espace. »')}</option>
-            <option value="custom">{t('Mon texte')}</option>
-            <option value="quote">{t('Une citation')}</option>
-            <option value="proverb">{t('Un proverbe')}</option>
-            <option value="history">{t('Ce jour dans l’histoire')}</option>
-            <option value="wikipedia">{t('Le saviez-vous ?')}</option>
-            <option value="none">{t('Rien')}</option>
-          </select>
+          <fieldset aria-label={t('Sous le logo')} className="m-0 flex flex-col gap-1.5 border-0 p-0">
+            {HEADLINE_SOURCES.map(([source, label]) => (
+              <label key={source} className="flex items-center gap-2 text-[13.5px] text-ink">
+                <input
+                  type="checkbox"
+                  checked={general.newtabHeadlines.includes(source)}
+                  onChange={(e) =>
+                    saveGeneral({
+                      newtabHeadlines: e.target.checked
+                        ? [...general.newtabHeadlines, source]
+                        : general.newtabHeadlines.filter((s) => s !== source)
+                    })
+                  }
+                  className="size-4 accent-violet"
+                />
+                {label}
+              </label>
+            ))}
+          </fieldset>
         </Row>
-        {general.newtabHeadline === 'custom' && (
+        {general.newtabHeadlines.includes('custom') && (
           <Row title={t('Mon texte')}>
             <div className="flex w-[300px] flex-col gap-1.5">
               <input
@@ -993,6 +998,16 @@ function ClearData({ onError }: { onError: (err: unknown) => void }): JSX.Elemen
     </Section>
   )
 }
+
+/** The new tab page's sources, in the order of the settings page. */
+const HEADLINE_SOURCES: [NewtabHeadlineSource, string][] = [
+  ['zak', t('« Un peu d’espace. »')],
+  ['custom', t('Mon texte')],
+  ['quote', t('Une citation')],
+  ['proverb', t('Un proverbe')],
+  ['history', t('Ce jour dans l’histoire')],
+  ['wikipedia', t('Le saviez-vous ?')]
+]
 
 function Row(props: { title: string; detail?: string; children: ReactNode }): JSX.Element {
   return (

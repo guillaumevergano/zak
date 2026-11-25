@@ -1,5 +1,5 @@
 import { getLang, locale, t, type Lang } from '@shared/i18n'
-import type { GeneralSettings, NewtabHeadline } from '@shared/types'
+import type { GeneralSettings, NewtabHeadline, NewtabHeadlineSource } from '@shared/types'
 import { SAYINGS } from './sayings'
 
 /**
@@ -71,37 +71,48 @@ export class Headlines {
 
   constructor(private readonly general: () => GeneralSettings) {}
 
-  /** For the page that is opening; null: Zak's own words. */
+  /**
+   * For the page that is opening: one of the ticked sources, at random; null: Zak's own words.
+   * A source with nothing to give (Wikipedia offline, an empty « Mon texte ») lets another one try.
+   */
   async next(): Promise<NewtabHeadline | null> {
     const settings = this.general()
-    try {
-      switch (settings.newtabHeadline) {
-        case 'none':
-          return { kind: 'none', title: '', subtitle: '' }
-        case 'custom':
-          return { kind: 'custom', title: settings.newtabTitle, subtitle: settings.newtabSubtitle }
-        case 'quote':
-          return this.saying('quote')
-        case 'proverb':
-          return this.saying('proverb')
-        case 'history':
-          return await this.history()
-        case 'wikipedia':
-          return await this.didYouKnow()
-        default:
-          return null
+    if (settings.newtabHeadlines.length === 0) return { kind: 'none', title: '', subtitle: '' }
+    const order = [...settings.newtabHeadlines].sort(() => Math.random() - 0.5)
+    for (const source of order) {
+      if (source === 'zak') return null
+      try {
+        const item = await this.from(source, settings)
+        if (item) return item
+      } catch {
+        /* offline, or Wikipedia unreachable: another source */
       }
-    } catch {
-      // Offline, or Wikipedia unreachable: Zak's own words rather than nothing.
-      return null
+    }
+    return null
+  }
+
+  private async from(source: Exclude<NewtabHeadlineSource, 'zak'>, settings: GeneralSettings): Promise<NewtabHeadline | null> {
+    switch (source) {
+      case 'custom':
+        return settings.newtabTitle.trim() || settings.newtabSubtitle.trim()
+          ? { kind: 'custom', title: settings.newtabTitle, subtitle: settings.newtabSubtitle }
+          : null
+      case 'quote':
+        return this.saying('quote')
+      case 'proverb':
+        return this.saying('proverb')
+      case 'history':
+        return this.history()
+      case 'wikipedia':
+        return this.didYouKnow()
     }
   }
 
-  /** Starts fetching ahead when a Wikipedia source is chosen (at launch, after a settings change). */
+  /** Starts fetching ahead when a Wikipedia source is ticked (at launch, after a settings change). */
   warmUp(): void {
-    const source = this.general().newtabHeadline
-    if (source === 'wikipedia') void this.fill().catch(() => {})
-    if (source === 'history') void this.events().catch(() => {})
+    const sources = this.general().newtabHeadlines
+    if (sources.includes('wikipedia')) void this.fill().catch(() => {})
+    if (sources.includes('history')) void this.events().catch(() => {})
   }
 
   private saying(kind: 'quote' | 'proverb'): NewtabHeadline | null {

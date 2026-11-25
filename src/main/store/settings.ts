@@ -1,6 +1,6 @@
 import { app } from 'electron'
 import Store from 'electron-store'
-import { NEWTAB_HEADLINE_SOURCES, type ExtensionBarSettings, type GeneralSettings, type PipSettings, type SidebarLayout } from '@shared/types'
+import { NEWTAB_HEADLINE_SOURCES, type NewtabHeadlineSource, type ExtensionBarSettings, type GeneralSettings, type PipSettings, type SidebarLayout } from '@shared/types'
 import { DEFAULT_EXTENSION_BAR, normalizeExtensionBar } from '@shared/extensionBar'
 import { SEARCH_ENGINES } from '@shared/url'
 import { LANG_SETTINGS } from '@shared/languages'
@@ -173,6 +173,14 @@ export class SettingsStore {
   }
 }
 
+/** The new tab sources ticked: a list (one source alone, as first saved, also works); none = nothing. */
+function headlineSources(raw: unknown): NewtabHeadlineSource[] {
+  if (raw === undefined) return ['zak']
+  if (raw === 'none') return []
+  const list = (Array.isArray(raw) ? raw : [raw]).filter((s): s is NewtabHeadlineSource => NEWTAB_HEADLINE_SOURCES.includes(s as NewtabHeadlineSource))
+  return [...new Set(list)]
+}
+
 /** Defaults for missing keys, and anything unknown replaced by its default. */
 export function normalizeGeneral(raw: Partial<GeneralSettings>): GeneralSettings {
   const pick = <T extends string>(value: unknown, allowed: readonly T[], fallback: T): T =>
@@ -187,7 +195,7 @@ export function normalizeGeneral(raw: Partial<GeneralSettings>): GeneralSettings
     safeBrowsing: raw.safeBrowsing !== false,
     savePasswords: raw.savePasswords !== false,
     sleepTabsAfter: [0, 15, 30, 60, 120].includes(raw.sleepTabsAfter as number) ? (raw.sleepTabsAfter as number) : 0,
-    newtabHeadline: pick(raw.newtabHeadline, NEWTAB_HEADLINE_SOURCES, 'zak'),
+    newtabHeadlines: headlineSources(raw.newtabHeadlines ?? (raw as { newtabHeadline?: unknown }).newtabHeadline),
     newtabTitle: typeof raw.newtabTitle === 'string' ? raw.newtabTitle.slice(0, 80) : '',
     newtabSubtitle: typeof raw.newtabSubtitle === 'string' ? raw.newtabSubtitle.slice(0, 120) : ''
   }
