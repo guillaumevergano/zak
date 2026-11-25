@@ -1,4 +1,4 @@
-import { useRef, type MouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useRef, useState, type MouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { rectSortingStrategy, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -7,7 +7,7 @@ import { SETTINGS_PAGE_URL } from '@shared/ipc'
 import { selectActiveTab, useBrowserStore } from '../store/useBrowserStore'
 import { dndId, ROOT_ZONE } from '../lib/dnd'
 import { matchFavorite, rectOf } from '../lib/favorites'
-import { ChevronIcon, GearIcon, GlobeIcon, PlusIcon } from './Icons'
+import { ChevronIcon, GearIcon, GlobeIcon, PlusIcon, SidebarIcon } from './Icons'
 import { t } from '@shared/i18n'
 
 const api = window.zak
@@ -19,6 +19,44 @@ const MAX_WIDTH = 380
 const COLUMNS = 5
 
 /**
+ * Folding / unfolding, calmly: the content fades out, the width glides (the page follows its edge
+ * frame by frame, App reports the layout), the content comes back in its new layout. No jump of
+ * the mosaic mid-way.
+ */
+const FADE_OUT_MS = 110
+const GLIDE_MS = 300
+const FADE_IN_MS = 200
+
+/** The layout shown (wide or folded) and how far the fold animation is, following `collapsed`. */
+function useFoldAnimation(collapsed: boolean | null): { shown: boolean; phase: 'idle' | 'out' | 'in'; gliding: boolean } {
+  const [shown, setShown] = useState(collapsed ?? false)
+  const [phase, setPhase] = useState<'idle' | 'out' | 'in'>('idle')
+  const loaded = useRef(collapsed !== null)
+  useEffect(() => {
+    if (collapsed === null) return
+    // The saved layout arriving at launch: no animation.
+    if (!loaded.current) {
+      loaded.current = true
+      setShown(collapsed)
+      return
+    }
+    if (collapsed === shown && phase === 'idle') return
+    setPhase('out')
+    const timers = [
+      setTimeout(() => setShown(collapsed), FADE_OUT_MS),
+      // The content comes back while the width lands.
+      setTimeout(() => setPhase('in'), GLIDE_MS - 80),
+      setTimeout(() => setPhase('idle'), GLIDE_MS)
+    ]
+    return () => timers.forEach(clearTimeout)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collapsed])
+  // Known in the very render where the width changes, so the browser animates it.
+  const gliding = loaded.current && collapsed !== null && (collapsed !== shown || phase !== 'idle')
+  return { shown, phase, gliding }
+}
+
+/**
  * Right sidebar on the plum frame, under the toolbar (CLAUDE.md §6.2, §7): the root favorites as a
  * 5-per-row emoji mosaic, then the folders as a list (their favorites as rows), and the settings button.
  */
@@ -26,10 +64,15 @@ export function Sidebar(): JSX.Element {
   const sidebar = useBrowserStore((s) => s.sidebar)
   const activeTab = useBrowserStore(selectActiveTab)
   const asideRef = useRef<HTMLElement>(null)
+  const { shown: collapsed, phase, gliding } = useFoldAnimation(sidebar?.layout.collapsed ?? null)
   if (!sidebar) return <aside className="no-drag w-[300px] shrink-0" />
 
   const { folders, favorites, layout } = sidebar
-  const collapsed = layout.collapsed
+  const fading = phase === 'out'
+  const content = {
+    opacity: fading ? 0 : 1,
+    transition: `opacity ${fading ? FADE_OUT_MS : FADE_IN_MS}ms var(--ease-calm)`
+  }
   const activeId = activeTab?.url ? matchFavorite(activeTab.url, favorites)?.id : undefined
   const inFolder = (folderId: string | null): FavoriteInfo[] => favorites.filter((f) => f.folderId === folderId)
 
@@ -46,12 +89,15 @@ export function Sidebar(): JSX.Element {
       ref={asideRef}
       aria-label={t('Favoris')}
       data-testid="sidebar"
-      style={{ width: collapsed ? SIDEBAR_COLLAPSED_WIDTH : layout.width }}
-      className="no-drag relative flex shrink-0 flex-col bg-frame text-frame-text transition-[width] duration-150"
+      data-collapsed={layout.collapsed || undefined}
+      style={{
+        width: layout.collapsed ? SIDEBAR_COLLAPSED_WIDTH : layout.width,
+        // Only while folding: dragging the edge follows the pointer.
+        transition: gliding ? `width ${GLIDE_MS}ms var(--ease-calm)` : undefined
+      }}
+      className="no-drag relative flex shrink-0 flex-col bg-frame text-frame-text"
     >
-      {/* The cream toolbar above turns down into the page: a concave corner at the sidebar's top left. */}
-      <div aria-hidden className="concave-corner pointer-events-none absolute top-0 left-0 size-[14px]" />
-      <div className={`no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto pt-4 ${collapsed ? 'px-2.5' : 'px-4'}`}>
+      <div style={content} className={`no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto pt-4 ${collapsed ? 'px-2.5' : 'px-4'}`}>
         <Mosaic zone={ROOT_ZONE} favorites={inFolder(null)} activeId={activeId} collapsed={collapsed} folderId={null} showAdd />
 
         <div className="my-4 h-px shrink-0 bg-frame-line" />
@@ -83,7 +129,17 @@ export function Sidebar(): JSX.Element {
         </button>
       </div>
 
-      <footer className={`flex shrink-0 items-center pt-2 pb-3 ${collapsed ? 'justify-center' : 'justify-end px-3'}`}>
+      <footer style={content} className={`flex shrink-0 items-center gap-2 pt-2 pb-3 ${collapsed ? 'flex-col justify-center' : 'justify-end px-3'}`}>
+        {/* Folded: icons only, the favorites one below the other (also ⌘B). */}
+        <button
+          data-testid="toggle-sidebar"
+          aria-expanded={!layout.collapsed}
+          title={layout.collapsed ? t('Déplier la barre latérale (⌘B)') : t('Réduire la barre latérale (⌘B)')}
+          onClick={() => useBrowserStore.getState().toggleSidebar()}
+          className="grid h-10 w-10 place-items-center rounded-full border border-frame-line text-frame-text hover:bg-frame-2"
+        >
+          <SidebarIcon collapse={!collapsed} />
+        </button>
         <button
           data-testid="open-settings"
           title={t('Réglages (⌘,)')}
@@ -94,7 +150,7 @@ export function Sidebar(): JSX.Element {
         </button>
       </footer>
 
-      {!collapsed && <ResizeHandle aside={asideRef} />}
+      {!collapsed && phase === 'idle' && <ResizeHandle aside={asideRef} />}
     </aside>
   )
 }
@@ -388,7 +444,8 @@ function ResizeHandle({ aside }: { aside: React.RefObject<HTMLElement | null> })
     <div
       onPointerDown={start}
       title={t('Redimensionner')}
-      className="absolute top-4 bottom-4 -left-[5px] w-2.5 cursor-col-resize rounded-full hover:bg-iris/25"
+      // Inside the sidebar's edge: the gutter on its left holds the page's scroll indicator.
+      className="absolute top-4 bottom-4 left-0 w-1.5 cursor-col-resize rounded-full hover:bg-iris/25"
     />
   )
 }

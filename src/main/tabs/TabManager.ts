@@ -1,9 +1,12 @@
 import { t } from '@shared/i18n'
 import { EventEmitter } from 'node:events'
 import { WebContentsView, type BaseWindow, type Session, type WebContents } from 'electron'
-import type { LayoutInsets, TabGroupInfo, TabId, TabInfo, TabsState } from '@shared/types'
-import { randomUUID } from 'node:crypto'
+import type { LayoutInsets, PageScroll, Rect, TabGroupInfo, TabId, TabInfo, TabSplitInfo, TabsState } from '@shared/types'
+import { randomBytes, randomUUID } from 'node:crypto'
+import { SCROLL_PREFIX, SCROLL_WORLD_ID, scrollScript, scrollToScript } from './scrollScript'
 import { endOfGroup, groupAt, nextColor, usedGroups } from './groups'
+import { outsideSplits, partnerOf, repairSplits, splitOf } from './splits'
+import { clampRatio, splitRects, SPLIT_ZOOM } from '@shared/split'
 import { manageIdentity, trackIdentitySetup } from '../userAgent'
 import { NEW_TAB_URL, errorPageUrl, failedUrlOf, isNewTabUrl, toUrl, type SearchEngine } from '@shared/url'
 import { isInternalUrl } from '../internal/InternalProtocol'
@@ -17,7 +20,10 @@ const PAGE_RADIUS = 12
 const CLOSED_STACK_SIZE = 20
 
 /**
- * Thin scrollbar in the app's colors for every page (CLAUDE.md §7). A transparent track also lets
+ * The page's own vertical scrollbar is hidden (`html`, !important to beat the site's style): the
+ * chrome UI draws a thin one in the gutter next to the page (scrollScript.ts). Inner scrollers
+ * keep a scrollbar:
+ * thin, in the app's colors (CLAUDE.md §7). A transparent track also lets
  * the page's rounded corners show (Chromium's default track fills the top-right corner). User
  * origin: sites that style their own scrollbars keep theirs.
  */
@@ -30,6 +36,7 @@ const SCROLLBAR_CSS = `
 }
 ::-webkit-scrollbar-thumb:hover { background-color: rgb(120 90 115 / 0.62); }
 ::-webkit-scrollbar-thumb:active { background-color: rgb(198 122 251 / 0.75); }
+html { scrollbar-width: none !important; }
 `
 
 const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
@@ -50,6 +57,8 @@ interface Tab {
   /** Asleep: the page was swapped for about:blank to free memory; what to show and reload. */
   asleep: { url: string; title: string; favicon: string | null } | null
   groupId: string | null
+  /** Secret of the scroll reports of this tab's page (scrollScript.ts). */
+  scrollNonce: string
 }
 
 interface ClosedTab {
@@ -84,6 +93,8 @@ export interface TabManagerEvents {
   favicon: [pageUrl: string, favicon: string]
   /** The last tab was closed: the window should close, like Chrome. */
   empty: []
+  /** The page scrolled or changed height; null: a new page, nothing known yet. */
+  scroll: [id: TabId, scroll: PageScroll | null]
   /** Context menu requested inside a tab. */
   'context-menu': [webContents: WebContents, params: Electron.ContextMenuParams]
 }
@@ -99,8 +110,14 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
 
   private tabs = new Map<TabId, Tab>()
   private readonly groups = new Map<string, TabGroupInfo>()
+  /** Split views: pairs of tabs shown side by side (splits.ts). */
+  private readonly splits = new Map<string, TabSplitInfo>()
   private order: TabId[] = []
   private activeId: TabId | null = null
+  /** Tabs whose page is on screen: the active one, and its partner in a split view. */
+  private shown = new Set<TabId>()
+  /** Tabs zoomed out for their split view (isolated zoom, see syncSplitZoom). */
+  private readonly splitZoomed = new Set<TabId>()
   private insets: LayoutInsets = { left: 0, top: 0, right: 0, bottom: 0 }
   private closed: ClosedTab[] = []
 
@@ -127,6 +144,9 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
    */
   static sleepAfterMinutes: () => number | null = () => null
 
+  /** Zoom remembered for the site of a URL (ZoomController); set once by index.ts. */
+  static siteZoom: (url: string) => number = () => 1
+
   constructor(
     private readonly window: BaseWindow,
     private readonly session: Session
@@ -149,7 +169,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     if (minutes === null) return
     for (const tab of this.tabs.values()) {
       const wc = tab.wc
-      if (tab.id === this.activeId || tab.asleep || wc.isDestroyed()) continue
+      if (this.shown.has(tab.id) || tab.asleep || wc.isDestroyed()) continue
       if (now - tab.lastActive < minutes * 60_000) continue
       if (wc.isCurrentlyAudible() || wc.isLoading() || !/^https?:/.test(wc.getURL())) continue
       this.sleep(tab)
@@ -200,10 +220,11 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     })
     const wc = view.webContents
     const pinned = opts.pinned ?? false
-    const tab: Tab = { id: wc.id, view, wc, favicon: null, pinned, url, setup: Promise.resolve(), lastActive: Date.now(), asleep: null, groupId: null }
+    const tab: Tab = { id: wc.id, view, wc, favicon: null, pinned, url, setup: Promise.resolve(), lastActive: Date.now(), asleep: null, groupId: null, scrollNonce: randomBytes(12).toString('hex') }
     this.tabs.set(tab.id, tab)
     const [start, end] = this.groupRange(pinned)
-    const at = clamp(opts.index ?? end, start, end)
+    // Never between the two tabs of a split view (a link opened from its left page goes after both).
+    const at = outsideSplits(this.order, this.splits, clamp(opts.index ?? end, start, end))
     this.order.splice(at, 0, tab.id)
     // A tab opened inside a group (a link next to its opener, a duplicate) joins it, like Chrome.
     if (opts.groupId !== undefined) tab.groupId = opts.groupId && this.groups.has(opts.groupId) ? opts.groupId : null
@@ -255,17 +276,38 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     // Showing a tab of a folded group unfolds it.
     const group = next.groupId ? this.groups.get(next.groupId) : undefined
     if (group?.collapsed) group.collapsed = false
-    next.lastActive = Date.now()
     if (previous) previous.lastActive = Date.now()
-    this.wake(next)
-    next.view.setVisible(true)
-    // Re-adding an existing child view moves it on top, above the previous tab still visible below.
-    this.window.contentView.addChildView(next.view)
-    this.layout()
+    this.present()
     if (focusPage) next.wc.focus()
     this.emit('activated', previous?.wc ?? null, next.wc)
     this.emit('changed')
-    if (previous) void this.hideWhenLeft(previous)
+  }
+
+  /**
+   * Puts the active tab (and its partner in a split view) on screen, lays them out, and hides the
+   * pages shown before that no longer are. Going from one page of a split view to the other hides
+   * nothing (no automatic PiP: the video is still in sight).
+   */
+  private present(): void {
+    const before = this.shown
+    const active = this.activeId !== null ? this.tabs.get(this.activeId) : undefined
+    const partnerId = active ? partnerOf(this.splits, active.id) : null
+    const partner = partnerId !== null ? this.tabs.get(partnerId) : undefined
+    const now = [partner, active].filter((tab): tab is Tab => tab !== undefined)
+    this.shown = new Set(now.map((tab) => tab.id))
+    for (const tab of now) {
+      tab.lastActive = Date.now()
+      if (before.has(tab.id)) continue
+      this.wake(tab)
+      tab.view.setVisible(true)
+      // Re-adding an existing child view moves it on top, above the previous tab still visible below.
+      this.window.contentView.addChildView(tab.view)
+    }
+    this.layout()
+    for (const id of before) {
+      const tab = this.tabs.get(id)
+      if (tab && !this.shown.has(id)) void this.hideWhenLeft(tab)
+    }
   }
 
   /** Ctrl+Tab / Ctrl+Shift+Tab, wrapping around. */
@@ -287,23 +329,29 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
       await Promise.race([this.beforeHide(tab.wc).catch(() => {}), delay(HIDE_DELAY_MS)])
     }
     // The user may have switched back meanwhile, or the tab may be gone.
-    if (this.activeId !== tab.id && this.tabs.has(tab.id)) tab.view.setVisible(false)
+    if (!this.shown.has(tab.id) && this.tabs.has(tab.id)) tab.view.setVisible(false)
   }
 
   close(id: TabId): void {
     const tab = this.tabs.get(id)
     if (!tab) return
     const index = this.order.indexOf(id)
+    const partner = partnerOf(this.splits, id)
     this.remember(tab, index)
     this.order.splice(index, 1)
     this.tabs.delete(id)
-    this.dropEmptyGroups()
+    this.shown.delete(id)
 
     if (this.activeId === id) {
       this.activeId = null
-      const neighbour = this.order[Math.min(index, this.order.length - 1)]
+      // Not present() yet: the partner stays on screen (no automatic PiP), it becomes the active tab.
+      this.dropEmptyGroups()
+      repairSplits(this.order, this.tabs, this.splits)
+      this.syncSplitZoom()
+      // The other page of its split view takes the whole area.
+      const neighbour = partner ?? this.order[Math.min(index, this.order.length - 1)]
       if (neighbour !== undefined) this.activate(neighbour)
-    }
+    } else this.afterStripChange()
 
     this.dispose(tab)
     if (this.order.length === 0) this.emit('empty')
@@ -325,6 +373,9 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     this.tabs.clear()
     this.order = []
     this.groups.clear()
+    this.splits.clear()
+    this.shown.clear()
+    this.splitZoomed.clear()
     this.activeId = null
     for (const tab of closing) this.dispose(tab)
   }
@@ -357,11 +408,11 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     if (!tab || tab.pinned === pinned) return
     this.order.splice(this.order.indexOf(id), 1)
     tab.pinned = pinned
-    tab.groupId = null // pinned tabs are never in a group
-    this.dropEmptyGroups()
+    tab.groupId = null // pinned tabs are never in a group, nor in a split view
     // Pinning appends to the pinned group; unpinning puts the tab first among the others.
     const [start, end] = this.groupRange(pinned)
     this.order.splice(pinned ? end : start, 0, id)
+    this.afterStripChange()
     this.emit('changed')
   }
 
@@ -371,11 +422,12 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     if (!tab) return
     this.order.splice(this.order.indexOf(id), 1)
     const [start, end] = this.groupRange(tab.pinned)
-    const at = clamp(index, start, end)
+    const at = outsideSplits(this.order, this.splits, clamp(index, start, end))
     this.order.splice(at, 0, id)
     // Dropped between two tabs of a group: joins it; away from its own group: leaves it.
     if (!tab.pinned) tab.groupId = groupAt(this.order, this.tabs, at, tab.groupId)
-    this.dropEmptyGroups()
+    // A page of a split view dragged away from the other one leaves the split view.
+    this.afterStripChange()
     this.emit('changed')
   }
 
@@ -383,7 +435,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
 
   /** « Ajouter à un nouveau groupe »: the tabs gather where the first one is. Returns the group. */
   addToNewGroup(ids: TabId[], init: Partial<Omit<TabGroupInfo, 'id'>> = {}): string | null {
-    const members = ids.filter((id) => this.tabs.has(id) && !this.tabs.get(id)!.pinned)
+    const members = this.withPartners(ids).filter((id) => this.tabs.has(id) && !this.tabs.get(id)!.pinned)
     if (members.length === 0) return null
     const group: TabGroupInfo = { id: randomUUID(), name: init.name ?? '', color: init.color ?? nextColor(this.groups.values()), collapsed: false }
     this.groups.set(group.id, group)
@@ -394,32 +446,146 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     const inStripOrder = [...members].sort((a, b) => before.indexOf(a) - before.indexOf(b))
     this.order.splice(this.order.indexOf(anchor), 1, ...inStripOrder)
     for (const id of members) this.tabs.get(id)!.groupId = group.id
-    this.dropEmptyGroups()
+    this.afterStripChange()
     this.emit('changed')
     return group.id
   }
 
-  /** Moves a tab to the end of an existing group. */
+  /** Moves a tab (with the other page of its split view) to the end of an existing group. */
   addToGroup(id: TabId, groupId: string): void {
     const tab = this.tabs.get(id)
     if (!tab || tab.pinned || !this.groups.has(groupId) || tab.groupId === groupId) return
-    this.order.splice(this.order.indexOf(id), 1)
-    this.order.splice(endOfGroup(this.order, this.tabs, groupId, this.order.length), 0, id)
-    tab.groupId = groupId
-    this.dropEmptyGroups()
-    this.emit('changed')
+    this.moveAfterGroup(this.withPartners([id]), groupId, groupId)
   }
 
-  /** « Retirer du groupe »: the tab goes right after the group. */
+  /** « Retirer du groupe »: the tab (with the other page of its split view) goes right after the group. */
   removeFromGroup(id: TabId): void {
     const tab = this.tabs.get(id)
     if (!tab?.groupId) return
-    const groupId = tab.groupId
-    tab.groupId = null
-    this.order.splice(this.order.indexOf(id), 1)
-    this.order.splice(endOfGroup(this.order, this.tabs, groupId, this.order.length), 0, id)
-    this.dropEmptyGroups()
+    this.moveAfterGroup(this.withPartners([id]), tab.groupId, null)
+  }
+
+  private moveAfterGroup(ids: TabId[], groupId: string, newGroup: string | null): void {
+    this.order = this.order.filter((id) => !ids.includes(id))
+    this.order.splice(endOfGroup(this.order, this.tabs, groupId, this.order.length), 0, ...ids)
+    for (const id of ids) this.tabs.get(id)!.groupId = newGroup
+    this.afterStripChange()
     this.emit('changed')
+  }
+
+  /** `ids` and the other page of their split views, in strip order. */
+  private withPartners(ids: TabId[]): TabId[] {
+    const all = new Set(ids.flatMap((id) => [id, partnerOf(this.splits, id)]).filter((id): id is TabId => id !== null))
+    return this.order.filter((id) => all.has(id))
+  }
+
+  // ── Split view (à la Arc) ─────────────────────────────────────────────────────────────
+
+  /**
+   * Shows `otherId` next to `targetId` (a tab dropped on another, « Afficher côte à côte »): it
+   * moves beside it, on the side it came from, and joins its group. A tab already in a split view
+   * leaves it; the target must not be in one. Returns the split view, or null.
+   */
+  split(targetId: TabId, otherId: TabId, opts: { ratio?: number; activate?: boolean } = {}): string | null {
+    const target = this.tabs.get(targetId)
+    const other = this.tabs.get(otherId)
+    if (!target || !other || targetId === otherId || target.pinned || other.pinned) return null
+    const existing = splitOf(this.splits, targetId)
+    if (existing) return existing.tabs.includes(otherId) ? existing.id : null
+    const previous = splitOf(this.splits, otherId)
+    if (previous) this.splits.delete(previous.id)
+
+    const fromLeft = this.order.indexOf(otherId) < this.order.indexOf(targetId)
+    this.order.splice(this.order.indexOf(otherId), 1)
+    const at = this.order.indexOf(targetId)
+    this.order.splice(fromLeft ? at : at + 1, 0, otherId)
+    other.groupId = target.groupId
+    const split: TabSplitInfo = { id: randomUUID(), tabs: fromLeft ? [otherId, targetId] : [targetId, otherId], ratio: clampRatio(opts.ratio ?? 0.5) }
+    this.splits.set(split.id, split)
+    this.afterStripChange()
+    if (opts.activate !== false && this.activeId !== otherId) this.activate(otherId)
+    else this.emit('changed')
+    return split.id
+  }
+
+  /** « Séparer les onglets »: both tabs stay, the one in use takes the whole area. */
+  unsplit(id: TabId): void {
+    const split = splitOf(this.splits, id)
+    if (!split) return
+    this.splits.delete(split.id)
+    this.syncSplitZoom()
+    this.present()
+    this.emit('changed')
+  }
+
+  /** « Inverser les côtés ». */
+  swapSplit(id: TabId): void {
+    const split = splitOf(this.splits, id)
+    if (!split) return
+    const [left, right] = split.tabs
+    this.order.splice(this.order.indexOf(left), 1)
+    this.order.splice(this.order.indexOf(right) + 1, 0, left)
+    split.ratio = 1 - split.ratio
+    this.afterStripChange()
+    this.emit('changed')
+  }
+
+  /** The divider between the two pages was dragged. */
+  setSplitRatio(splitId: string, ratio: number): void {
+    const split = this.splits.get(splitId)
+    if (!split) return
+    split.ratio = clampRatio(ratio)
+    this.layout()
+    this.emit('changed')
+  }
+
+  /** The scroll indicator next to the page was dragged or clicked. */
+  scrollTo(id: TabId, top: number, smooth: boolean): void {
+    const wc = this.tabs.get(id)?.wc
+    if (!wc || wc.isDestroyed() || !Number.isFinite(top)) return
+    void wc.executeJavaScriptInIsolatedWorld(SCROLL_WORLD_ID, [{ code: scrollToScript(top, smooth) }]).catch(() => {})
+  }
+
+  /** The other page of `id`'s split view, or null. */
+  splitPartner(id: TabId): TabId | null {
+    return partnerOf(this.splits, id)
+  }
+
+  splitList(): TabSplitInfo[] {
+    return [...this.splits.values()].map((s) => ({ ...s, tabs: [...s.tabs] as [TabId, TabId] }))
+  }
+
+  /** After tabs moved, closed or changed group: drop broken split views, refresh what's on screen. */
+  private afterStripChange(): void {
+    this.dropEmptyGroups()
+    repairSplits(this.order, this.tabs, this.splits)
+    this.syncSplitZoom()
+    this.present()
+  }
+
+  /**
+   * The pages of a split view are zoomed out (SPLIT_ZOOM of their site's zoom), each on its own:
+   * isolated zoom, so other tabs of the same site and the remembered zoom don't change. Leaving the
+   * split view gives the page its site's zoom back. ZoomController keeps it across navigations.
+   */
+  private syncSplitZoom(): void {
+    const inSplit = new Set([...this.splits.values()].flatMap((s) => s.tabs))
+    for (const id of inSplit) {
+      const wc = this.tabs.get(id)?.wc
+      if (this.splitZoomed.has(id) || !wc || wc.isDestroyed()) continue
+      this.splitZoomed.add(id)
+      wc.setZoomMode('isolated')
+      wc.setZoomFactor(TabManager.siteZoom(wc.getURL()) * SPLIT_ZOOM)
+    }
+    for (const id of this.splitZoomed) {
+      if (inSplit.has(id)) continue
+      this.splitZoomed.delete(id)
+      const wc = this.tabs.get(id)?.wc
+      if (!wc || wc.isDestroyed()) continue
+      // Back to the site's zoom (the default mode alone keeps the page's level when the site has none).
+      wc.setZoomMode('default')
+      wc.setZoomFactor(TabManager.siteZoom(wc.getURL()))
+    }
   }
 
   updateGroup(groupId: string, changes: Partial<Omit<TabGroupInfo, 'id'>>): void {
@@ -552,7 +718,8 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     return {
       activeId: this.activeId,
       tabs: this.order.map((id) => this.describe(this.tabs.get(id)!)),
-      groups: this.groupList()
+      groups: this.groupList(),
+      splits: this.splitList()
     }
   }
 
@@ -629,14 +796,16 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
       active.view.setBorderRadius(0)
       return
     }
-    active.view.setBorderRadius(PAGE_RADIUS)
     const { left, top, right, bottom } = this.insets
-    active.view.setBounds({
-      x: left,
-      y: top,
-      width: Math.max(0, width - left - right),
-      height: Math.max(0, height - top - bottom)
-    })
+    const area: Rect = { x: left, y: top, width: Math.max(0, width - left - right), height: Math.max(0, height - top - bottom) }
+    const split = splitOf(this.splits, active.id)
+    const places: [Tab | undefined, Rect][] = split
+      ? split.tabs.map((id, i): [Tab | undefined, Rect] => [this.tabs.get(id), splitRects(area, split.ratio)[i]!])
+      : [[active, area]]
+    for (const [tab, rect] of places) {
+      tab?.view.setBorderRadius(PAGE_RADIUS)
+      tab?.view.setBounds(rect)
+    }
   }
 
   /**
@@ -689,6 +858,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     }
     wc.on('page-title-updated', changed)
     wc.on('did-navigate', (_e, url) => {
+      this.emit('scroll', tab.id, null)
       if (tab.asleep) return // about:blank of the tab sleep: the strip keeps the page's title and icon
       tab.url = url
       tab.favicon = null
@@ -716,9 +886,25 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
       changed()
     })
     wc.on('context-menu', (_e, params) => this.emit('context-menu', wc, params))
-    wc.on('dom-ready', () => void wc.insertCSS(SCROLLBAR_CSS, { cssOrigin: 'user' }).catch(() => {}))
+    // Clicking in the other page of a split view makes it the active tab (omnibox, ⌘W, find…).
+    wc.on('focus', () => {
+      if (this.shown.has(tab.id) && this.activeId !== tab.id) this.activate(tab.id, false)
+    })
+    wc.on('dom-ready', () => {
+      void wc.insertCSS(SCROLLBAR_CSS, { cssOrigin: 'user' }).catch(() => {})
+      void wc.executeJavaScriptInIsolatedWorld(SCROLL_WORLD_ID, [{ code: scrollScript(tab.scrollNonce) }]).catch(() => {})
+    })
+    wc.on('console-message', (event) => {
+      const prefix = `${SCROLL_PREFIX}${tab.scrollNonce}:`
+      if (!event.message.startsWith(prefix) || event.frame !== wc.mainFrame) return
+      const [top, height, viewport] = event.message.slice(prefix.length).split(',').map(Number)
+      if ([top, height, viewport].every((n) => Number.isFinite(n))) this.emit('scroll', tab.id, { top: top!, height: height!, viewport: viewport! })
+    })
     // HTML full screen (§6.7): the page covers the sidebar and the bars.
     wc.on('enter-html-full-screen', () => {
+      // From the other page of a split view: it becomes the active tab, on top of its partner.
+      if (this.activeId !== tab.id) this.activate(tab.id)
+      this.window.contentView.addChildView(tab.view)
       this.fullScreenTab = tab.id
       if (!this.window.isFullScreen()) {
         this.madeWindowFullScreen = true

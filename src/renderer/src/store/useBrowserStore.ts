@@ -1,10 +1,17 @@
 import { create } from 'zustand'
-import type { DownloadInfo, SidebarLayout, SidebarState, TabGroupInfo, TabId, TabInfo, TabsState } from '@shared/types'
+import type { DownloadInfo, PageScroll, SidebarLayout, SidebarState, TabGroupInfo, TabId, TabInfo, TabSplitInfo, TabsState } from '@shared/types'
 
 interface BrowserStore {
   tabs: TabInfo[]
   activeId: TabId | null
   groups: TabGroupInfo[]
+  splits: TabSplitInfo[]
+  /** Scroll of the tabs' pages, for the indicator next to the page. */
+  scrolls: Record<TabId, PageScroll>
+  setScroll: (tabId: TabId, scroll: PageScroll | null) => void
+  /** While a tab is dragged and held over another one: the tab it would join in a split view. */
+  mergeTarget: TabId | null
+  setMergeTarget: (id: TabId | null) => void
   /** Bumped to ask the omnibox to take focus and select its text. */
   omniboxFocusTick: number
   sidebar: SidebarState | null
@@ -33,12 +40,23 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
   tabs: [],
   activeId: null,
   groups: [],
+  splits: [],
+  scrolls: {},
+  setScroll: (tabId, scroll) =>
+    set(({ scrolls }) => {
+      const next = { ...scrolls }
+      if (scroll) next[tabId] = scroll
+      else delete next[tabId]
+      return { scrolls: next }
+    }),
+  mergeTarget: null,
+  setMergeTarget: (mergeTarget) => set({ mergeTarget }),
   omniboxFocusTick: 0,
   sidebar: null,
   downloads: [],
   setDownloads: (downloads) => set({ downloads }),
 
-  setTabsState: ({ tabs, activeId, groups }) => set({ tabs, activeId, groups }),
+  setTabsState: ({ tabs, activeId, groups, splits }) => set({ tabs, activeId, groups, splits }),
 
   moveTabLocally: (id, index) =>
     set(({ tabs }) => {

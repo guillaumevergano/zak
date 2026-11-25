@@ -110,6 +110,9 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
       this.emit('tabs-changed', handle)
     }
     tabs.on('changed', push)
+    tabs.on('scroll', (tabId, scroll) => {
+      if (!window.isDestroyed()) this.sendTo(window, 'tabs:scroll', { tabId, scroll })
+    })
     tabs.on('created', (wc) => this.emit('tab-created', wc, window))
     tabs.on('removed', (wc) => this.emit('tab-removed', wc))
     tabs.on('empty', () => window.close())
@@ -150,10 +153,16 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
     // Create tabs once the chrome UI is loaded so it receives the first state push.
     window.webContents.once('did-finish-load', () => {
       if (options.tabs && options.tabs.length > 0) {
+        const ids: TabId[] = []
         for (const tab of options.tabs) {
           if (tab.group) tabs.restoreGroup(tab.group)
-          tabs.create(tab.url, { active: false, pinned: tab.pinned, groupId: tab.group?.id ?? null })
+          ids.push(tabs.create(tab.url, { active: false, pinned: tab.pinned, groupId: tab.group?.id ?? null }).id)
         }
+        // Split views: two neighbours saved with the same split id (a new tab page isn't saved).
+        options.tabs.forEach((tab, i) => {
+          const next = options.tabs![i + 1]
+          if (tab.split && next?.split?.id === tab.split.id) tabs.split(ids[i]!, ids[i + 1]!, { ratio: tab.split.ratio, activate: false })
+        })
         // The saved active tab, or else the first one not hidden in a folded group, or else a new tab.
         const saved = options.tabs.findIndex((t) => t.active)
         const active = saved !== -1 ? saved : options.tabs.findIndex((t) => !t.group?.collapsed)
@@ -255,7 +264,12 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
   }
 
   showTabMenu(handle: BrowserWindowHandle, id: TabId): void {
-    buildTabMenu(handle.tabs, id).popup({ window: handle.window })
+    const newTabBeside = (): void => {
+      const tab = handle.tabs.create(undefined, { focusPage: false, index: handle.tabs.indexOf(id) + 1 })
+      handle.tabs.split(id, tab.id)
+      this.focusOmnibox(handle)
+    }
+    buildTabMenu(handle.tabs, id, newTabBeside).popup({ window: handle.window })
   }
 
   showGroupMenu(handle: BrowserWindowHandle, groupId: string): void {

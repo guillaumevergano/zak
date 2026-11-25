@@ -1,4 +1,5 @@
 import type {
+  PageScroll,
   AgentId,
   AgentStatus,
   ImportSource,
@@ -61,6 +62,12 @@ export interface InvokeChannels {
   'tabs:toggleMute': { args: [id: TabId]; result: void }
   /** Moves a tab to `index` in the strip; main keeps pinned tabs before the others. */
   'tabs:move': { args: [id: TabId, index: number]; result: void }
+  /** A tab dropped on another one: split view, the two side by side (CLAUDE.md §6.1). */
+  'tabs:split': { args: [targetId: TabId, otherId: TabId]; result: void }
+  /** The divider of a split view was dragged: share of the width of its left page. */
+  'tabs:setSplitRatio': { args: [splitId: string, ratio: number]; result: void }
+  /** The scroll indicator next to the page was dragged or clicked: scroll the page to `top` (CSS px). */
+  'tabs:scrollTo': { args: [id: TabId, top: number, smooth: boolean]; result: void }
   /** Native context menu of a tab in the strip (épingler, dupliquer, fermer…). */
   'tabs:showContextMenu': { args: [id: TabId]; result: void }
   'tabs:getState': { args: []; result: TabsState }
@@ -113,6 +120,8 @@ export interface SendChannels {
 /** main → renderer events (webContents.send / ipcRenderer.on). */
 export interface EventChannels {
   'tabs:state': TabsState
+  /** A page scrolled or changed height (null: new page, nothing known yet). */
+  'tabs:scroll': { tabId: TabId; scroll: PageScroll | null }
   /** Cmd/Ctrl+L, new tab: focus and select the omnibox. */
   'omnibox:focus': null
   /** Favorites, folders or sidebar layout changed (sent to every window). */
@@ -150,6 +159,9 @@ export const INVOKE_CHANNELS = [
   'tabs:setPinned',
   'tabs:toggleMute',
   'tabs:move',
+  'tabs:split',
+  'tabs:setSplitRatio',
+  'tabs:scrollTo',
   'tabs:showContextMenu',
   'tabs:getState',
   'widevine:getStatus',
@@ -183,6 +195,7 @@ export const INVOKE_CHANNELS = [
 export const SEND_CHANNELS = ['layout:update'] as const satisfies readonly SendChannel[]
 export const EVENT_CHANNELS = [
   'tabs:state',
+  'tabs:scroll',
   'omnibox:focus',
   'sidebar:state',
   'sidebar:toggle',

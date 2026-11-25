@@ -104,8 +104,8 @@ export function buildPageMenu(
   return menu
 }
 
-/** Right-click on a tab in the strip. */
-export function buildTabMenu(tabs: TabManager, id: TabId): Menu {
+/** Right-click on a tab in the strip. `newTabBeside`: a new tab in a split view with this one, omnibox focused. */
+export function buildTabMenu(tabs: TabManager, id: TabId, newTabBeside: () => void): Menu {
   const wc = tabs.get(id)
   const pinned = tabs.isPinned(id)
   const muted = wc?.isAudioMuted() ?? false
@@ -126,7 +126,30 @@ export function buildTabMenu(tabs: TabManager, id: TabId): Menu {
         ...(groupId ? [{ label: t('Retirer du groupe'), click: () => tabs.removeFromGroup(id) }] : []),
         { type: 'separator' as const }
       ]
+  // Split view (§6.1): also by dropping a tab on another one.
+  const partner = tabs.splitPartner(id)
+  const candidates = tabs.getState().tabs.filter((tab) => tab.id !== id && !tab.pinned && tabs.splitPartner(tab.id) === null)
+  const splitItems: Electron.MenuItemConstructorOptions[] = pinned
+    ? []
+    : partner !== null
+      ? [
+          { label: t('Séparer les onglets'), click: () => tabs.unsplit(id) },
+          { label: t('Inverser les côtés'), click: () => tabs.swapSplit(id) },
+          { type: 'separator' }
+        ]
+      : [
+          {
+            label: t('Afficher côte à côte avec'),
+            submenu: [
+              ...candidates.map((tab) => ({ label: menuTitle(tab.title), click: () => void tabs.split(tab.id, id) })),
+              ...(candidates.length > 0 ? [{ type: 'separator' as const }] : []),
+              { label: t('Un nouvel onglet'), click: newTabBeside }
+            ]
+          },
+          { type: 'separator' }
+        ]
   return Menu.buildFromTemplate([
+    ...splitItems,
     { label: t('Nouvel onglet à droite'), click: () => tabs.create(undefined, { index: tabs.indexOf(id) + 1 }) },
     ...groupItems,
     { type: 'separator' },
@@ -144,6 +167,9 @@ export function buildTabMenu(tabs: TabManager, id: TabId): Menu {
     }
   ])
 }
+
+/** A tab's title in a menu: short enough to keep the menu narrow. */
+const menuTitle = (title: string): string => (title.length > 60 ? `${title.slice(0, 59)}…` : title)
 
 /** A color's name, in the interface language. */
 const colorName = (color: TabGroupColor): string =>

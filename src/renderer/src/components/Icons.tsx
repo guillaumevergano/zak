@@ -69,6 +69,14 @@ export const SparkleIcon = ({ size = 14 }: { size?: number }): JSX.Element => (
     <path d="M8 1.8c.4 3.3 1.6 5.2 6.2 6.2-4.6 1-5.8 2.9-6.2 6.2C7.6 10.9 6.4 9 1.8 8 6.4 7 7.6 5.1 8 1.8Z" />
   </Icon>
 )
+/** A panel on the right, with an arrow: `collapse` points out (fold the sidebar), else in. */
+export const SidebarIcon = ({ collapse }: { collapse: boolean }): JSX.Element => (
+  <Icon width={17} height={17} strokeWidth={1.4}>
+    <rect x="1.5" y="2.5" width="13" height="11" rx="2" />
+    <path d="M10.5 2.5v11" />
+    <path d={collapse ? 'M5 6l2 2-2 2' : 'M7 6 5 8l2 2'} />
+  </Icon>
+)
 export const GearIcon = (): JSX.Element => (
   <Icon width={17} height={17} strokeWidth={1.4}>
     <circle cx="8" cy="8" r="2" />
@@ -79,5 +87,13 @@ export const GearIcon = (): JSX.Element => (
 export const DownloadIcon = (): JSX.Element => (
   <Icon width={17} height={17}>
     <path d="M8 2.5v7.5M4.8 7 8 10.2 11.2 7M3 13.5h10" />
+  </Icon>
+)
+
+/** Two pages side by side (split view). */
+export const SplitIcon = (): JSX.Element => (
+  <Icon>
+    <rect x="2" y="3" width="12" height="10" rx="2" />
+    <path d="M8 3v10" />
   </Icon>
 )

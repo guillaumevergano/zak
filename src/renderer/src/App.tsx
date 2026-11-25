@@ -7,6 +7,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragMoveEvent,
   type DragStartEvent
 } from '@dnd-kit/core'
 import type { WidevineStatus } from '@shared/types'
@@ -16,6 +17,9 @@ import { rectOf } from './lib/favorites'
 import { Sidebar, TileIcon } from './components/Sidebar'
 import { TabGhost, TabStrip } from './components/TabStrip'
 import { Toolbar } from './components/Toolbar'
+import { SplitFrame } from './components/SplitFrame'
+import { ScrollTrack } from './components/ScrollTrack'
+import { SPLIT_INSET } from '@shared/split'
 
 const api = window.zak
 
@@ -28,11 +32,13 @@ const api = window.zak
 export function App(): JSX.Element {
   const [widevine, setWidevine] = useState<WidevineStatus | null>(null)
   const contentRef = useRef<HTMLDivElement>(null)
+  const inSplit = useBrowserStore((s) => s.splits.some((x) => s.activeId !== null && x.tabs.includes(s.activeId)))
 
   useEffect(() => {
     const { setTabsState, focusOmnibox, setSidebar, toggleSidebar, setDownloads } = useBrowserStore.getState()
     const offs = [
       api.on('tabs:state', setTabsState),
+      api.on('tabs:scroll', ({ tabId, scroll }) => useBrowserStore.getState().setScroll(tabId, scroll)),
       api.on('omnibox:focus', focusOmnibox),
       api.on('sidebar:state', setSidebar),
       api.on('sidebar:toggle', toggleSidebar),
@@ -50,14 +56,21 @@ export function App(): JSX.Element {
   useLayoutEffect(() => {
     const el = contentRef.current
     if (!el) return
+    // Once per frame while the sidebar glides: the page follows its edge.
+    let last = ''
     const report = (): void => {
       const r = el.getBoundingClientRect()
-      api.send('layout:update', {
-        left: Math.round(r.left),
-        top: Math.round(r.top),
-        right: Math.round(window.innerWidth - r.right),
-        bottom: Math.round(window.innerHeight - r.bottom)
-      })
+      // Rounded outwards: the page covers its slot to the last pixel (no light line on its edges).
+      const insets = {
+        left: Math.floor(r.left),
+        top: Math.floor(r.top),
+        right: Math.floor(window.innerWidth - r.right),
+        bottom: Math.floor(window.innerHeight - r.bottom)
+      }
+      const key = JSON.stringify(insets)
+      if (key === last) return
+      last = key
+      api.send('layout:update', insets)
     }
     const observer = new ResizeObserver(report)
     observer.observe(el)
@@ -79,13 +92,32 @@ export function App(): JSX.Element {
           <Toolbar widevine={widevine} />
         </header>
         <div className="flex min-h-0 flex-1">
-          <main aria-label={t('Page')} className="page-slot no-drag mb-2 ml-2 min-w-0 flex-1 overflow-hidden rounded-b-[14px]">
+          <main aria-label={t('Page')} data-split={inSplit || undefined} className="page-slot no-drag relative mb-2 ml-2 min-w-0 flex-1 overflow-hidden rounded-b-[14px]">
             <div ref={contentRef} className="h-full w-full" />
+            <SplitFrame />
           </main>
+          <ScrollGutter />
           <Sidebar />
         </div>
       </div>
     </DragAndDrop>
+  )
+}
+
+/**
+ * Between the page and the sidebar: the page's thin scroll indicator (its own scrollbar is hidden),
+ * on the plum frame. In a split view, the right page's (the left one's is in the split's gap).
+ * The cream panel turns down here into the page: a concave corner at the top.
+ */
+function ScrollGutter(): JSX.Element {
+  const activeId = useBrowserStore((s) => s.activeId)
+  const split = useBrowserStore((s) => s.splits.find((x) => activeId !== null && x.tabs.includes(activeId)))
+  const inset = split ? SPLIT_INSET : 0
+  return (
+    <div data-testid="page-gutter" className="relative mb-2 w-2.5 shrink-0 bg-frame">
+      <div aria-hidden className="concave-corner pointer-events-none absolute top-0 left-0 z-10 size-[14px]" />
+      <ScrollTrack tabId={split ? split.tabs[1] : activeId} testId="page-scroll" style={{ left: 0, right: 0, top: inset, bottom: inset }} />
+    </div>
   )
 }
 
@@ -113,8 +145,30 @@ function openEditor({ kind, id }: { kind: 'favorite' | 'folder'; id: string }): 
 }
 
 /**
- * One drag & drop context for the chrome UI: reorder tabs, reorder favorites and folders,
- * move favorites between folders, drop a tab into the sidebar to make it a favorite.
+ * The tab a dragged tab would join in a split view: the pointer is over the middle of a tab that
+ * isn't pinned nor already in a split view. Over its edges, the drag reorders as usual. While over
+ * the middle the strip stays still (TabStrip), so the target doesn't slide away from the pointer.
+ */
+function mergeCandidate({ active, over, delta, activatorEvent }: DragMoveEvent): number | null {
+  const from = parseDndId(active.id)
+  const to = over ? parseDndId(over.id) : null
+  if (!over || from.kind !== 'tab' || to?.kind !== 'tab' || !(activatorEvent instanceof PointerEvent)) return null
+  const { tabs, splits } = useBrowserStore.getState()
+  const dragged = tabs.find((t) => t.id === Number(from.id))
+  const target = tabs.find((t) => t.id === Number(to.id))
+  if (!dragged || !target || dragged.id === target.id || dragged.pinned || target.pinned) return null
+  if (splits.some((s) => s.tabs.includes(target.id))) return null
+  const x = activatorEvent.clientX + delta.x
+  const y = activatorEvent.clientY + delta.y
+  const r = over.rect
+  const across = (x - r.left) / r.width
+  return y >= r.top - 6 && y <= r.top + r.height + 6 && across > 0.2 && across < 0.8 ? target.id : null
+}
+
+/**
+ * One drag & drop context for the chrome UI: reorder tabs, hold a tab over another to show them
+ * side by side (split view), reorder favorites and folders, move favorites between folders, drop a
+ * tab into the sidebar to make it a favorite.
  */
 function DragAndDrop({ children }: { children: React.ReactNode }): JSX.Element {
   // A small distance keeps a plain click a click (activate, open) rather than a drag.
@@ -122,13 +176,27 @@ function DragAndDrop({ children }: { children: React.ReactNode }): JSX.Element {
   const [dragging, setDragging] = useState<{ kind: DndKind; id: string } | null>(null)
   const tabs = useBrowserStore((s) => s.tabs)
   const sidebar = useBrowserStore((s) => s.sidebar)
+  const mergeTarget = useBrowserStore((s) => s.mergeTarget)
+  const setMergeTarget = (id: number | null): void => {
+    if (useBrowserStore.getState().mergeTarget !== id) useBrowserStore.getState().setMergeTarget(id)
+  }
 
   const onDragStart = ({ active }: DragStartEvent): void => setDragging(parseDndId(active.id))
 
+  // Over the middle of another tab: the strip stops reordering and the target lights up; dropping
+  // then shows both tabs side by side.
+  const onDragMove = (event: DragMoveEvent): void => setMergeTarget(mergeCandidate(event))
+
   const onDragEnd = ({ active, over }: DragEndEvent): void => {
     setDragging(null)
-    if (!over || active.id === over.id) return
+    const merging = useBrowserStore.getState().mergeTarget
+    setMergeTarget(null)
     const from = parseDndId(active.id)
+    if (merging !== null && from.kind === 'tab') {
+      void api.invoke('tabs:split', merging, Number(from.id))
+      return
+    }
+    if (!over || active.id === over.id) return
     const to = parseDndId(over.id)
     const state = useBrowserStore.getState()
 
@@ -188,12 +256,16 @@ function DragAndDrop({ children }: { children: React.ReactNode }): JSX.Element {
       sensors={sensors}
       collisionDetection={collisionDetection}
       onDragStart={onDragStart}
+      onDragMove={onDragMove}
       onDragEnd={onDragEnd}
-      onDragCancel={() => setDragging(null)}
+      onDragCancel={() => {
+        setDragging(null)
+        setMergeTarget(null)
+      }}
     >
       {children}
       <DragOverlay dropAnimation={null}>
-        {ghostTab && <TabGhost tab={ghostTab} />}
+        {ghostTab && <TabGhost tab={ghostTab} merging={mergeTarget !== null} />}
         {ghostFavorite && (
           <div className="grid h-11 w-11 place-items-center rounded-[10px] bg-frame-3 shadow-[0_8px_24px_rgb(0_0_0/0.4)]">
             <TileIcon favorite={ghostFavorite} />
