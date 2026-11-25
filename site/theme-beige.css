@@ -1,0 +1,81 @@
+/* Warm beige edition. The product preview keeps Zak's original plum frame. */
+:root {
+  --bg: #f3ede3;
+  --surface: #faf6f0;
+  --text: #2a1a26;
+  --muted: #6f5b68;
+  --line: #2e1f2d20;
+  color-scheme: light;
+}
+.site-header { background: #f3ede3f2; }
+.main-nav a, .site-footer nav a { color: #6f5b68; }
+.main-nav a:hover, .site-footer nav a:hover { color: #2e1f2d; }
+.button-cream { background: #2e1f2d; color: #f3edea; }
+.button-cream:hover { background: #493148; }
+.button-secondary { background: #ffffff33; border-color: #2e1f2d2b; color: #493347; }
+.button-secondary:hover { background: #ffffff8c; border-color: #9b7fa3; }
+.menu-toggle { border-color: #2e1f2d26; }
+.menu-toggle span { background: #2e1f2d; }
+.hero-ambient { background: radial-gradient(ellipse 54% 44% at 50% 0%,#b690d012,transparent 100%),radial-gradient(ellipse 35% 22% at 70% 76%,#c67afb0d,transparent 100%); }
+.hero-ambient:after { background-image: linear-gradient(#6e467307 1px,transparent 1px),linear-gradient(90deg,#6e467307 1px,transparent 1px); }
+.eyebrow-pill { color: #7a488f; border-color: #aa80ba45; background: #f7f0f8; }
+.eyebrow-pill>span { color: #815392; border-color: #aa80ba45; }
+.hero h1>span { color: #8954a5; }
+.hero-description { color: #6f5b68; }
+.hero-note { color: #806b78; }
+.section-tag { color: #875699; }
+.demo-disclaimer { color: #806b78; }
+.scenario-controls { background: #ebe3df; border-color: #d9cdd5; }
+.scenario { color: #75616f; }
+.scenario:hover { color: #2e1f2d; background: #ffffff66; }
+.scenario.active { background: #ddd0e8; color: #62377b; }
+.demo-stage { border-color: #d9ccd5; background: #eae1dc80; }
+.claude-panel { background: #faf6f0; border-color: #d9cdd5; color: #2a1a26; }
+.claude-heading { border-color: #e0d3db; }
+.claude-star { color: #b87352; }
+.mcp-badge { color: #7a4d8e; border-color: #d5bfdc; background: #f2eaf5; }
+.message-label { color: #806b78; }
+.user-message { background: #efe7e2; border-color: #e4d8dd; color: #493347; }
+.connection-line { color: #8a649b; }
+.connection-line i { background: #c7aecf; }
+.response { color: #6f5b68; }
+.response-symbol { color: #9255b1; }
+.reset-demo { color: #806b78; }
+.demo-caption { color: #806b78; }
+.demo-caption>span:first-child { color: #80578d; }
+.muted-heading { color: #92738b; }
+.feature-icon { color: #9865b5; }
+.benefits p { color: #6f5b68; }
+.feature-detail { color: #80578d; border-color: #dcd0d6; }
+.mcp-section { background: #ebe3d9; border-block: 1px solid #ded3cf; }
+.prompt-card { background: #fcf8f2; border-color: #d7cad3; }
+.prompt-card:hover { background: #fffdfa; border-color: #a876be; }
+.prompt-icon { background: #e8dced; }
+.favorites-art { color: #f3ebf1; border-color: #2e1f2d; }
+.everyday-item>.icon { color: #9163a8; }
+.everyday-item p { color: #6f5b68; }
+.faq details, .faq details:first-child { border-color: #d8cdd0; }
+.faq summary .icon { color: #95749f; }
+.faq details>p { color: #6f5b68; }
+.faq details[open] summary { color: #805197; }
+.final-cta { background: #eadfe9; border-color: #d9c8d8; }
+.final-glow { background: radial-gradient(ellipse at 50% 0%,#d8b8e83d,transparent 68%); }
+.final-note { color: #7c647c; }
+.site-footer>p { color: #806b78; }
+@media(max-width:680px) {
+  .main-nav { background: #faf6f0; border-color: #d9cdd5; }
+  .claude-heading { border-color: #e0d3db; }
+}
+
+/* The other builds, under the main download button. */
+.hero-actions{flex-wrap:wrap}
+.other-builds{flex-basis:100%;margin:0;font-size:13px;color:#806b78}
+.other-builds a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.other-builds a:hover{color:#2e1f2d}
+
+/* Language menu, in the footer. */
+.language-select{position:relative;display:inline-flex;align-items:center;gap:6px;color:#6f5b68;font-size:14px}
+.language-select .icon{width:16px;height:16px}
+.language-select select{appearance:none;border:1px solid #2e1f2d26;border-radius:999px;background:transparent;color:inherit;font:inherit;padding:6px 12px;cursor:pointer}
+.language-select select:hover{border-color:#9b7fa3;color:#2e1f2d}
+.language-select select:focus-visible{outline:2px solid #c67afb;outline-offset:2px}

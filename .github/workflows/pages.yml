@@ -43,7 +43,7 @@ jobs:
           rsync -rlpz --delete -e "ssh -i ~/.ssh/deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes" build/ zakdeploy@72.61.104.113:/
       - name: Check
         run: |
-          for path in / /en/ /mods/ /mods/mods.json; do
+          for path in / /fr/ /es/ /de/ /it/ /pt/ /mods/ /fr/mods/ /mods/mods.json; do
             code=$(curl -s -o /dev/null -w '%{http_code}' "https://hellozak.com$path")
             echo "$path $code"; test "$code" = 200
           done
