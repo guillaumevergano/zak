@@ -108,6 +108,8 @@ export interface InvokeChannels {
   'passwords:answer': { args: [promptId: number, choice: SavePasswordChoice]; result: void }
   'downloads:getState': { args: []; result: DownloadInfo[] }
   'downloads:action': { args: [id: string, action: DownloadAction]; result: void }
+  /** « Tout afficher » in the panel: zak://downloads in a new tab. */
+  'downloads:openPage': { args: []; result: void }
   /** Toolbar zoom badge: back to 100 %. */
   'tabs:resetZoom': { args: [id: TabId]; result: void }
 }
@@ -115,6 +117,8 @@ export interface InvokeChannels {
 /** renderer → main, fire-and-forget (ipcRenderer.send / ipcMain.on). */
 export interface SendChannels {
   'layout:update': LayoutInsets
+  /** A completed download dragged out of the panel (webContents.startDrag needs the sender). */
+  'downloads:drag': string
 }
 
 /** main → renderer events (webContents.send / ipcRenderer.on). */
@@ -189,10 +193,11 @@ export const INVOKE_CHANNELS = [
   'passwords:answer',
   'downloads:getState',
   'downloads:action',
+  'downloads:openPage',
   'tabs:resetZoom'
 ] as const satisfies readonly InvokeChannel[]
 
-export const SEND_CHANNELS = ['layout:update'] as const satisfies readonly SendChannel[]
+export const SEND_CHANNELS = ['layout:update', 'downloads:drag'] as const satisfies readonly SendChannel[]
 export const EVENT_CHANNELS = [
   'tabs:state',
   'tabs:scroll',
@@ -312,6 +317,12 @@ export interface InternalApiRoutes {
   'history/search': { body: { query: string; before: number | null }; result: HistoryEntry[] }
   'history/remove': { body: { ids: number[] }; result: null }
   'history/clear': { body: { period: ClearPeriod }; result: null }
+  /** zak://downloads: newest first, `before` (start time) pages through older ones. */
+  'downloads/list': { body: { query: string; before: number | null }; result: DownloadInfo[] }
+  'downloads/action': { body: { id: string; action: DownloadAction }; result: null }
+  /** « Tout effacer »: forgets the finished downloads (the files stay). */
+  'downloads/clear': { body: null; result: null }
+  'downloads/openFolder': { body: null; result: null }
   /** New tab page: « Reprendre la navigation » available, and « Récemment ». */
   'newtab/state': { body: null; result: { canReopenSession: boolean; recent: HistoryEntry[] } }
   'newtab/reopenSession': { body: null; result: null }
@@ -377,6 +388,10 @@ export const INTERNAL_API_ROUTES = [
   'history/search',
   'history/remove',
   'history/clear',
+  'downloads/list',
+  'downloads/action',
+  'downloads/clear',
+  'downloads/openFolder',
   'newtab/state',
   'newtab/reopenSession',
   'newtab/suggest',
@@ -401,6 +416,7 @@ export const INTERNAL_PAGES = {
   extensions: 'extensions.html',
   settings: 'settings.html',
   history: 'history.html',
+  downloads: 'downloads.html',
   passwords: 'passwords.html',
   welcome: 'welcome.html',
   error: 'error.html'
@@ -410,6 +426,7 @@ export const NEWTAB_PAGE_URL = `${INTERNAL_SCHEME}://newtab/`
 export const EXTENSIONS_PAGE_URL = `${INTERNAL_SCHEME}://extensions/`
 export const SETTINGS_PAGE_URL = `${INTERNAL_SCHEME}://settings/`
 export const HISTORY_PAGE_URL = `${INTERNAL_SCHEME}://history/`
+export const DOWNLOADS_PAGE_URL = `${INTERNAL_SCHEME}://downloads/`
 export const PASSWORDS_PAGE_URL = `${INTERNAL_SCHEME}://passwords/`
 export const WELCOME_PAGE_URL = `${INTERNAL_SCHEME}://welcome/`
 export const ERROR_PAGE_URL = `${INTERNAL_SCHEME}://error/`

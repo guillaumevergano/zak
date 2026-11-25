@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { app, BrowserWindow, components, dialog, ipcMain, nativeTheme, shell, webContents, type IpcMainInvokeEvent } from 'electron'
-import { NEWTAB_PAGE_URL, SETTINGS_PAGE_URL, WELCOME_PAGE_URL, type InvokeChannel, type InvokeChannels, type SendChannel, type SendChannels } from '@shared/ipc'
+import { DOWNLOADS_PAGE_URL, NEWTAB_PAGE_URL, SETTINGS_PAGE_URL, WELCOME_PAGE_URL, type InvokeChannel, type InvokeChannels, type SendChannel, type SendChannels } from '@shared/ipc'
 import type { McpState, WidevineStatus } from '@shared/types'
 import { resolveLang, setLang, t, type LangSetting } from '@shared/i18n'
 import { chromeUserAgent, identitySettled } from './userAgent'
@@ -48,6 +48,7 @@ import { installShortcuts } from './shortcuts/Shortcuts'
 import { openDatabase } from './store/db'
 import { FavoritesStore } from './store/favorites'
 import { HistoryStore } from './store/history'
+import { DownloadsStore } from './store/downloads'
 import { SitesStore } from './store/sites'
 import { SessionStore } from './store/sessions'
 import { SessionRestore } from './sessions/SessionRestore'
@@ -202,13 +203,19 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
   handle('permission:answer', (_e, requestId, granted) => permissions.answer(requestId, granted))
   handle('passwords:answer', (_e, promptId, choice) => passwords.answer(promptId, choice))
   handle('downloads:getState', (e) => downloads.stateFor(windowOf(e).session))
-  handle('downloads:action', (_e, id, action) => downloads.act(id, action))
+  handle('downloads:action', (e, id, action) => downloads.act(id, action, windowOf(e).session))
+  handle('downloads:openPage', (e) => {
+    const handle = windowOf(e)
+    handle.overlay.close()
+    handle.tabs.create(DOWNLOADS_PAGE_URL)
+  })
   handle('tabs:resetZoom', (e, id) => {
     const wc = tabsOf(e).get(id)
     if (wc) zoom.change(wc, 0)
   })
 
   on('layout:update', (e, insets) => tabsOf(e).setInsets(insets))
+  on('downloads:drag', (e, id) => downloads.drag(e.sender, id))
 }
 
 app.whenReady().then(async () => {
@@ -306,9 +313,16 @@ app.whenReady().then(async () => {
   const zoom = new ZoomController(sites, windows)
   TabManager.siteZoom = (url) => zoom.siteZoom(url)
   const permissions = new PermissionsHandler(sites, windows)
-  const downloads = new DownloadsManager(windows, () => settings.getGeneral().downloadDir)
+  const downloads = new DownloadsManager(windows, {
+    store: new DownloadsStore(db),
+    defaultSession: browsingSession,
+    downloadDir: () => settings.getGeneral().downloadDir,
+    askWhereToSave: () => settings.getGeneral().askWhereToSave,
+    isDangerous: (url) => safeBrowsing.check(url) !== null,
+    allow: (url) => safeBrowsing.allow(url)
+  })
   permissions.attach(browsingSession, false)
-  downloads.attach(browsingSession)
+  downloads.attach(browsingSession, true)
   const passwordStore = new PasswordStore(db, keychainCipher)
   const passwords = new PasswordManager(passwordStore, windows, () => settings.getGeneral().savePasswords)
   registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords })
@@ -358,6 +372,23 @@ app.whenReady().then(async () => {
     const pages = withHistory ? history.importVisits(readChromiumHistory(profile)) : 0
     return { ...added, pages }
   }
+  /** zak://downloads routes, for the session the page belongs to (private windows: their own list). */
+  const downloadRoutes = (ses: Electron.Session) =>
+    ({
+      'downloads/list': ({ query, before }) => downloads.list(ses, query, before),
+      'downloads/action': ({ id, action }) => {
+        downloads.act(id, action, ses)
+        return null
+      },
+      'downloads/clear': () => {
+        downloads.clear(ses)
+        return null
+      },
+      'downloads/openFolder': async () => {
+        await shell.openPath(settings.getGeneral().downloadDir)
+        return null
+      }
+    }) satisfies Pick<InternalApiHandlers, 'downloads/list' | 'downloads/action' | 'downloads/clear' | 'downloads/openFolder'>
   const internalApi: InternalApiHandlers = {
     'extensions/list': () => extensions.list(),
     'extensions/setEnabled': async ({ id, enabled }) => {
@@ -497,8 +528,9 @@ app.whenReady().then(async () => {
       sites.removePermission(origin, permission)
       return sites.permissions()
     },
-    'settings/clearData': async ({ period, history: clearHistory, siteData, cache }) => {
+    'settings/clearData': async ({ period, history: clearHistory, siteData, cache, downloads: clearDownloads }) => {
       if (clearHistory) history.clear(period)
+      if (clearDownloads) downloads.clearHistory(period)
       // Electron can't clear site data or cache by time range: these are always cleared entirely.
       if (siteData) await browsingSession.clearStorageData()
       if (cache) await browsingSession.clearCache()
@@ -516,6 +548,7 @@ app.whenReady().then(async () => {
       history.clear(period)
       return null
     },
+    ...downloadRoutes(browsingSession),
     'newtab/state': () => ({ canReopenSession: session.canReopenPrevious(), recent: history.recentByHost(4) }),
     'newtab/suggest': ({ text }) => suggest(text, settings.getGeneral().searchEngine, favorites, history),
     'newtab/reopenSession': () => {
@@ -537,10 +570,11 @@ app.whenReady().then(async () => {
   await enableAdBlocker(browsingSession, guard)
   // Private windows (§6.3): internal pages and the built-in ad blocker, but no extensions.
   sessions.onPrivateSession = (ses) => {
-    handleInternalProtocol(ses, internalApi)
+    // zak://downloads of a private window lists that window's downloads only.
+    handleInternalProtocol(ses, { ...internalApi, ...downloadRoutes(ses) })
     void enableAdBlocker(ses, guard)
     permissions.attach(ses, true)
-    downloads.attach(ses)
+    downloads.attach(ses, false)
   }
 
   const restored = session.launchWindows(settings.getGeneral().startup)

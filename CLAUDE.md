@@ -189,7 +189,7 @@ Les fenêtres privées n'écrivent **rien** dans `history` ni `tab_sessions`.
 ### 6.7 Socle « comme Chrome » (obligatoire pour un usage quotidien)
 - **Omnibox** : URL ↔ recherche (moteur par défaut réglable : Google, DuckDuckGo, Brave…), suggestions depuis l'historique et les favoris, `Cmd/Ctrl+L` focus, affichage du cadenas/état HTTPS.
 - **Historique** : table `history`, panneau `Cmd/Ctrl+Y`, recherche, effacement par période.
-- **Téléchargements** : `session.on('will-download')`, panneau avec progression/pause/annuler/ouvrir le dossier, bouton toolbar avec badge.
+- **Téléchargements** : `session.on('will-download')`, panneau avec progression/pause/annuler/ouvrir le dossier/réessayer, bouton toolbar avec badge, fichier terminé à glisser vers le Finder ; progression sur l'icône du Dock / de la barre des tâches. Page `zak://downloads` (`Cmd+Shift+J` sur Mac, `Ctrl+J` ailleurs, « Tout afficher » du panneau) : historique gardé en SQLite (table `downloads`, rien pour les fenêtres privées, qui ne listent que les leurs), recherche, par jour, « Fichier supprimé » si le fichier a disparu, retirer de la liste / tout effacer sans toucher aux fichiers. Réglage « Demander où enregistrer chaque fichier ». Un téléchargement dont l'adresse (ou une redirection) figure sur les listes des sites dangereux est bloqué (« Télécharger quand même » possible).
 - **Recherche dans la page** : `Cmd/Ctrl+F` → `webContents.findInPage` avec compteur.
 - **Zoom** : `Cmd/Ctrl +/-/0`, mémorisé par domaine.
 - **Menu contextuel** : retour/avancer/recharger, ouvrir le lien dans un nouvel onglet / fenêtre privée, copier lien/image, enregistrer l'image, inspecter, + entrées des extensions (`chrome.contextMenus`, fourni par la lib).

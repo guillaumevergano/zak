@@ -49,7 +49,14 @@ const MIGRATIONS: string[] = [
    ALTER TABLE tab_sessions ADD COLUMN group_collapsed INTEGER;`,
   // 5 — split views (two tabs side by side) in the saved session.
   `ALTER TABLE tab_sessions ADD COLUMN split_id TEXT;
-   ALTER TABLE tab_sessions ADD COLUMN split_ratio REAL;`
+   ALTER TABLE tab_sessions ADD COLUMN split_ratio REAL;`,
+  // 6 — download history (zak://downloads). Private windows never write here.
+  `CREATE TABLE downloads (
+     id TEXT PRIMARY KEY, url TEXT NOT NULL, filename TEXT NOT NULL, path TEXT NOT NULL,
+     state TEXT NOT NULL, received_bytes INTEGER NOT NULL DEFAULT 0, total_bytes INTEGER NOT NULL DEFAULT 0,
+     started_at INTEGER NOT NULL, ended_at INTEGER
+   );
+   CREATE INDEX downloads_started_at ON downloads(started_at);`
 ]
 
 export function openDatabase(dir: string): Db {
