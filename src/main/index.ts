@@ -17,7 +17,7 @@ import { PasswordStore } from './passwords/PasswordStore'
 import { startCrashReporter } from './support/report'
 import { DEFAULT_PROFILE_ID, Profiles } from './profiles/Profiles'
 import { PasswordManager } from './passwords/PasswordManager'
-import { keychainCipher, passwordRoutes } from './passwords/routes'
+import { keychainCipher, keychainIsSafe, passwordRoutes } from './passwords/routes'
 import type { ImportSource } from '@shared/types'
 
 /** Where the AI agents keep their configuration (ZAK_AGENTS_HOME: a fake home for the e2e tests). */
@@ -336,7 +336,7 @@ app.whenReady().then(async () => {
   permissions.attach(browsingSession, false)
   downloads.attach(browsingSession, true)
   const passwordStore = new PasswordStore(db, keychainCipher)
-  const passwords = new PasswordManager(passwordStore, windows, () => settings.getGeneral().savePasswords)
+  const passwords = new PasswordManager(passwordStore, windows, () => settings.getGeneral().savePasswords && keychainIsSafe())
   registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords })
   const menuCommands = {
     find,

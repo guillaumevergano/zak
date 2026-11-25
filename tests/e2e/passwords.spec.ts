@@ -45,7 +45,28 @@ test('a login is offered for saving, then listed under the field and filled on c
   await expect(option).toHaveCount(1)
   // Closed shadow root: click where the first login is (under the field).
   const box = (await page.locator('input[type=email]').boundingBox())!
-  await page.mouse.click(box.x + 40, box.y + box.height + 4 + 34)
+  const clickLogin = (): Promise<void> => page.mouse.click(box.x + 40, box.y + box.height + 4 + 34)
+
+  // Clickjacking: a click the instant the list shows up, or on a list the page made invisible,
+  // fills nothing.
+  await clickLogin()
+  await expect(page.locator('input[type=password]')).toHaveValue('')
+  await page.keyboard.press('Escape')
+  await page.locator('input[type=password]').click()
+  await page.locator('input[type=email]').click()
+  await expect(option).toHaveCount(1)
+  await page.waitForTimeout(600)
+  await page.evaluate(() => document.querySelector<HTMLElement>('zak-passwords')!.style.setProperty('opacity', '0', 'important'))
+  await clickLogin()
+  await expect(page.locator('input[type=password]')).toHaveValue('')
+
+  // A click on the list as shown fills the form (focusing the field again shows a fresh list).
+  await page.keyboard.press('Escape')
+  await page.locator('input[type=password]').click()
+  await page.locator('input[type=email]').click()
+  await expect(option).toHaveCount(1)
+  await page.waitForTimeout(600)
+  await clickLogin()
   await expect(page.locator('input[type=email]')).toHaveValue('ana@site.test')
   await expect(page.locator('input[type=password]')).toHaveValue('s3cret!')
 

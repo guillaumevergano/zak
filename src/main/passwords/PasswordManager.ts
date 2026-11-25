@@ -142,7 +142,7 @@ export class PasswordManager {
       const password = this.store.password(login.id)
       if (password === null) return
       this.store.markUsed(login.id)
-      void wc.executeJavaScriptInIsolatedWorld(PASSWORDS_WORLD_ID, [{ code: fillScript(login.username, password) }]).catch(() => {})
+      void wc.executeJavaScriptInIsolatedWorld(PASSWORDS_WORLD_ID, [{ code: fillScript(login.origin, login.username, password) }]).catch(() => {})
     }
   }
 
