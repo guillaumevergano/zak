@@ -63,7 +63,9 @@ export function App(): JSX.Element {
     let last = ''
     const report = (): void => {
       const r = el.getBoundingClientRect()
-      // Rounded outwards: the page covers its slot to the last pixel (no light line on its edges).
+      // The frame around the page is laid out in whole pixels (margins in px, not rem: the UI's root
+      // font is 13 px), so the page lines up with the toolbar's edges. Rounded outwards for what's
+      // left (the bars' heights): the page covers its slot to the last pixel, no light line.
       const insets = {
         left: Math.floor(r.left),
         top: Math.floor(r.top),
@@ -104,7 +106,7 @@ export function App(): JSX.Element {
           <main
             aria-label={t('Page')}
             data-split={inSplit || undefined}
-            className={`page-slot no-drag relative mb-2 min-w-0 flex-1 overflow-hidden rounded-b-[14px] ${side === 'right' ? 'ml-2' : ''}`}
+            className={`page-slot no-drag relative mb-[7px] min-w-0 flex-1 overflow-hidden rounded-b-[14px] ${side === 'right' ? 'ml-[7px]' : ''}`}
           >
             <div ref={contentRef} className="h-full w-full" />
             <SplitFrame />
@@ -127,7 +129,7 @@ function ScrollGutter({ corner }: { corner: boolean }): JSX.Element {
   const split = useBrowserStore((s) => s.splits.find((x) => activeId !== null && x.tabs.includes(activeId)))
   const inset = split ? SPLIT_INSET : 0
   return (
-    <div data-testid="page-gutter" className="relative mb-2 w-2.5 shrink-0 bg-frame">
+    <div data-testid="page-gutter" className="relative mb-[7px] w-[8px] shrink-0 bg-frame">
       {corner && <div aria-hidden className="concave-corner pointer-events-none absolute top-0 left-0 z-10 size-[14px]" />}
       <ScrollTrack tabId={split ? split.tabs[1] : activeId} testId="page-scroll" style={{ left: 0, right: 0, top: inset, bottom: inset }} />
     </div>
@@ -137,7 +139,7 @@ function ScrollGutter({ corner }: { corner: boolean }): JSX.Element {
 /** Sidebar on the left: the frame between it and the page, where the cream panel turns down into the page. */
 function SidebarEdge(): JSX.Element {
   return (
-    <div className="relative mb-2 w-2.5 shrink-0 bg-frame">
+    <div className="relative mb-[7px] w-[8px] shrink-0 bg-frame">
       <div aria-hidden className="concave-corner-left pointer-events-none absolute top-0 right-0 z-10 size-[14px]" />
     </div>
   )
