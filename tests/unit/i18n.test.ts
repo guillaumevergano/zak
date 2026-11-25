@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { plural, resolveLang, setLang, t } from '../../src/shared/i18n'
+import { plural, resolveLang, setLang, t, TRANSLATIONS } from '../../src/shared/i18n'
 import { EN } from '../../src/shared/i18n.en'
 import { EN_MAIN } from '../../src/shared/i18n/en-main'
 import { EN_UI } from '../../src/shared/i18n/en-ui'
@@ -35,6 +35,13 @@ describe('i18n', () => {
     expect(missing).toEqual([])
   })
 
+  it('has every text in every language, and nothing else', () => {
+    for (const [lang, dict] of Object.entries(TRANSLATIONS)) {
+      expect(Object.keys(EN).filter((fr) => !(fr in dict)), `${lang}: missing`).toEqual([])
+      expect(Object.keys(dict).filter((fr) => !(fr in EN)), `${lang}: unknown (French text changed?)`).toEqual([])
+    }
+  })
+
   it('translates a French text the same way everywhere (use `texte@@sens` for two meanings)', () => {
     const parts = [EN_MAIN, EN_UI, EN_WELCOME]
     const clashes = parts.flatMap((a, i) =>
@@ -43,15 +50,19 @@ describe('i18n', () => {
     expect(clashes).toEqual([])
   })
 
-  it('keeps the placeholders in the English texts', () => {
+  it('keeps the placeholders in every language', () => {
     const names = (text: string): string[] => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]!).sort()
-    const broken = Object.entries(EN).filter(([fr, en]) => names(fr).join() !== names(en).join())
-    expect(broken).toEqual([])
+    for (const [lang, dict] of Object.entries(TRANSLATIONS)) {
+      const broken = Object.entries(dict).filter(([fr, text]) => names(fr).join() !== names(text).join())
+      expect(broken, lang).toEqual([])
+    }
   })
 
   it('picks the language and fills the placeholders', () => {
     expect(resolveLang('system', 'fr-CA')).toBe('fr')
-    expect(resolveLang('system', 'de-DE')).toBe('en')
+    expect(resolveLang('system', 'de-DE')).toBe('de')
+    expect(resolveLang('system', 'pt-BR')).toBe('pt')
+    expect(resolveLang('system', 'ja-JP')).toBe('en')
     expect(resolveLang('fr', 'en-US')).toBe('fr')
     setLang('fr')
     expect(t('{n} pages', { n: 3 })).toBe('3 pages')

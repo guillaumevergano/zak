@@ -41,7 +41,7 @@ codex "Add youtube.com and twitch.tv to the sites where Zak's picture-in-picture
 The settings are in ~/Library/Application Support/Zak/config.json (schema linked inside)."
 ```
 
-Changes apply right away, except the interface language (at the next launch).
+Changes apply right away, except the interface language (at the next launch; `system`, `en`, `fr`, `es`, `de`, `it` or `pt`).
 
 ## 2. Mods: a theme, a new tab page
 

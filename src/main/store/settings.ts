@@ -3,6 +3,7 @@ import Store from 'electron-store'
 import type { ExtensionBarSettings, GeneralSettings, PipSettings, SidebarLayout } from '@shared/types'
 import { DEFAULT_EXTENSION_BAR, normalizeExtensionBar } from '@shared/extensionBar'
 import { SEARCH_ENGINES } from '@shared/url'
+import { LANG_SETTINGS } from '@shared/languages'
 import { EMPTY_APPEARANCE, normalizeAppearance, patchAppearance, type Appearance, type AppearancePatch } from '@shared/appearance'
 import { DEFAULT_PIP_SETTINGS, normalizePipSettings } from '../pip/domains'
 
@@ -177,7 +178,7 @@ export function normalizeGeneral(raw: Partial<GeneralSettings>): GeneralSettings
   const pick = <T extends string>(value: unknown, allowed: readonly T[], fallback: T): T =>
     allowed.includes(value as T) ? (value as T) : fallback
   return {
-    language: pick(raw.language, ['system', 'fr', 'en'] as const, 'system'),
+    language: pick(raw.language, LANG_SETTINGS, 'system'),
     searchEngine: pick(raw.searchEngine, Object.keys(SEARCH_ENGINES) as (keyof typeof SEARCH_ENGINES)[], 'google'),
     startup: pick(raw.startup, ['restore', 'newtab'] as const, 'restore'),
     theme: pick(raw.theme, ['system', 'light', 'dark'] as const, 'light'),

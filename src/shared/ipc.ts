@@ -1,4 +1,5 @@
 import type { Appearance, AppearancePatch } from './appearance'
+import type { Lang } from './languages'
 import type {
   PageScroll,
   AgentId,
@@ -216,7 +217,7 @@ export const EVENT_CHANNELS = [
 /** Shape of `window.zak` exposed by src/preload/chrome.ts. */
 export interface ZakApi {
   /** Interface language (src/shared/i18n.ts). */
-  lang: 'fr' | 'en'
+  lang: Lang
   /** « 🏠 Perso » when there are several profiles (src/main/profiles/), else null. */
   profile: string | null
   invoke<C extends InvokeChannel>(

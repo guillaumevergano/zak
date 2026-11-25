@@ -6,6 +6,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { z } from 'zod'
 import type { GeneralSettings, SidebarSide, TabGroupColor, TabsPosition } from '@shared/types'
 import { COLOR_TOKENS, type AppearancePatch } from '@shared/appearance'
+import { LANG_SETTINGS } from '@shared/languages'
 
 /**
  * What the MCP tools can do with the running Zak (implemented in index.ts). Deliberately limited:
@@ -157,7 +158,7 @@ export class ZakMcpServer {
           'Changes general settings and the layout. Invalid values are ignored. The language applies at the next launch; ' +
           'sidebarSide (left or right of the page) and tabsPosition (top strip, or one per row in the sidebar) apply at once to every window.',
         inputSchema: {
-          language: z.enum(['system', 'fr', 'en']).optional(),
+          language: z.enum(LANG_SETTINGS).optional(),
           searchEngine: z.enum(['google', 'duckduckgo', 'brave', 'bing', 'qwant', 'ecosia']).optional(),
           startup: z.enum(['restore', 'newtab']).optional(),
           theme: z.enum(['system', 'light', 'dark']).optional(),

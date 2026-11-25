@@ -24,7 +24,7 @@ import { SEARCH_ENGINES, type SearchEngine } from '@shared/url'
 import { callInternal } from './api'
 import { SmallButton, Toggle } from './ui'
 import '../styles.css'
-import { plural, t } from '@shared/i18n'
+import { LANGUAGES, LANG_CODES, plural, t } from '@shared/i18n'
 
 /** zak://settings (CLAUDE.md §6.7). Every change is saved at once (no save button). */
 function SettingsPage(): JSX.Element {
@@ -113,8 +113,11 @@ function SettingsPage(): JSX.Element {
             className={selectClass}
           >
             <option value="system">{t('Langue du système')}</option>
-            <option value="fr">Français</option>
-            <option value="en">English</option>
+            {LANG_CODES.map((code) => (
+              <option key={code} value={code} lang={code}>
+                {LANGUAGES[code]}
+              </option>
+            ))}
           </select>
         </Row>
         <Row title={t('Au démarrage')}>

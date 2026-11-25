@@ -92,7 +92,7 @@ export function buildPageMenu(
     separator()
     const pageUrl = wc.getURL()
     if (/^https?:/.test(pageUrl)) {
-      add({ label: getLang() === 'fr' ? t('Traduire en français') : t('Traduire en anglais'), click: () => tabs.create(translateUrl(pageUrl, getLang()), { index: openerIndex }) })
+      add({ label: t('Traduire cette page'), click: () => tabs.create(translateUrl(pageUrl, getLang()), { index: openerIndex }) })
       add({ label: t('Imprimer…'), click: () => wc.print() })
       separator()
     }
