@@ -167,6 +167,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
   ) {
     super()
     window.on('resize', () => this.layout())
+    window.on('leave-full-screen', () => this.onWindowLeftFullScreen())
     const timer = setInterval(() => this.sleepIdleTabs(), 60_000)
     timer.unref()
     window.once('closed', () => clearInterval(timer))
@@ -729,6 +730,41 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     if (this.madeWindowFullScreen && !this.window.isDestroyed()) this.window.setFullScreen(false)
     this.madeWindowFullScreen = false
     this.layout()
+  }
+
+  /**
+   * The window is out of full screen (its animation is over). Two things Electron leaves to us for
+   * a page in a WebContentsView (it only handles the window's own page):
+   * - left by the window (green button, ⌃⌘F, the View menu): the page is still in full screen, so
+   *   it covers the whole window; it leaves it too.
+   * - left by the page (Esc, the video's button): the page heard « still full screen » while the
+   *   window was animating out, and nothing tells it otherwise afterwards (YouTube, X stay giant).
+   *   Giving it its size again does.
+   */
+  private onWindowLeftFullScreen(): void {
+    const id = this.fullScreenTab
+    const tab = id !== null ? this.tabs.get(id) : undefined
+    if (id !== null) {
+      this.madeWindowFullScreen = false
+      this.leaveFullScreen(id)
+      if (tab && !tab.wc.isDestroyed()) {
+        void tab.wc.executeJavaScript('document.fullscreenElement && document.exitFullscreen()', true).catch(() => {})
+      }
+    }
+    this.resyncPages()
+  }
+
+  /** The shown pages get their size again (1 px less, then right): Chromium tells them their state anew. */
+  private resyncPages(): void {
+    for (const id of this.shown) {
+      const tab = this.tabs.get(id)
+      if (!tab || tab.wc.isDestroyed()) continue
+      const bounds = tab.view.getBounds()
+      if (bounds.height > 1) tab.view.setBounds({ ...bounds, height: bounds.height - 1 })
+    }
+    setTimeout(() => {
+      if (!this.window.isDestroyed()) this.layout()
+    }, 50)
   }
 
   /** Tells the chrome UI that something it shows changed (zoom…). */
