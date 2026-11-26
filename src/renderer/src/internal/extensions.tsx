@@ -189,7 +189,7 @@ function ZakTools(): JSX.Element | null {
             <p className="m-0 text-[13px] text-sub">
               {t('Sélectionnez un texte puis clic droit : « Traduire en… ». Dans un champ où vous écrivez (un e-mail, un message), le texte sélectionné est remplacé par sa traduction (⌘Z pour revenir) ; ailleurs, la traduction s’affiche dans une bulle.')}
             </p>
-            <p className="m-0 text-[12px] text-sub/80">
+            <p className="m-0 text-[12px] text-sub">
               {t('Le texte n’est envoyé à Google Traduction qu’au moment où vous le demandez.')}
             </p>
             {translate.enabled && (
