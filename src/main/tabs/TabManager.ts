@@ -248,7 +248,14 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
       if (details.isMainFrame && details.url !== 'about:blank') navigatedElsewhere = details.url
     }
     wc.on('did-start-navigation', onStart)
-    tab.setup = trackIdentitySetup(wc.loadURL('about:blank').then(() => manageIdentity(wc)))
+    // about:blank is cut short when something else navigates first (typing in the omnibox at once):
+    // the identity still goes on, for that page.
+    tab.setup = trackIdentitySetup(
+      wc
+        .loadURL('about:blank')
+        .catch(() => undefined)
+        .then(() => manageIdentity(wc))
+    )
     void tab.setup
       .then(() => {
         if (wc.isDestroyed()) return undefined
