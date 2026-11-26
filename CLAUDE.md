@@ -133,7 +133,7 @@ Les fenêtres privées n'écrivent **rien** dans `history` ni `tab_sessions`.
 ## 6. Spécification fonctionnelle, feature par feature
 
 ### 6.1 Onglets (en haut, style Chrome)
-- Barre d'onglets en haut de la fenêtre, au-dessus de la toolbar. Chaque onglet : favicon, titre tronqué, indicateur audio (🔊 / cliquer = mute), bouton ✕ au survol.
+- Barre d'onglets en haut de la fenêtre, au-dessus de la toolbar. Chaque onglet : favicon, titre tronqué, indicateur audio (pastille 🔊 dans le coin supérieur gauche de l'onglet, sur son icône : elle ne bouge pas quand un onglet épinglé s'élargit ; cliquer = mute), bouton ✕ au survol.
 - Bouton « + » nouvel onglet (ouvre `zak://newtab`, la barre d'adresse garde le focus pour taper tout de suite, avec suggestions) ; bouton **« Tout fermer »** à gauche de la barre (icône balai, à la Arc) : ferme tous les onglets sauf l'onglet actif et les épinglés, sans confirmation (`Cmd/Ctrl+Shift+T` les rouvre).
 - Onglets épinglés (clic droit → Épingler) : réduits à l'icône, regroupés à gauche de la barre avant le balai ; au survol, l'onglet s'élargit et montre le titre du site.
 - Réorganisation par drag & drop ; glisser hors de la barre = nouvelle fenêtre (v2).
@@ -142,6 +142,7 @@ Les fenêtres privées n'écrivent **rien** dans `history` ni `tab_sessions`.
 - **Onglets dans la barre latérale** (réglage « Onglets : en haut / dans la barre latérale », `sidebar.tabs` du fichier de réglages, MCP `update_settings.tabsPosition`, `src/renderer/src/components/SidebarTabs.tsx`) : la barre d'onglets du haut devient une barre de titre fine (36 px : feux tricolores ou boutons de fenêtre, titre de la page, badge Privé / profil) et les onglets passent dans la barre latérale, sous les dossiers : « Onglets » avec le balai et « + », les épinglés en icônes, puis un onglet par ligne (l'actif sur crème), les groupes en ligne au-dessus de leurs onglets (liseré de couleur), une vue partagée en une ligne à deux moitiés. Mêmes glisser-déposer que la barre du haut (réordonner, tenir au milieu d'un onglet pour la vue partagée, déposer sur les favoris). Barre réduite : icônes seules.
 - Raccourcis : `Cmd/Ctrl+T` nouveau, `Cmd/Ctrl+W` fermer, `Cmd/Ctrl+Shift+T` rouvrir le dernier fermé (pile de 20), `Ctrl+Tab`/`Ctrl+Shift+Tab` suivant/précédent, `Cmd/Ctrl+1..9` aller à l'onglet n, `Cmd/Ctrl+Shift+W` tout fermer.
 - Implémentation : `TabManager` crée une `WebContentsView` par onglet dans la session de la fenêtre, l'ajoute à `win.contentView`, ne rend visible que l'active (`setVisible`). Les bounds sont recalculées à partir du layout envoyé par le renderer (`layout:update { sidebarWidth, topHeight }`).
+- `Cmd/Ctrl+clic` (ou clic molette) sur un lien : nouvel onglet en arrière-plan, on reste sur la page (la lib d'extensions, qui marque actif chaque onglet qu'on lui annonce, n'a pas le droit de l'afficher : `ExtensionsHost`).
 - `webContents.setWindowOpenHandler` → ouvre dans un nouvel onglet (jamais une BrowserWindow sauvage), sauf popups OAuth (features `popup` ou taille explicite) → petite fenêtre dédiée dans la même session.
 - Mise en veille des onglets inactifs (réglage Général : jamais par défaut, 15 min à 2 h) : la page est remplacée par about:blank, l'onglet garde titre et icône (estompé) et se recharge quand on y revient. Jamais un onglet qui joue du son, qui charge, ou dont la page refuse de partir (beforeunload).
 

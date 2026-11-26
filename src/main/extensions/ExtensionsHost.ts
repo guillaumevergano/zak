@@ -34,6 +34,9 @@ export class ExtensionsHost {
 
   async init(): Promise<void> {
     const { windows } = this
+    // The library marks every tab it is told about as the active one, and asks us to show it:
+    // a tab opened in the background (⌘-click) must stay there.
+    let adding: Electron.WebContents | null = null
 
     this.extensions = new ElectronChromeExtensions({
       session: this.browsingSession,
@@ -43,6 +46,7 @@ export class ExtensionsHost {
         return [wc, handle.window]
       },
       selectTab(tab) {
+        if (tab === adding) return
         windows.fromTab(tab)?.tabs.activate(tab.id)
       },
       removeTab(tab) {
@@ -60,7 +64,16 @@ export class ExtensionsHost {
     // Extensions only see tabs of the browsing session: private windows have their own (§6.3).
     const ours = (wc: Electron.WebContents): boolean => !wc.isDestroyed() && wc.session === this.browsingSession
     windows.on('tab-created', (wc, window) => {
-      if (ours(wc)) this.extensions?.addTab(wc, window)
+      if (!ours(wc)) return
+      adding = wc
+      try {
+        this.extensions?.addTab(wc, window)
+      } finally {
+        adding = null
+      }
+      // Extensions are told which tab really is active (the new one only if it was opened in front).
+      const active = windows.fromTab(wc)?.tabs.getActive()
+      if (active && active !== wc && ours(active)) this.extensions?.selectTab(active)
     })
     windows.on('tab-selected', (wc) => {
       if (ours(wc)) this.extensions?.selectTab(wc)
