@@ -233,6 +233,23 @@ export interface PipSettings {
   autoplayed: boolean
   /** Sites where PiP never triggers (a domain covers its subdomains). */
   excludedDomains: string[]
+  /**
+   * Which floating player: Zak's own (a rounded window with Zak's buttons, the tab moved into it)
+   * or Chromium's native Picture-in-Picture.
+   */
+  style: PipStyle
+}
+
+export type PipStyle = 'zak' | 'system'
+
+/** Buttons of Zak's floating player. */
+export type MiniPlayerAction = 'toggle' | 'back' | 'close'
+
+/** What Zak's floating player shows on its buttons. */
+export interface MiniPlayerState {
+  playing: boolean
+  /** The tab's title (the « back » button's tooltip). */
+  title: string
 }
 
 /** General preferences (CLAUDE.md §6.7), set on zak://settings. */

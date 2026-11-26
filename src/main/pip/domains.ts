@@ -34,7 +34,8 @@ export const DEFAULT_PIP_SETTINGS: PipSettings = {
   closeOnReturn: true,
   skipMuted: false,
   autoplayed: false,
-  excludedDomains: []
+  excludedDomains: [],
+  style: 'zak'
 }
 
 /** Cleans what the settings page sends: known keys only, valid unique sorted domains. */
@@ -47,6 +48,7 @@ export function normalizePipSettings(input: Partial<PipSettings>): PipSettings {
     closeOnReturn: input.closeOnReturn ?? DEFAULT_PIP_SETTINGS.closeOnReturn,
     skipMuted: input.skipMuted ?? DEFAULT_PIP_SETTINGS.skipMuted,
     autoplayed: input.autoplayed ?? DEFAULT_PIP_SETTINGS.autoplayed,
-    excludedDomains: [...new Set(domains)].sort()
+    excludedDomains: [...new Set(domains)].sort(),
+    style: input.style === 'system' ? 'system' : 'zak'
   }
 }

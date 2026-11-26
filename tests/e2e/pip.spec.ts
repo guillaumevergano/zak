@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { mkdtempSync } from 'node:fs'
+import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
@@ -39,6 +39,8 @@ test.beforeAll(async () => {
   videoUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}/video`
 
   const profile = mkdtempSync(join(tmpdir(), 'zak-e2e-pip-'))
+  // Chromium's own Picture-in-Picture here; Zak's floating player has miniplayer.spec.ts.
+  writeFileSync(join(profile, 'config.json'), JSON.stringify({ pip: { style: 'system' } }))
   app = await electron.launch({
     executablePath: electronPath,
     args: [root],

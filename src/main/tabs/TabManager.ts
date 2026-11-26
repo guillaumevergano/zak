@@ -127,6 +127,10 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
   private lastStripId: TabId | null = null
   /** Tabs whose page is on screen: the active one, and its partner in a split view. */
   private shown = new Set<TabId>()
+  /** Tabs whose view is lent to Zak's floating player (pip/MiniPlayer.ts): out of this window. */
+  private lent = new Set<TabId>()
+  /** A lent tab comes back (shown again, or the player closed): the borrower lets go of its view first. */
+  onReclaim: ((id: TabId) => void) | null = null
   /** Tabs zoomed out for their split view (isolated zoom, see syncSplitZoom). */
   private readonly splitZoomed = new Set<TabId>()
   private insets: LayoutInsets = { left: 0, top: 0, right: 0, bottom: 0 }
@@ -184,7 +188,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     if (minutes === null) return
     for (const tab of this.tabs.values()) {
       const wc = tab.wc
-      if (this.shown.has(tab.id) || tab.asleep || wc.isDestroyed()) continue
+      if (this.shown.has(tab.id) || this.lent.has(tab.id) || tab.asleep || wc.isDestroyed()) continue
       if (now - tab.lastActive < minutes * 60_000) continue
       if (wc.isCurrentlyAudible() || wc.isLoading() || !/^https?:/.test(wc.getURL())) continue
       this.sleep(tab)
@@ -319,6 +323,8 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     const partnerId = active ? partnerOf(this.splits, active.id) : null
     const partner = partnerId !== null ? this.tabs.get(partnerId) : undefined
     const now = [partner, active].filter((tab): tab is Tab => tab !== undefined)
+    // Coming back to a tab shown in the floating player: its page comes back here.
+    for (const tab of now) if (this.lent.has(tab.id)) this.reclaim(tab.id, false)
     this.shown = new Set(now.map((tab) => tab.id))
     for (const tab of now) {
       tab.lastActive = Date.now()
@@ -357,7 +363,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
       await Promise.race([this.beforeHide(tab.wc).catch(() => {}), delay(HIDE_DELAY_MS)])
     }
     // The user may have switched back meanwhile, or the tab may be gone.
-    if (!this.shown.has(tab.id) && this.tabs.has(tab.id)) tab.view.setVisible(false)
+    if (!this.shown.has(tab.id) && this.tabs.has(tab.id) && !this.lent.has(tab.id)) tab.view.setVisible(false)
   }
 
   close(id: TabId): void {
@@ -850,6 +856,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
   }
 
   private dispose(tab: Tab): void {
+    this.lent.delete(tab.id)
     this.emit('removed', tab.wc)
     if (!this.window.isDestroyed()) this.window.contentView.removeChildView(tab.view)
     // Closing a page while a CDP command of its setup is in flight leaves the main process
@@ -902,9 +909,36 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     }
   }
 
+  /**
+   * Lends a tab's view to Zak's floating player, which puts it in its own window. Not the page in
+   * HTML full screen. Null when it can't be lent.
+   */
+  lend(id: TabId): WebContentsView | null {
+    const tab = this.tabs.get(id)
+    if (!tab || this.lent.has(id) || this.fullScreenTab === id || tab.wc.isDestroyed()) return null
+    this.lent.add(id)
+    if (!this.window.isDestroyed()) this.window.contentView.removeChildView(tab.view)
+    return tab.view
+  }
+
+  isLent(id: TabId): boolean {
+    return this.lent.has(id)
+  }
+
+  /** Takes a lent view back (the player closed, or the tab is shown): back in this window, in its place. */
+  reclaim(id: TabId, lay = true): void {
+    if (!this.lent.delete(id)) return
+    const tab = this.tabs.get(id)
+    this.onReclaim?.(id)
+    if (!tab || this.window.isDestroyed() || tab.wc.isDestroyed()) return
+    tab.view.setVisible(this.shown.has(id))
+    this.window.contentView.addChildView(tab.view)
+    if (lay) this.layout()
+  }
+
   private layout(): void {
     const active = this.activeId !== null ? this.tabs.get(this.activeId) : undefined
-    if (!active) return
+    if (!active || this.lent.has(active.id)) return
     const { width, height } = this.window.getContentBounds()
     if (this.fullScreenTab === active.id) {
       active.view.setBounds({ x: 0, y: 0, width, height })
@@ -918,6 +952,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
       ? split.tabs.map((id, i): [Tab | undefined, Rect] => [this.tabs.get(id), splitRects(area, split.ratio)[i]!])
       : [[active, area]]
     for (const [tab, rect] of places) {
+      if (tab && this.lent.has(tab.id)) continue
       tab?.view.setBorderRadius(PAGE_RADIUS)
       tab?.view.setBounds(rect)
     }

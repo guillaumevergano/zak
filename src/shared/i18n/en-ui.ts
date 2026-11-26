@@ -569,5 +569,10 @@ export const EN_UI: Record<string, string> = {
   'Suivant': 'Next',
   'Volume': 'Volume',
   'En cours de lecture': 'Now playing',
-  'Afficher l’onglet': 'Show the tab'
+  'Afficher l’onglet': 'Show the tab',
+  'Revenir à l’onglet « {title} »': 'Back to the tab “{title}”',
+  'Revenir à l’onglet': 'Back to the tab',
+  'Fermer le lecteur': 'Close the player',
+  'Celui de Zak : coins arrondis, ses boutons (lecture, revenir à l’onglet, fermer), et on le déplace à la souris. Celui du système : le lecteur Picture-in-Picture de Chromium.': 'Zak’s: rounded corners, its own buttons (play, back to the tab, close), and you move it with the mouse. The system’s: Chromium’s Picture-in-Picture player.',
+  'Celui du système': 'The system’s'
 }

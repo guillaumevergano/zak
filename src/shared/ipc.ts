@@ -3,6 +3,8 @@ import type { Lang } from './languages'
 import type { ScreenshotMode, ScreenshotSettings, ToolsSettings, TranslateSettings } from './tools'
 import type { MediaAction, MediaState } from './media'
 import type {
+  MiniPlayerAction,
+  MiniPlayerState,
   PageScroll,
   Rect,
   NewtabHeadline,
@@ -138,6 +140,11 @@ export interface InvokeChannels {
   'media:action': { args: [action: MediaAction]; result: void }
   /** The player's volume, 0–1. */
   'media:setVolume': { args: [volume: number]; result: void }
+  /** Zak's floating player (its controls view only): what its buttons show. */
+  'miniplayer:state': { args: []; result: MiniPlayerState | null }
+  'miniplayer:action': { args: [action: MiniPlayerAction]; result: void }
+  /** Its window's position, as a drag starts. */
+  'miniplayer:position': { args: []; result: [number, number] | null }
 }
 
 /** renderer → main, fire-and-forget (ipcRenderer.send / ipcMain.on). */
@@ -147,6 +154,8 @@ export interface SendChannels {
   'downloads:drag': string
   /** The last screenshot's thumbnail dragged out (to a message, the Finder…). */
   'tools:screenshotDrag': null
+  /** Zak's floating player dragged by its controls: its window's new position. */
+  'miniplayer:move': { x: number; y: number }
 }
 
 /** main → renderer events (webContents.send / ipcRenderer.on). */
@@ -232,10 +241,13 @@ export const INVOKE_CHANNELS = [
   'tabs:resetZoom',
   'media:getState',
   'media:action',
-  'media:setVolume'
+  'media:setVolume',
+  'miniplayer:state',
+  'miniplayer:action',
+  'miniplayer:position'
 ] as const satisfies readonly InvokeChannel[]
 
-export const SEND_CHANNELS = ['layout:update', 'downloads:drag', 'tools:screenshotDrag'] as const satisfies readonly SendChannel[]
+export const SEND_CHANNELS = ['layout:update', 'downloads:drag', 'tools:screenshotDrag', 'miniplayer:move'] as const satisfies readonly SendChannel[]
 export const EVENT_CHANNELS = [
   'tabs:state',
   'tabs:scroll',
