@@ -39,8 +39,9 @@ test('a screenshot of a region, the visible page or the whole page is copied and
     await clickMenu(app, 'Capture d’écran…')
     await overlayOf(app).getByRole('button', { name: 'Page entière' }).click()
     await expect.poll(shots).toHaveLength(1)
-    expect(shots()[0]).toMatch(/^Capture \d{4}-\d\d-\d\d \d\d\.\d\d\.\d\d\.png$/)
-    const full = pngSize(join(downloads, shots()[0]!))
+    const first = shots()[0]!
+    expect(first).toMatch(/^Capture \d{4}-\d\d-\d\d \d\d\.\d\d\.\d\d\.png$/)
+    const full = pngSize(join(downloads, first))
     expect(full.height / viewport.ratio).toBeGreaterThanOrEqual(3000)
     await expect(overlayOf(app).getByTestId('screenshot-toast')).toContainText('Capture copiée')
     expect(await app.evaluate(({ clipboard }) => clipboard.has('image/png'))).toBe(true)
@@ -62,7 +63,8 @@ test('a screenshot of a region, the visible page or the whole page is copied and
     await picker.mouse.move(240, 170, { steps: 4 })
     await picker.mouse.up()
     await expect.poll(shots).toHaveLength(2)
-    const region = pngSize(join(downloads, shots().find((f) => f !== shots()[0]) ?? shots()[1]!))
+    // The new file (taken in the same second, « … (1).png » sorts before the first one).
+    const region = pngSize(join(downloads, shots().find((f) => f !== first)!))
     expect(Math.round(region.width / viewport.ratio)).toBe(200)
     expect(Math.round(region.height / viewport.ratio)).toBe(50)
 
