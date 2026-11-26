@@ -251,6 +251,20 @@ function SettingsPage(): JSX.Element {
         <Row title={t('Passer automatiquement en lecteur flottant')} detail={t("Au changement d'onglet ou quand la fenêtre est réduite.")}>
           <Toggle label={t('Lecteur flottant automatique')} on={pip.enabled} onChange={(enabled) => savePip({ ...pip, enabled })} />
         </Row>
+        <Row
+          title={t('Lecteur flottant')}
+          detail={t('Celui de Zak : coins arrondis, ses boutons (lecture, revenir à l’onglet, fermer), et on le déplace à la souris. Celui du système : le lecteur Picture-in-Picture de Chromium.')}
+        >
+          <select
+            aria-label={t('Lecteur flottant')}
+            value={pip.style}
+            onChange={(e) => savePip({ ...pip, style: e.target.value === 'system' ? 'system' : 'zak' })}
+            className={selectClass}
+          >
+            <option value="zak">{t('Celui de Zak')}</option>
+            <option value="system">{t('Celui du système')}</option>
+          </select>
+        </Row>
         <Row title={t("Fermer le lecteur flottant au retour sur l'onglet")}>
           <Toggle label={t('Fermer au retour')} on={pip.closeOnReturn} onChange={(closeOnReturn) => savePip({ ...pip, closeOnReturn })} />
         </Row>

@@ -23,6 +23,11 @@ describe('PiP excluded domains', () => {
   it('cleans settings sent by the page', () => {
     expect(
       normalizePipSettings({ enabled: false, excludedDomains: ['www.b.com', 'a.com', 'https://a.com/x', '???'] })
-    ).toEqual({ enabled: false, closeOnReturn: true, skipMuted: false, autoplayed: false, excludedDomains: ['a.com', 'b.com'] })
+    ).toEqual({ enabled: false, closeOnReturn: true, skipMuted: false, autoplayed: false, excludedDomains: ['a.com', 'b.com'], style: 'zak' })
+  })
+
+  it('uses Zak’s floating player unless the system one is chosen', () => {
+    expect(normalizePipSettings({ style: 'system' }).style).toBe('system')
+    expect(normalizePipSettings({ style: 'other' as never }).style).toBe('zak')
   })
 })

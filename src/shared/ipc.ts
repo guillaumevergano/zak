@@ -1,5 +1,7 @@
 import type { Appearance, AppearancePatch } from './appearance'
 import type {
+  MiniPlayerAction,
+  MiniPlayerState,
   PageScroll,
   AgentId,
   AgentStatus,
@@ -114,6 +116,11 @@ export interface InvokeChannels {
   'downloads:openPage': { args: []; result: void }
   /** Toolbar zoom badge: back to 100 %. */
   'tabs:resetZoom': { args: [id: TabId]; result: void }
+  /** Zak's floating player (its controls view only): what its buttons show. */
+  'miniplayer:state': { args: []; result: MiniPlayerState | null }
+  'miniplayer:action': { args: [action: MiniPlayerAction]; result: void }
+  /** Its window's position, as a drag starts. */
+  'miniplayer:position': { args: []; result: [number, number] | null }
 }
 
 /** renderer → main, fire-and-forget (ipcRenderer.send / ipcMain.on). */
@@ -121,6 +128,8 @@ export interface SendChannels {
   'layout:update': LayoutInsets
   /** A completed download dragged out of the panel (webContents.startDrag needs the sender). */
   'downloads:drag': string
+  /** Zak's floating player dragged by its controls: its window's new position. */
+  'miniplayer:move': { x: number; y: number }
 }
 
 /** main → renderer events (webContents.send / ipcRenderer.on). */
@@ -196,10 +205,13 @@ export const INVOKE_CHANNELS = [
   'downloads:getState',
   'downloads:action',
   'downloads:openPage',
-  'tabs:resetZoom'
+  'tabs:resetZoom',
+  'miniplayer:state',
+  'miniplayer:action',
+  'miniplayer:position'
 ] as const satisfies readonly InvokeChannel[]
 
-export const SEND_CHANNELS = ['layout:update', 'downloads:drag'] as const satisfies readonly SendChannel[]
+export const SEND_CHANNELS = ['layout:update', 'downloads:drag', 'miniplayer:move'] as const satisfies readonly SendChannel[]
 export const EVENT_CHANNELS = [
   'tabs:state',
   'tabs:scroll',

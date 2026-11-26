@@ -10,6 +10,7 @@ import { SessionManager } from './sessions/SessionManager'
 import { WindowManager } from './windows/WindowManager'
 import { ExtensionsHost } from './extensions/ExtensionsHost'
 import { PipController } from './pip/PipController'
+import { MiniPlayer } from './pip/MiniPlayer'
 import { enableAdBlocker } from './adblock/AdBlocker'
 import { SafeBrowsing, leaveDangerousPage } from './safety/SafeBrowsing'
 import { detectBrowsers, readChromiumBookmarks, readChromiumHistory } from './import/chromium'
@@ -140,9 +141,10 @@ interface Services {
   permissions: PermissionsHandler
   downloads: DownloadsManager
   passwords: PasswordManager
+  miniPlayer: MiniPlayer
 }
 
-function registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords }: Services): void {
+function registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords, miniPlayer }: Services): void {
   const windowOf = (event: IpcMainInvokeEvent | Electron.IpcMainEvent) => {
     const handle = windows.fromWebContents(event.sender)
     if (!handle) throw new Error('IPC from unknown window')
@@ -219,6 +221,10 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
 
   on('layout:update', (e, insets) => tabsOf(e).setInsets(insets))
   on('downloads:drag', (e, id) => downloads.drag(e.sender, id))
+  on('miniplayer:move', (e, { x, y }) => miniPlayer.moveTo(e.sender, x, y))
+  handle('miniplayer:state', (e) => miniPlayer.state(e.sender))
+  handle('miniplayer:action', (e, action) => miniPlayer.act(e.sender, action))
+  handle('miniplayer:position', (e) => miniPlayer.position(e.sender))
 }
 
 app.whenReady().then(async () => {
@@ -239,7 +245,10 @@ app.whenReady().then(async () => {
   // Not awaited: the cached lists load in a moment, the first download must not delay the window.
   const safeBrowsing = new SafeBrowsing(() => settings.getGeneral().safeBrowsing)
   void safeBrowsing.start()
-  const windows = new WindowManager(sessions, new PipController(() => settings.getPip()))
+  const pip = new PipController(() => settings.getPip())
+  const windows = new WindowManager(sessions, pip)
+  const miniPlayer = new MiniPlayer(windows)
+  pip.miniPlayer = miniPlayer
   const db = openDatabase(app.getPath('userData'))
   const favorites = new FavoritesStore(db)
   const history = new HistoryStore(db)
@@ -337,7 +346,7 @@ app.whenReady().then(async () => {
   downloads.attach(browsingSession, true)
   const passwordStore = new PasswordStore(db, keychainCipher)
   const passwords = new PasswordManager(passwordStore, windows, () => settings.getGeneral().savePasswords)
-  registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords })
+  registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords, miniPlayer })
   const menuCommands = {
     find,
     zoom,
