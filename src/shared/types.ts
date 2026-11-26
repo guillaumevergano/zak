@@ -184,6 +184,8 @@ export type FramedOverlayRequest =
   | { kind: 'find'; frame: Rect; tabId: TabId; text: string }
   | { kind: 'permission'; frame: Rect; requestId: number; origin: string; permission: PermissionKind }
   | { kind: 'save-password'; frame: Rect; promptId: number; origin: string; username: string; update: boolean }
+  /** A selection's translation (CLAUDE.md §6.8), under it; `error`: the translation of an edited text failed. */
+  | { kind: 'translation'; frame: Rect; tabId: TabId; text: string; target: string; error?: boolean }
 
 /** A row of the omnibox dropdown (CLAUDE.md §6.7). */
 export interface OmniboxSuggestion {

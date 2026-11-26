@@ -41,6 +41,9 @@ turn this protection off in Settings → Security.
   (Google by default), like in any browser. Suggestions come from your own history and favorites.
 - **Translate a page** (right-click → Translate) opens the page through Google Translate, which
   then receives its address.
+- **Translate a selection** (right-click on selected text → Translate into…) sends that text, and
+  nothing else (no cookies), to Google Translate. You can turn translation off under Zak tools on
+  the Extensions page.
 
 ## AI agents (MCP)
 

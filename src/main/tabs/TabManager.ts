@@ -737,6 +737,12 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
   }
 
   /** Where the page sits in the window (the chrome UI around it). */
+  /** Where a tab's page sits in the window (content coordinates), null if it isn't shown. */
+  pageBounds(id: TabId): Rect | null {
+    const tab = this.tabs.get(id)
+    return tab && this.shown.has(id) ? tab.view.getBounds() : null
+  }
+
   getInsets(): LayoutInsets {
     return this.insets
   }

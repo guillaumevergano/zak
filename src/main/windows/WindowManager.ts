@@ -12,6 +12,7 @@ import type { SessionManager } from '../sessions/SessionManager'
 import { buildPageMenu, buildGroupMenu, buildTabMenu } from '../menu/ContextMenu'
 import { present, quiet } from './quietMode'
 import { Overlay } from './Overlay'
+import type { TranslateTool } from '../tools/TranslateTool'
 
 export interface BrowserWindowHandle {
   window: BrowserWindow
@@ -54,6 +55,9 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
 
   /** Page context menu → "Ajouter aux favoris de la sidebar" (set by the sidebar controller). */
   addLinkToFavorites: ((url: string, title: string) => void) | null = null
+
+  /** Zak's own tools in the page menu (CLAUDE.md §6.8), set at startup. */
+  translateTool: TranslateTool | null = null
 
   constructor(
     private readonly sessions: SessionManager,
@@ -99,7 +103,10 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
     const overlay = new Overlay(window, () => (tabs.getActive() ?? window.webContents).focus())
     const handle: BrowserWindowHandle = { window, tabs, overlay, private: isPrivate, session: browsingSession }
     this.handles.set(window.id, handle)
-    overlay.onHidden = (request) => this.emit('overlay-hidden', handle, request)
+    overlay.onHidden = (request) => {
+      if (request.kind === 'translation') this.translateTool?.closeBubble(handle)
+      this.emit('overlay-hidden', handle, request)
+    }
     window.webContents.once('did-finish-load', () => overlay.preload())
 
     const push = (): void => {
@@ -135,7 +142,9 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
       buildPageMenu(tabs, wc, params, {
         addExtensionItems: (menu) => this.emit('tab-context-menu', wc, params, menu),
         addLinkToFavorites: this.addLinkToFavorites,
-        openInPrivateWindow: isPrivate ? null : (url) => this.create([url], { private: true })
+        openInPrivateWindow: isPrivate ? null : (url) => this.create([url], { private: true }),
+        toolItems: this.translateTool?.menuItems(handle, wc, params) ?? [],
+        translatePage: this.translateTool?.enabled() ?? false
       }).popup({ window })
     })
 
