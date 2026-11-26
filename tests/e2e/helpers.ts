@@ -17,10 +17,12 @@ export async function launch(
   colorScheme: 'light' | null = 'light'
 ): Promise<{ app: ElectronApplication; chrome: Page; profile: string }> {
   const dir = profile ?? mkdtempSync(join(tmpdir(), `zak-e2e-${name}-`))
+  // Profiles of their own: never the list of the Zak installed on this computer.
+  const profiles = join(dir, 'Zak Profiles')
   const app = await electron.launch({
     executablePath: electronPath,
     args: [root],
-    env: { ...process.env, ZAK_USER_DATA: dir, ZAK_E2E: '1', ZAK_LANG: 'fr', ...env },
+    env: { ...process.env, ZAK_USER_DATA: dir, ZAK_PROFILES_DIR: profiles, ZAK_E2E: '1', ZAK_LANG: 'fr', ...env },
     colorScheme
   })
   try {

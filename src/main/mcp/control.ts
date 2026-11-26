@@ -7,6 +7,7 @@ import type { SettingsStore } from '../store/settings'
 import type { SidebarController } from '../sidebar/SidebarController'
 import type { ModsManager } from '../mods/ModsManager'
 import type { BrowserWindowHandle, WindowManager } from '../windows/WindowManager'
+import { present } from '../windows/quietMode'
 import type { McpSettings, ZakControl } from './ZakMcpServer'
 
 /** The MCP tools' view of the running Zak (see ZakControl for what is, and isn't, reachable). */
@@ -55,8 +56,7 @@ export function zakControl(deps: {
       const handle = windowOf(id)
       if (!handle) return false
       handle.tabs.activate(id)
-      handle.window.show()
-      handle.window.focus()
+      present(handle.window, true)
       return true
     },
     groupTabs: (ids, name, color) => {

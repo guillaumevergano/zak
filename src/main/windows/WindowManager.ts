@@ -10,6 +10,7 @@ import { TabManager } from '../tabs/TabManager'
 import type { PipController } from '../pip/PipController'
 import type { SessionManager } from '../sessions/SessionManager'
 import { buildPageMenu, buildGroupMenu, buildTabMenu } from '../menu/ContextMenu'
+import { present, quiet } from './quietMode'
 import { Overlay } from './Overlay'
 
 export interface BrowserWindowHandle {
@@ -144,7 +145,7 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
       this.handles.delete(window.id)
       if (isPrivate) void this.sessions.destroyPrivate(browsingSession)
     })
-    window.once('ready-to-show', () => window.show())
+    window.once('ready-to-show', () => present(window))
 
     // The chrome UI reads `?private=1` to switch to the dark private theme and badge.
     const devUrl = process.env['ELECTRON_RENDERER_URL']
@@ -225,7 +226,9 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
   /** The focused browser window, if any (popups and DevTools are not browser windows). */
   focused(): BrowserWindowHandle | undefined {
     const focused = BrowserWindow.getFocusedWindow()
-    return focused ? this.handles.get(focused.id) : undefined
+    if (focused) return this.handles.get(focused.id)
+    // Quiet e2e runs (quietMode.ts): no window ever gets the focus; the last one opened stands for it.
+    return quiet ? [...this.handles.values()].pop() : undefined
   }
 
   focusedOrFirst(): BrowserWindowHandle {
@@ -257,8 +260,7 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
     }
     for (const url of urls) target.tabs.create(url)
     if (target.window.isMinimized()) target.window.restore()
-    target.window.show()
-    target.window.focus()
+    present(target.window, true)
   }
 
   /** Tabs of normal windows only (extensions never see private tabs). */

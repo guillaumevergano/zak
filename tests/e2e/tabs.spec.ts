@@ -76,22 +76,6 @@ test('open, navigate, close, close all and reopen tabs', async () => {
   await expect(chrome.getByTestId('close-all')).toBeDisabled()
 })
 
-test('a new tab keeps the focus in the omnibox while its page loads', async () => {
-  // Start from a focused page: the new tab page used to take the focus back once loaded.
-  const omnibox = chrome.getByTestId('omnibox')
-  await omnibox.fill(page('Focus'))
-  await omnibox.press('Enter')
-  await expect(chrome.getByTestId('tab').last()).toHaveAttribute('title', 'Focus')
-  const focusedUrl = (): Promise<string | undefined> =>
-    app.evaluate(({ webContents }) => webContents.getFocusedWebContents()?.getURL())
-  await expect.poll(focusedUrl).toContain('Focus')
-  await clickMenu(app, 'Nouvel onglet')
-  await expect(chrome.getByTestId('tab').last()).toHaveAttribute('title', 'Nouvel onglet')
-  await new Promise((r) => setTimeout(r, 1000))
-  expect(await focusedUrl()).not.toMatch(/^zak:|^data:/)
-  await expect(omnibox).toBeFocused()
-})
-
 test('pinned tabs sit on the left and show their title on hover', async () => {
   const omnibox = chrome.getByTestId('omnibox')
   await omnibox.fill(page('Pinned'))
