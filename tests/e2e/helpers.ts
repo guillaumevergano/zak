@@ -15,7 +15,13 @@ export async function launch(
   env: Record<string, string> = {}
 ): Promise<{ app: ElectronApplication; chrome: Page; profile: string }> {
   const dir = profile ?? mkdtempSync(join(tmpdir(), `zak-e2e-${name}-`))
-  const app = await electron.launch({ executablePath: electronPath, args: [root], env: { ...process.env, ZAK_USER_DATA: dir, ZAK_E2E: '1', ZAK_LANG: 'fr', ...env } })
+  // Profiles of their own: never the list of the Zak installed on this computer.
+  const profiles = join(dir, 'Zak Profiles')
+  const app = await electron.launch({
+    executablePath: electronPath,
+    args: [root],
+    env: { ...process.env, ZAK_USER_DATA: dir, ZAK_PROFILES_DIR: profiles, ZAK_E2E: '1', ZAK_LANG: 'fr', ...env }
+  })
   try {
     const chrome = await firstChrome(app)
     await expect(chrome.getByTestId('tab').first()).toBeVisible()
