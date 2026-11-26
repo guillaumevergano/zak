@@ -18,6 +18,12 @@ export function buildPageMenu(
     addLinkToFavorites: ((url: string, title: string) => void) | null
     /** Null in a private window (its links already open privately). */
     openInPrivateWindow: ((url: string) => void) | null
+    /** Zak's own tools for this selection (CLAUDE.md §6.8: « Traduire en… »), none when they are off. */
+    toolItems: Electron.MenuItemConstructorOptions[]
+    /** Translating the whole page: part of the translation tool. */
+    translatePage: boolean
+    /** Zak's tools for the page itself (« Capture d’écran… »), none when they are off. */
+    pageItems: Electron.MenuItemConstructorOptions[]
   }
 ): Menu {
   const menu = new Menu()
@@ -74,6 +80,8 @@ export function buildPageMenu(
     add({ label: t('Coller'), role: 'paste', enabled: flags.canPaste })
     add({ label: t('Tout sélectionner'), role: 'selectAll', enabled: flags.canSelectAll })
     separator()
+    hooks.toolItems.forEach(add)
+    separator()
   } else if (params.selectionText.trim()) {
     const text = params.selectionText.trim()
     const short = text.length > 24 ? `${text.slice(0, 24)}…` : text
@@ -82,6 +90,7 @@ export function buildPageMenu(
       label: t('Rechercher « {text} » sur {engine}', { text: short, engine: SEARCH_ENGINES[TabManager.searchEngine()].label }),
       click: () => tabs.create(searchUrl(text, TabManager.searchEngine()), { index: openerIndex })
     })
+    hooks.toolItems.forEach(add)
     separator()
   }
 
@@ -92,10 +101,13 @@ export function buildPageMenu(
     separator()
     const pageUrl = wc.getURL()
     if (/^https?:/.test(pageUrl)) {
-      add({ label: getLang() === 'fr' ? t('Traduire en français') : t('Traduire en anglais'), click: () => tabs.create(translateUrl(pageUrl, getLang()), { index: openerIndex }) })
+      if (hooks.translatePage) {
+        add({ label: t('Traduire cette page'), click: () => tabs.create(translateUrl(pageUrl, getLang()), { index: openerIndex }) })
+      }
       add({ label: t('Imprimer…'), click: () => wc.print() })
-      separator()
     }
+    hooks.pageItems.forEach(add)
+    separator()
   }
 
   hooks.addExtensionItems(menu)

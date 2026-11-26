@@ -1,9 +1,11 @@
 import { app } from 'electron'
 import Store from 'electron-store'
-import type { ExtensionBarSettings, GeneralSettings, PipSettings, SidebarLayout } from '@shared/types'
+import { NEWTAB_HEADLINE_SOURCES, type NewtabHeadlineSource, type ExtensionBarSettings, type GeneralSettings, type PipSettings, type SidebarLayout } from '@shared/types'
 import { DEFAULT_EXTENSION_BAR, normalizeExtensionBar } from '@shared/extensionBar'
 import { SEARCH_ENGINES } from '@shared/url'
+import { LANG_SETTINGS } from '@shared/languages'
 import { EMPTY_APPEARANCE, normalizeAppearance, patchAppearance, type Appearance, type AppearancePatch } from '@shared/appearance'
+import { DEFAULT_TOOLS, normalizeTools, type ToolsSettings } from '@shared/tools'
 import { DEFAULT_PIP_SETTINGS, normalizePipSettings } from '../pip/domains'
 
 /** Preferences (CLAUDE.md §2: electron-store), edited on zak://settings. */
@@ -25,12 +27,14 @@ interface Settings {
   mcp: { enabled: boolean; port: number; token: string }
   /** Zak's own colors (per theme) and fonts, chosen on zak://appearance; only what differs from the defaults. */
   appearance: Appearance
+  /** Zak's own tools (CLAUDE.md §6.8): on/off and their options. */
+  tools: ToolsSettings
 }
 
 const SCHEMA_URL = 'https://raw.githubusercontent.com/guillaumevergano/zak/main/docs/customize/settings.schema.json'
 
 /** Same bounds as the renderer's Sidebar (5 tiles per row need some room). */
-export const SIDEBAR_MIN_WIDTH = 220
+export const SIDEBAR_MIN_WIDTH = 140
 export const SIDEBAR_MAX_WIDTH = 380
 
 export const DEFAULT_SIDEBAR: SidebarLayout = { width: 300, collapsed: false, side: 'right', tabs: 'top' }
@@ -50,7 +54,7 @@ export class SettingsStore {
   private store = new Store<Settings>({
     // The file can be edited by hand or by an AI agent (docs/customize/): changes apply at once.
     watch: true,
-    defaults: { sidebar: DEFAULT_SIDEBAR, disabledExtensions: [], unpackedExtensions: [], pip: DEFAULT_PIP_SETTINGS, general: {}, extensionBar: DEFAULT_EXTENSION_BAR, onboarded: false, mods: { theme: null, newtab: null }, mcp: { enabled: false, port: 0, token: '' }, appearance: EMPTY_APPEARANCE }
+    defaults: { sidebar: DEFAULT_SIDEBAR, disabledExtensions: [], unpackedExtensions: [], pip: DEFAULT_PIP_SETTINGS, general: {}, extensionBar: DEFAULT_EXTENSION_BAR, onboarded: false, mods: { theme: null, newtab: null }, mcp: { enabled: false, port: 0, token: '' }, appearance: EMPTY_APPEARANCE, tools: DEFAULT_TOOLS }
   })
 
   /** Where the settings live (config.json in the profile folder), for « Ouvrir le fichier de réglages ». */
@@ -129,6 +133,16 @@ export class SettingsStore {
     return clean
   }
 
+  getTools(): ToolsSettings {
+    return normalizeTools(this.store.get('tools'))
+  }
+
+  setTools(tools: ToolsSettings): ToolsSettings {
+    const clean = normalizeTools(tools)
+    this.store.set('tools', clean)
+    return clean
+  }
+
   getMods(): { theme: string | null; newtab: string | null } {
     const mods = this.store.get('mods')
     const id = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? v : null)
@@ -172,19 +186,31 @@ export class SettingsStore {
   }
 }
 
+/** The new tab sources ticked: a list (one source alone, as first saved, also works); none = nothing. */
+function headlineSources(raw: unknown): NewtabHeadlineSource[] {
+  if (raw === undefined) return ['zak']
+  if (raw === 'none') return []
+  const list = (Array.isArray(raw) ? raw : [raw]).filter((s): s is NewtabHeadlineSource => NEWTAB_HEADLINE_SOURCES.includes(s as NewtabHeadlineSource))
+  return [...new Set(list)]
+}
+
 /** Defaults for missing keys, and anything unknown replaced by its default. */
 export function normalizeGeneral(raw: Partial<GeneralSettings>): GeneralSettings {
   const pick = <T extends string>(value: unknown, allowed: readonly T[], fallback: T): T =>
     allowed.includes(value as T) ? (value as T) : fallback
   return {
-    language: pick(raw.language, ['system', 'fr', 'en'] as const, 'system'),
+    language: pick(raw.language, LANG_SETTINGS, 'system'),
     searchEngine: pick(raw.searchEngine, Object.keys(SEARCH_ENGINES) as (keyof typeof SEARCH_ENGINES)[], 'google'),
     startup: pick(raw.startup, ['restore', 'newtab'] as const, 'restore'),
     theme: pick(raw.theme, ['system', 'light', 'dark'] as const, 'light'),
+    sitesTheme: pick(raw.sitesTheme, ['system', 'light', 'dark'] as const, 'system'),
     downloadDir: typeof raw.downloadDir === 'string' && raw.downloadDir !== '' ? raw.downloadDir : app.getPath('downloads'),
     askWhereToSave: raw.askWhereToSave === true,
     safeBrowsing: raw.safeBrowsing !== false,
     savePasswords: raw.savePasswords !== false,
-    sleepTabsAfter: [0, 15, 30, 60, 120].includes(raw.sleepTabsAfter as number) ? (raw.sleepTabsAfter as number) : 0
+    sleepTabsAfter: [0, 15, 30, 60, 120].includes(raw.sleepTabsAfter as number) ? (raw.sleepTabsAfter as number) : 0,
+    newtabHeadlines: headlineSources(raw.newtabHeadlines ?? (raw as { newtabHeadline?: unknown }).newtabHeadline),
+    newtabTitle: typeof raw.newtabTitle === 'string' ? raw.newtabTitle.slice(0, 80) : '',
+    newtabSubtitle: typeof raw.newtabSubtitle === 'string' ? raw.newtabSubtitle.slice(0, 120) : ''
   }
 }

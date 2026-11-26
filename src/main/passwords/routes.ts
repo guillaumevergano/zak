@@ -11,6 +11,16 @@ export const keychainCipher: Cipher = {
   decrypt: (data) => safeStorage.decryptString(data)
 }
 
+/**
+ * Whether passwords can be kept safely. On Linux without a keyring (no GNOME Keyring nor KWallet),
+ * safeStorage falls back to a fixed key (`basic_text`): anyone reading the profile could decrypt
+ * them, so Zak doesn't offer to save any there.
+ */
+export function keychainIsSafe(): boolean {
+  if (!safeStorage.isEncryptionAvailable()) return false
+  return !(process.platform === 'linux' && safeStorage.getSelectedStorageBackend() === 'basic_text')
+}
+
 /** Asking again for each password would be tiresome: an unlock lasts a minute, like Chrome. */
 const UNLOCK_MS = 60_000
 let unlockedUntil = 0

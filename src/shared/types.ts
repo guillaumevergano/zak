@@ -1,4 +1,5 @@
 import type { Appearance } from './appearance'
+import type { LangSetting } from './languages'
 import type { SearchEngine } from './url'
 
 export type TabId = number
@@ -20,6 +21,11 @@ export interface TabInfo {
   asleep: boolean
   /** Tab group it belongs to (TabsState.groups), or null. */
   groupId: string | null
+  /**
+   * The sidebar favorite whose tab this is (opened by its tile, hidden from the strip), or null.
+   * Such a tab is also `pinned`.
+   */
+  favoriteId: string | null
 }
 
 export type TabGroupColor = 'grey' | 'blue' | 'red' | 'yellow' | 'green' | 'pink' | 'purple' | 'cyan' | 'orange'
@@ -84,8 +90,12 @@ export interface FavoriteInfo {
   /** Shown in the mosaic tile; null → the site's favicon. */
   emoji: string | null
   favicon: string | null
+  /** The user's own image (data: URL), shown before the emoji and the favicon. */
+  image: string | null
   folderId: string | null
   position: number
+  /** Row of the root mosaic (0, 1, …: a new line of tiles); 0 in a folder. */
+  row: number
 }
 
 export interface FolderInfo {
@@ -131,7 +141,12 @@ export interface FavoriteInput {
   url: string
   emoji: string | null
   folderId: string | null
+  /** The site's icon (a URL, or a data: URL fetched by favorites:fetchIcon); kept when omitted. */
   favicon?: string | null
+  /** The user's own image (data: URL); null or omitted: none. */
+  image?: string | null
+  /** A new favorite of the root: the mosaic row it goes to (default: the last one). */
+  row?: number
 }
 
 export interface FolderInput {
@@ -169,6 +184,12 @@ export type FramedOverlayRequest =
   | { kind: 'find'; frame: Rect; tabId: TabId; text: string }
   | { kind: 'permission'; frame: Rect; requestId: number; origin: string; permission: PermissionKind }
   | { kind: 'save-password'; frame: Rect; promptId: number; origin: string; username: string; update: boolean }
+  /** A selection's translation (CLAUDE.md §6.8), under it; `error`: the translation of an edited text failed. */
+  | { kind: 'translation'; frame: Rect; tabId: TabId; text: string; target: string; error?: boolean }
+  /** Screenshot (§6.8): drawing a region over the page, which the view covers exactly. */
+  | { kind: 'screenshot'; frame: Rect; tabId: TabId }
+  /** The screenshot just taken: its thumbnail (a data: URL), copied and saved. Doesn't take the focus. */
+  | { kind: 'screenshot-done'; frame: Rect; preview: string; name: string }
 
 /** A row of the omnibox dropdown (CLAUDE.md §6.7). */
 export interface OmniboxSuggestion {
@@ -208,18 +229,39 @@ export interface PipSettings {
   closeOnReturn: boolean
   /** Don't trigger for a muted video (default: trigger anyway). */
   skipMuted: boolean
+  /** Also videos the page started by itself (feeds); by default, only those the user started. */
+  autoplayed: boolean
   /** Sites where PiP never triggers (a domain covers its subdomains). */
   excludedDomains: string[]
+  /**
+   * Which floating player: Zak's own (a rounded window with Zak's buttons, the tab moved into it)
+   * or Chromium's native Picture-in-Picture.
+   */
+  style: PipStyle
+}
+
+export type PipStyle = 'zak' | 'system'
+
+/** Buttons of Zak's floating player. */
+export type MiniPlayerAction = 'toggle' | 'back' | 'close'
+
+/** What Zak's floating player shows on its buttons. */
+export interface MiniPlayerState {
+  playing: boolean
+  /** The tab's title (the « back » button's tooltip). */
+  title: string
 }
 
 /** General preferences (CLAUDE.md §6.7), set on zak://settings. */
 export interface GeneralSettings {
   /** Interface language; applied at the next launch. */
-  language: 'system' | 'fr' | 'en'
+  language: LangSetting
   searchEngine: SearchEngine
   /** At launch: reopen the last session's tabs, or a single new tab. */
   startup: 'restore' | 'newtab'
   theme: 'system' | 'light' | 'dark'
+  /** Light or dark mode web pages see (`prefers-color-scheme`); 'system': the computer's, whatever Zak's theme. */
+  sitesTheme: 'system' | 'light' | 'dark'
   /** Where downloads go (private windows too, like Chrome). */
   downloadDir: string
   /** Ask where to save each file (a save dialog) instead of saving straight into downloadDir. */
@@ -230,6 +272,31 @@ export interface GeneralSettings {
   savePasswords: boolean
   /** Unload background tabs after this many minutes alone (CLAUDE.md §6.1), 0 = never. */
   sleepTabsAfter: number
+  /**
+   * What the new tab page may show under its logo (src/main/newtab/headlines.ts): one picked at
+   * random for each tab; none = nothing.
+   */
+  newtabHeadlines: NewtabHeadlineSource[]
+  /** « Mon texte »: the title and the line under it. */
+  newtabTitle: string
+  newtabSubtitle: string
+}
+
+/**
+ * Under the new tab page's logo: Zak's « Un peu d'espace. », the user's own text, a quote or a
+ * proverb (shipped with Zak), something from Wikipedia (« Ce jour dans l'histoire », « Le
+ * saviez-vous ? »).
+ */
+export type NewtabHeadlineSource = 'zak' | 'custom' | 'quote' | 'proverb' | 'history' | 'wikipedia'
+export const NEWTAB_HEADLINE_SOURCES = ['zak', 'custom', 'quote', 'proverb', 'history', 'wikipedia'] as const satisfies readonly NewtabHeadlineSource[]
+
+/** One headline, as the page shows it: a big line, a small one, maybe a link to read more. */
+export interface NewtabHeadline {
+  /** none: nothing is ticked, the page shows nothing. */
+  kind: Exclude<NewtabHeadlineSource, 'zak'> | 'none'
+  title: string
+  subtitle: string
+  link?: string
 }
 
 /** What zak://settings shows and edits. */
@@ -283,6 +350,15 @@ export interface McpState {
   url: string | null
   token: string
   error: string | null
+}
+
+/** A tool of Zak's MCP server, as agents see it (Réglages → MCP lists them). */
+export interface McpToolInfo {
+  name: string
+  /** The description sent to agents (English). */
+  description: string
+  /** Only reads (readOnlyHint); otherwise it changes something in Zak. */
+  readOnly: boolean
 }
 
 /** A mod (src/main/mods/): a theme and/or a new tab page, from the profile's mods folder. */

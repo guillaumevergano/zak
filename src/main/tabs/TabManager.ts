@@ -10,6 +10,7 @@ import { clampRatio, splitRects, SPLIT_ZOOM } from '@shared/split'
 import { manageIdentity, trackIdentitySetup } from '../userAgent'
 import { NEW_TAB_URL, errorPageUrl, failedUrlOf, isNewTabUrl, toUrl, type SearchEngine } from '@shared/url'
 import { isInternalUrl } from '../internal/InternalProtocol'
+import type { SiteColorScheme } from './colorScheme'
 import { INTERNAL_FAVICON } from '../internal/favicon'
 import { blockedThreat } from '../safety/SafeBrowsing'
 
@@ -57,6 +58,12 @@ interface Tab {
   /** Asleep: the page was swapped for about:blank to free memory; what to show and reload. */
   asleep: { url: string; title: string; favicon: string | null } | null
   groupId: string | null
+  /**
+   * The sidebar favorite this tab belongs to (« onglet de favori », à la Arc), or null. Such a tab
+   * lives in the pinned group (never grouped, split, or closed by « Tout fermer ») and the strip
+   * doesn't show it: its tile does.
+   */
+  favoriteId: string | null
   /** Secret of the scroll reports of this tab's page (scrollScript.ts). */
   scrollNonce: string
 }
@@ -72,6 +79,8 @@ export interface CreateTabOptions {
   /** Position in the strip; defaults to the end. Clamped to the unpinned group. */
   index?: number
   pinned?: boolean
+  /** Makes it the tab of this sidebar favorite (see Tab.favoriteId). */
+  favoriteId?: string
   /** Tab group to put it in (session restore). By default a tab placed inside a group joins it. */
   groupId?: string | null
   /**
@@ -114,8 +123,14 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
   private readonly splits = new Map<string, TabSplitInfo>()
   private order: TabId[] = []
   private activeId: TabId | null = null
+  /** Last active tab shown in the strip: where closing a favorite's tab goes back to. */
+  private lastStripId: TabId | null = null
   /** Tabs whose page is on screen: the active one, and its partner in a split view. */
   private shown = new Set<TabId>()
+  /** Tabs whose view is lent to Zak's floating player (pip/MiniPlayer.ts): out of this window. */
+  private lent = new Set<TabId>()
+  /** A lent tab comes back (shown again, or the player closed): the borrower lets go of its view first. */
+  onReclaim: ((id: TabId) => void) | null = null
   /** Tabs zoomed out for their split view (isolated zoom, see syncSplitZoom). */
   private readonly splitZoomed = new Set<TabId>()
   private insets: LayoutInsets = { left: 0, top: 0, right: 0, bottom: 0 }
@@ -147,12 +162,16 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
   /** Zoom remembered for the site of a URL (ZoomController); set once by index.ts. */
   static siteZoom: (url: string) => number = () => 1
 
+  /** Light or dark for web pages, apart from Zak's theme (colorScheme.ts); set once by index.ts. */
+  static colorScheme: SiteColorScheme | null = null
+
   constructor(
     private readonly window: BaseWindow,
     private readonly session: Session
   ) {
     super()
     window.on('resize', () => this.layout())
+    window.on('leave-full-screen', () => this.onWindowLeftFullScreen())
     const timer = setInterval(() => this.sleepIdleTabs(), 60_000)
     timer.unref()
     window.once('closed', () => clearInterval(timer))
@@ -169,7 +188,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     if (minutes === null) return
     for (const tab of this.tabs.values()) {
       const wc = tab.wc
-      if (this.shown.has(tab.id) || tab.asleep || wc.isDestroyed()) continue
+      if (this.shown.has(tab.id) || this.lent.has(tab.id) || tab.asleep || wc.isDestroyed()) continue
       if (now - tab.lastActive < minutes * 60_000) continue
       if (wc.isCurrentlyAudible() || wc.isLoading() || !/^https?:/.test(wc.getURL())) continue
       this.sleep(tab)
@@ -219,8 +238,9 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
       }
     })
     const wc = view.webContents
-    const pinned = opts.pinned ?? false
-    const tab: Tab = { id: wc.id, view, wc, favicon: null, pinned, url, setup: Promise.resolve(), lastActive: Date.now(), asleep: null, groupId: null, scrollNonce: randomBytes(12).toString('hex') }
+    const favoriteId = opts.favoriteId ?? null
+    const pinned = favoriteId !== null || (opts.pinned ?? false)
+    const tab: Tab = { id: wc.id, view, wc, favicon: null, pinned, url, setup: Promise.resolve(), lastActive: Date.now(), asleep: null, groupId: null, favoriteId, scrollNonce: randomBytes(12).toString('hex') }
     this.tabs.set(tab.id, tab)
     const [start, end] = this.groupRange(pinned)
     // Never between the two tabs of a split view (a link opened from its left page goes after both).
@@ -239,17 +259,25 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     // Client Hints must be in place before the first request goes out.
     // The CDP target only exists once something is loaded, hence about:blank first.
     // If something else navigates the tab meanwhile (the omnibox, an extension), it wins.
-    let navigatedElsewhere = false
+    let navigatedElsewhere: string | null = null
     const onStart = (details: Electron.Event<Electron.WebContentsDidStartNavigationEventParams>): void => {
-      if (details.isMainFrame && details.url !== 'about:blank') navigatedElsewhere = true
+      if (details.isMainFrame && details.url !== 'about:blank') navigatedElsewhere = details.url
     }
     wc.on('did-start-navigation', onStart)
-    tab.setup = trackIdentitySetup(wc.loadURL('about:blank').then(() => manageIdentity(wc)))
+    // about:blank is cut short when something else navigates first (typing in the omnibox at once):
+    // the identity still goes on, for that page.
+    tab.setup = trackIdentitySetup(
+      wc
+        .loadURL('about:blank')
+        .catch(() => undefined)
+        .then(() => manageIdentity(wc))
+    )
     void tab.setup
       .then(() => {
         if (wc.isDestroyed()) return undefined
         wc.off('did-start-navigation', onStart)
-        if (url !== 'about:blank' && !navigatedElsewhere) return wc.loadURL(url)
+        TabManager.colorScheme?.apply(wc, navigatedElsewhere ?? url)
+        if (url !== 'about:blank' && navigatedElsewhere === null) return wc.loadURL(url)
         return undefined
       })
       .catch(() => {
@@ -273,6 +301,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     }
 
     this.activeId = id
+    if (next.favoriteId === null) this.lastStripId = id
     // Showing a tab of a folded group unfolds it.
     const group = next.groupId ? this.groups.get(next.groupId) : undefined
     if (group?.collapsed) group.collapsed = false
@@ -294,6 +323,8 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     const partnerId = active ? partnerOf(this.splits, active.id) : null
     const partner = partnerId !== null ? this.tabs.get(partnerId) : undefined
     const now = [partner, active].filter((tab): tab is Tab => tab !== undefined)
+    // Coming back to a tab shown in the floating player: its page comes back here.
+    for (const tab of now) if (this.lent.has(tab.id)) this.reclaim(tab.id, false)
     this.shown = new Set(now.map((tab) => tab.id))
     for (const tab of now) {
       tab.lastActive = Date.now()
@@ -312,15 +343,18 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
 
   /** Ctrl+Tab / Ctrl+Shift+Tab, wrapping around. */
   activateRelative(delta: number): void {
-    if (this.order.length === 0 || this.activeId === null) return
-    const index = this.order.indexOf(this.activeId)
-    const n = this.order.length
-    this.activate(this.order[(((index + delta) % n) + n) % n]!)
+    const strip = this.stripOrder()
+    if (strip.length === 0 || this.activeId === null) return
+    // From a favorite's tab: as if on the last strip tab shown.
+    const index = strip.indexOf(this.activeId) >= 0 ? strip.indexOf(this.activeId) : Math.max(0, strip.indexOf(this.lastStripId ?? -1))
+    const n = strip.length
+    this.activate(strip[(((index + delta) % n) + n) % n]!)
   }
 
   /** Cmd/Ctrl+1..8 → that tab, Cmd/Ctrl+9 → last tab (like Chrome). */
   activateNumber(n: number): void {
-    const id = n >= 9 ? this.order[this.order.length - 1] : this.order[n - 1]
+    const strip = this.stripOrder()
+    const id = n >= 9 ? strip[strip.length - 1] : strip[n - 1]
     if (id !== undefined) this.activate(id)
   }
 
@@ -329,7 +363,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
       await Promise.race([this.beforeHide(tab.wc).catch(() => {}), delay(HIDE_DELAY_MS)])
     }
     // The user may have switched back meanwhile, or the tab may be gone.
-    if (!this.shown.has(tab.id) && this.tabs.has(tab.id)) tab.view.setVisible(false)
+    if (!this.shown.has(tab.id) && this.tabs.has(tab.id) && !this.lent.has(tab.id)) tab.view.setVisible(false)
   }
 
   close(id: TabId): void {
@@ -337,7 +371,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     if (!tab) return
     const index = this.order.indexOf(id)
     const partner = partnerOf(this.splits, id)
-    this.remember(tab, index)
+    if (tab.favoriteId === null) this.remember(tab, index)
     this.order.splice(index, 1)
     this.tabs.delete(id)
     this.shown.delete(id)
@@ -349,7 +383,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
       repairSplits(this.order, this.tabs, this.splits)
       this.syncSplitZoom()
       // The other page of its split view takes the whole area.
-      const neighbour = partner ?? this.order[Math.min(index, this.order.length - 1)]
+      const neighbour = partner ?? this.neighbourOf(tab, index)
       if (neighbour !== undefined) this.activate(neighbour)
     } else this.afterStripChange()
 
@@ -405,7 +439,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
 
   setPinned(id: TabId, pinned: boolean): void {
     const tab = this.tabs.get(id)
-    if (!tab || tab.pinned === pinned) return
+    if (!tab || tab.pinned === pinned || tab.favoriteId !== null) return
     this.order.splice(this.order.indexOf(id), 1)
     tab.pinned = pinned
     tab.groupId = null // pinned tabs are never in a group, nor in a split view
@@ -678,6 +712,11 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     return this.order.indexOf(id)
   }
 
+  /** Light or dark changed (computer, or Réglages): every page gets its new scheme. */
+  refreshColorScheme(): void {
+    for (const tab of this.tabs.values()) TabManager.colorScheme?.apply(tab.wc, tab.wc.getURL())
+  }
+
   /** The pages of every tab (asleep ones show about:blank). */
   webContentsList(): WebContents[] {
     return [...this.tabs.values()].map((t) => t.wc).filter((wc) => !wc.isDestroyed())
@@ -699,12 +738,53 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     this.layout()
   }
 
+  /**
+   * The window is out of full screen (its animation is over). Two things Electron leaves to us for
+   * a page in a WebContentsView (it only handles the window's own page):
+   * - left by the window (green button, ⌃⌘F, the View menu): the page is still in full screen, so
+   *   it covers the whole window; it leaves it too.
+   * - left by the page (Esc, the video's button): the page heard « still full screen » while the
+   *   window was animating out, and nothing tells it otherwise afterwards (YouTube, X stay giant).
+   *   Giving it its size again does.
+   */
+  private onWindowLeftFullScreen(): void {
+    const id = this.fullScreenTab
+    const tab = id !== null ? this.tabs.get(id) : undefined
+    if (id !== null) {
+      this.madeWindowFullScreen = false
+      this.leaveFullScreen(id)
+      if (tab && !tab.wc.isDestroyed()) {
+        void tab.wc.executeJavaScript('document.fullscreenElement && document.exitFullscreen()', true).catch(() => {})
+      }
+    }
+    this.resyncPages()
+  }
+
+  /** The shown pages get their size again (1 px less, then right): Chromium tells them their state anew. */
+  private resyncPages(): void {
+    for (const id of this.shown) {
+      const tab = this.tabs.get(id)
+      if (!tab || tab.wc.isDestroyed()) continue
+      const bounds = tab.view.getBounds()
+      if (bounds.height > 1) tab.view.setBounds({ ...bounds, height: bounds.height - 1 })
+    }
+    setTimeout(() => {
+      if (!this.window.isDestroyed()) this.layout()
+    }, 50)
+  }
+
   /** Tells the chrome UI that something it shows changed (zoom…). */
   refresh(): void {
     this.emit('changed')
   }
 
   /** Where the page sits in the window (the chrome UI around it). */
+  /** Where a tab's page sits in the window (content coordinates), null if it isn't shown. */
+  pageBounds(id: TabId): Rect | null {
+    const tab = this.tabs.get(id)
+    return tab && this.shown.has(id) ? tab.view.getBounds() : null
+  }
+
   getInsets(): LayoutInsets {
     return this.insets
   }
@@ -723,6 +803,45 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     }
   }
 
+  /** The tabs the strip shows, in order (not the favorites' tabs). */
+  private stripOrder(): TabId[] {
+    return this.order.filter((id) => this.tabs.get(id)?.favoriteId === null)
+  }
+
+  /**
+   * The tab to show once the active one is closed: from a favorite's tab, the strip tab shown
+   * before it; otherwise the next strip tab (or the previous one at the end), like Chrome.
+   */
+  private neighbourOf(closed: Tab, index: number): TabId | undefined {
+    if (closed.favoriteId !== null && this.lastStripId !== null && this.tabs.has(this.lastStripId)) return this.lastStripId
+    const after = this.order.slice(index).find((id) => this.tabs.get(id)?.favoriteId === null)
+    const before = this.order.slice(0, index).reverse().find((id) => this.tabs.get(id)?.favoriteId === null)
+    return after ?? before ?? this.order[Math.min(index, this.order.length - 1)]
+  }
+
+  /** The tab of a sidebar favorite, if it is open. */
+  favoriteTab(favoriteId: string): TabId | null {
+    for (const id of this.order) if (this.tabs.get(id)?.favoriteId === favoriteId) return id
+    return null
+  }
+
+  /**
+   * A click on a favorite (CLAUDE.md §6.2): its own tab, as it was left; opened at `url` the first
+   * time. Clicking the favorite of the tab already shown brings it back to `url`.
+   */
+  openFavorite(favoriteId: string, url: string): void {
+    const id = this.favoriteTab(favoriteId)
+    if (id === null) this.create(url, { favoriteId, active: true })
+    else if (id === this.activeId) this.navigate(id, url)
+    else this.activate(id)
+  }
+
+  /** The favorite was deleted: its tab goes too. */
+  closeFavorite(favoriteId: string): void {
+    const id = this.favoriteTab(favoriteId)
+    if (id !== null) this.close(id)
+  }
+
   /** [first index, one past last index] of the pinned or unpinned group in `order`. */
   private groupRange(pinned: boolean): [number, number] {
     const pinnedCount = this.order.filter((id) => this.tabs.get(id)?.pinned).length
@@ -737,6 +856,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
   }
 
   private dispose(tab: Tab): void {
+    this.lent.delete(tab.id)
     this.emit('removed', tab.wc)
     if (!this.window.isDestroyed()) this.window.contentView.removeChildView(tab.view)
     // Closing a page while a CDP command of its setup is in flight leaves the main process
@@ -763,7 +883,8 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
         canGoForward: false,
         zoom: Math.round(wc.getZoomFactor() * 100),
         asleep: true,
-        groupId: tab.groupId
+        groupId: tab.groupId,
+        favoriteId: tab.favoriteId
       }
     }
     // An error page shows the address that failed, like Chrome.
@@ -783,13 +904,41 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
       canGoForward: wc.navigationHistory.canGoForward(),
       zoom: Math.round(wc.getZoomFactor() * 100),
       asleep: false,
-      groupId: tab.groupId
+      groupId: tab.groupId,
+      favoriteId: tab.favoriteId
     }
+  }
+
+  /**
+   * Lends a tab's view to Zak's floating player, which puts it in its own window. Not the page in
+   * HTML full screen. Null when it can't be lent.
+   */
+  lend(id: TabId): WebContentsView | null {
+    const tab = this.tabs.get(id)
+    if (!tab || this.lent.has(id) || this.fullScreenTab === id || tab.wc.isDestroyed()) return null
+    this.lent.add(id)
+    if (!this.window.isDestroyed()) this.window.contentView.removeChildView(tab.view)
+    return tab.view
+  }
+
+  isLent(id: TabId): boolean {
+    return this.lent.has(id)
+  }
+
+  /** Takes a lent view back (the player closed, or the tab is shown): back in this window, in its place. */
+  reclaim(id: TabId, lay = true): void {
+    if (!this.lent.delete(id)) return
+    const tab = this.tabs.get(id)
+    this.onReclaim?.(id)
+    if (!tab || this.window.isDestroyed() || tab.wc.isDestroyed()) return
+    tab.view.setVisible(this.shown.has(id))
+    this.window.contentView.addChildView(tab.view)
+    if (lay) this.layout()
   }
 
   private layout(): void {
     const active = this.activeId !== null ? this.tabs.get(this.activeId) : undefined
-    if (!active) return
+    if (!active || this.lent.has(active.id)) return
     const { width, height } = this.window.getContentBounds()
     if (this.fullScreenTab === active.id) {
       active.view.setBounds({ x: 0, y: 0, width, height })
@@ -803,6 +952,7 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
       ? split.tabs.map((id, i): [Tab | undefined, Rect] => [this.tabs.get(id), splitRects(area, split.ratio)[i]!])
       : [[active, area]]
     for (const [tab, rect] of places) {
+      if (tab && this.lent.has(tab.id)) continue
       tab?.view.setBorderRadius(PAGE_RADIUS)
       tab?.view.setBounds(rect)
     }
@@ -863,6 +1013,10 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
       tab.url = url
       tab.favicon = null
       changed()
+    })
+    // Web pages get the light or dark mode of the computer (or the one chosen), not Zak's theme.
+    wc.on('did-start-navigation', (details) => {
+      if (details.isMainFrame && !details.isSameDocument) TabManager.colorScheme?.apply(wc, details.url)
     })
     wc.on('did-navigate-in-page', (_e, url, isMainFrame) => {
       if (isMainFrame) tab.url = url

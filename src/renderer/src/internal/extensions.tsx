@@ -2,10 +2,12 @@ import '../lib/lang'
 import { StrictMode, useCallback, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { ExtensionInfo } from '@shared/types'
+import type { InternalApiRoutes } from '@shared/ipc'
+import { languageMenu, languageName, type ToolsSettings } from '@shared/tools'
 import { callInternal } from './api'
 import { SmallButton, Toggle } from './ui'
 import '../styles.css'
-import { t } from '@shared/i18n'
+import { getLang, t } from '@shared/i18n'
 
 /** zak://extensions (CLAUDE.md §6.5): installed extensions, on/off, options, uninstall. */
 function ExtensionsPage(): JSX.Element {
@@ -67,6 +69,10 @@ function ExtensionsPage(): JSX.Element {
           {error}
         </p>
       )}
+
+      <ZakTools />
+
+      <h2 className="m-0 mt-2 text-[17px] font-bold text-title">{t('Extensions Chrome')}</h2>
 
       {extensions?.length === 0 && (
         <div className="glass-card rounded-[18px] px-6 py-10 text-center text-sub">
@@ -148,6 +154,98 @@ function ExtensionCard({ ext, run }: { ext: ExtensionInfo; run: (action: Promise
         label={ext.enabled ? t('Désactiver {name}', { name: ext.name }) : t('Activer {name}', { name: ext.name })}
         on={ext.enabled}
         onChange={(enabled) => run(callInternal('extensions/setEnabled', { id: ext.id, enabled }))}
+      />
+    </li>
+  )
+}
+
+/** Zak's own tools (CLAUDE.md §6.8): built in, on or off; off, nothing of them is left. */
+function ZakTools(): JSX.Element | null {
+  const [tools, setTools] = useState<ToolsSettings | null>(null)
+  useEffect(() => {
+    void callInternal('extensions/tools', null).then(setTools)
+  }, [])
+  if (!tools) return null
+  const lang = getLang()
+  const { translate, screenshot } = tools
+  const setTranslate = (patch: InternalApiRoutes['extensions/setTranslate']['body']): void =>
+    void callInternal('extensions/setTranslate', patch).then(setTools)
+  const isMac = navigator.platform.startsWith('Mac')
+
+  return (
+    <section aria-labelledby="zak-tools" className="flex flex-col gap-3">
+      <div>
+        <h2 id="zak-tools" className="m-0 text-[17px] font-bold text-title">
+          {t('Outils Zak')}
+        </h2>
+        <p className="m-0 mt-1 text-[13px] text-sub">{t('Intégrés à Zak : activez seulement ceux qui vous servent.')}</p>
+      </div>
+      <ul className="m-0 flex list-none flex-col gap-3 p-0" aria-label={t('Outils Zak')}>
+        <ToolCard
+          id="translate"
+          icon="🌐"
+          name={t('Traduction')}
+          enabled={translate.enabled}
+          onToggle={(enabled) => setTranslate({ enabled })}
+          description={t('Sélectionnez un texte puis clic droit : « Traduire en… ». Dans un champ où vous écrivez (un e-mail, un message), le texte sélectionné est remplacé par sa traduction (⌘Z pour revenir) ; ailleurs, la traduction s’affiche dans une bulle.')}
+          note={t('Le texte n’est envoyé à Google Traduction qu’au moment où vous le demandez.')}
+        >
+          <label className="mt-2 flex items-center gap-2 text-[13px] text-ink">
+            {t('Traduire ce que je lis en')}
+            <select
+              value={translate.target}
+              onChange={(e) => setTranslate({ target: e.target.value })}
+              className="h-8 rounded-lg border border-track bg-white px-2 text-[13px] font-semibold text-title"
+            >
+              <option value="">{t('Langue de Zak ({language})', { language: languageName(lang, lang, false) })}</option>
+              {languageMenu([], lang).others.map((code) => (
+                <option key={code} value={code}>
+                  {languageName(code, lang)}
+                </option>
+              ))}
+            </select>
+          </label>
+        </ToolCard>
+        <ToolCard
+          id="screenshot"
+          icon="📸"
+          name={t('Capture d’écran')}
+          enabled={screenshot.enabled}
+          onToggle={(enabled) => void callInternal('extensions/setScreenshot', { enabled }).then(setTools)}
+          description={t('Une zone tracée, la page visible ou la page entière : menu Fichier ({shortcut}) ou clic droit sur la page. L’image est copiée dans le presse-papiers et enregistrée dans le dossier des téléchargements.', { shortcut: isMac ? '⌘⇧2' : t('Ctrl+Maj+2') })}
+          note={t('Tout reste sur votre ordinateur.')}
+        />
+      </ul>
+    </section>
+  )
+}
+
+function ToolCard(props: {
+  id: string
+  icon: string
+  name: string
+  enabled: boolean
+  onToggle: (enabled: boolean) => void
+  description: string
+  note: string
+  /** Its options, shown while it is on. */
+  children?: JSX.Element
+}): JSX.Element {
+  return (
+    <li data-tool-id={props.id} className={`glass-card flex gap-4 rounded-[18px] px-5 py-4 ${props.enabled ? '' : 'opacity-70'}`}>
+      <div className="flex size-11 shrink-0 items-center justify-center rounded-[12px] bg-white text-[24px]" aria-hidden>
+        {props.icon}
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <h3 className="m-0 text-[15px] font-bold text-title">{props.name}</h3>
+        <p className="m-0 text-[13px] text-sub">{props.description}</p>
+        <p className="m-0 text-[12px] text-sub">{props.note}</p>
+        {props.enabled && props.children}
+      </div>
+      <Toggle
+        label={props.enabled ? t('Désactiver {name}', { name: props.name }) : t('Activer {name}', { name: props.name })}
+        on={props.enabled}
+        onChange={props.onToggle}
       />
     </li>
   )

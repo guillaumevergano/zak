@@ -197,7 +197,7 @@ function FavoriteStar({ tab }: { tab: TabInfo }): JSX.Element {
           anchor: rectOf(e.currentTarget),
           favoriteId: saved?.id ?? null,
           draft: saved
-            ? { title: saved.title, url: saved.url, emoji: saved.emoji, folderId: saved.folderId, favicon: saved.favicon }
+            ? { title: saved.title, url: saved.url, emoji: saved.emoji, folderId: saved.folderId, favicon: saved.favicon, image: saved.image }
             : { title: tab.title, url: tab.url, emoji: null, folderId: null, favicon: tab.favicon }
         })
       }

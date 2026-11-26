@@ -21,10 +21,12 @@ export interface MenuCommands {
   session: SessionRestore
   updater: Updater
   profiles: { list: () => ProfileInfo[]; current: string; open: (id: string) => void; manage: () => void }
+  /** Zak's screenshot tool (§6.8): its entry is only there when the tool is on. */
+  screenshot: { enabled: () => boolean; start: (handle: BrowserWindowHandle) => void }
 }
 
 /** Builds the application menu; called again when the list of profiles changes. */
-export function installAppMenu(windows: WindowManager, { find, zoom, session, updater, profiles }: MenuCommands): void {
+export function installAppMenu(windows: WindowManager, { find, zoom, session, updater, profiles, screenshot }: MenuCommands): void {
   const isMac = process.platform === 'darwin'
 
   /** Runs on the focused browser window; ignored when none (e.g. a DevTools window is focused). */
@@ -130,7 +132,12 @@ export function installAppMenu(windows: WindowManager, { find, zoom, session, up
           label: t('Imprimer…'),
           accelerator: 'CmdOrCtrl+P',
           click: onActiveTab((wc) => wc.print())
-        }
+        },
+        ...(screenshot.enabled()
+          ? ([
+              { id: 'screenshot', label: t('Capture d’écran…'), accelerator: 'CmdOrCtrl+Shift+2', click: onWindow(screenshot.start) }
+            ] as MenuItemConstructorOptions[])
+          : [])
       ]
     },
     {

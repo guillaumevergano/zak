@@ -10,9 +10,9 @@ import {
   type DragMoveEvent,
   type DragStartEvent
 } from '@dnd-kit/core'
-import type { WidevineStatus } from '@shared/types'
+import type { FavoriteInfo, WidevineStatus } from '@shared/types'
 import { useBrowserStore } from './store/useBrowserStore'
-import { collisionDetection, parseDndId, ROOT_ZONE, type DndKind } from './lib/dnd'
+import { collisionDetection, NEW_ROW, parseDndId, ROOT_ZONE, type DndKind } from './lib/dnd'
 import { rectOf } from './lib/favorites'
 import { Sidebar, TileIcon } from './components/Sidebar'
 import { TabGhost, TabStrip, TitleBar } from './components/TabStrip'
@@ -63,7 +63,9 @@ export function App(): JSX.Element {
     let last = ''
     const report = (): void => {
       const r = el.getBoundingClientRect()
-      // Rounded outwards: the page covers its slot to the last pixel (no light line on its edges).
+      // The frame around the page is laid out in whole pixels (margins in px, not rem: the UI's root
+      // font is 13 px), so the page lines up with the toolbar's edges. Rounded outwards for what's
+      // left (the bars' heights): the page covers its slot to the last pixel, no light line.
       const insets = {
         left: Math.floor(r.left),
         top: Math.floor(r.top),
@@ -104,7 +106,7 @@ export function App(): JSX.Element {
           <main
             aria-label={t('Page')}
             data-split={inSplit || undefined}
-            className={`page-slot no-drag relative mb-2 min-w-0 flex-1 overflow-hidden rounded-b-[14px] ${side === 'right' ? 'ml-2' : ''}`}
+            className={`page-slot no-drag relative mb-[7px] min-w-0 flex-1 overflow-hidden rounded-b-[14px] ${side === 'right' ? 'ml-[7px]' : ''}`}
           >
             <div ref={contentRef} className="h-full w-full" />
             <SplitFrame />
@@ -127,7 +129,7 @@ function ScrollGutter({ corner }: { corner: boolean }): JSX.Element {
   const split = useBrowserStore((s) => s.splits.find((x) => activeId !== null && x.tabs.includes(activeId)))
   const inset = split ? SPLIT_INSET : 0
   return (
-    <div data-testid="page-gutter" className="relative mb-2 w-2.5 shrink-0 bg-frame">
+    <div data-testid="page-gutter" className="relative mb-[7px] w-[8px] shrink-0 bg-frame">
       {corner && <div aria-hidden className="concave-corner pointer-events-none absolute top-0 left-0 z-10 size-[14px]" />}
       <ScrollTrack tabId={split ? split.tabs[1] : activeId} testId="page-scroll" style={{ left: 0, right: 0, top: inset, bottom: inset }} />
     </div>
@@ -137,7 +139,7 @@ function ScrollGutter({ corner }: { corner: boolean }): JSX.Element {
 /** Sidebar on the left: the frame between it and the page, where the cream panel turns down into the page. */
 function SidebarEdge(): JSX.Element {
   return (
-    <div className="relative mb-2 w-2.5 shrink-0 bg-frame">
+    <div className="relative mb-[7px] w-[8px] shrink-0 bg-frame">
       <div aria-hidden className="concave-corner-left pointer-events-none absolute top-0 right-0 z-10 size-[14px]" />
     </div>
   )
@@ -157,7 +159,7 @@ function openEditor({ kind, id }: { kind: 'favorite' | 'folder'; id: string }): 
       kind: 'favorite-editor',
       anchor,
       favoriteId: id,
-      draft: { title: f.title, url: f.url, emoji: f.emoji, folderId: f.folderId, favicon: f.favicon }
+      draft: { title: f.title, url: f.url, emoji: f.emoji, folderId: f.folderId, favicon: f.favicon, image: f.image }
     })
   } else {
     const f = sidebar.folders.find((x) => x.id === id)
@@ -227,19 +229,32 @@ function DragAndDrop({ children }: { children: React.ReactNode }): JSX.Element {
     const to = parseDndId(over.id)
     const state = useBrowserStore.getState()
 
-    // Favorites target: [folder, index] of the tile or zone under the pointer.
-    const favoriteTarget = (): [string | null, number] | null => {
+    // Favorites target: [folder, index, row] of the tile, row or zone under the pointer. In the
+    // root, the index is within the row (CLAUDE.md §6.2).
+    const favoriteTarget = (): [string | null, number, number | undefined] | null => {
       if (!state.sidebar) return null
       const favorites = state.sidebar.favorites
+      const root = favorites.filter((f) => f.folderId === null)
+      const rowCount = root.reduce((n, f) => Math.max(n, f.row + 1), 0)
+      const inRow = (row: number): FavoriteInfo[] => root.filter((f) => f.row === row && f.id !== from.id)
       if (to.kind === 'fav') {
         const target = favorites.find((f) => f.id === to.id)
         if (!target) return null
+        if (target.folderId === null) return [null, root.filter((f) => f.row === target.row).indexOf(target), target.row]
         const siblings = favorites.filter((f) => f.folderId === target.folderId)
-        return [target.folderId, siblings.indexOf(target)]
+        return [target.folderId, siblings.indexOf(target), undefined]
+      }
+      if (to.kind === 'row') {
+        const row = to.id === NEW_ROW ? rowCount : Number(to.id)
+        return [null, inRow(row).length, row]
       }
       if (to.kind === 'zone' || to.kind === 'folder') {
         const folderId = to.id === ROOT_ZONE ? null : to.id
-        return [folderId, favorites.filter((f) => f.folderId === folderId).length]
+        if (folderId === null) {
+          const last = Math.max(0, rowCount - 1)
+          return [null, inRow(last).length, last]
+        }
+        return [folderId, favorites.filter((f) => f.folderId === folderId).length, undefined]
       }
       return null
     }
@@ -257,15 +272,15 @@ function DragAndDrop({ children }: { children: React.ReactNode }): JSX.Element {
         return
       }
       const target = favoriteTarget()
-      if (target) void api.invoke('favorites:addFromTab', tabId, target[0], target[1])
+      if (target) void api.invoke('favorites:addFromTab', tabId, target[0], target[1], target[2])
       return
     }
 
     if (from.kind === 'fav') {
       const target = favoriteTarget()
       if (!target) return
-      state.moveFavoriteLocally(from.id, target[0], target[1])
-      void api.invoke('favorites:move', from.id, target[0], target[1])
+      state.moveFavoriteLocally(from.id, target[0], target[1], target[2])
+      void api.invoke('favorites:move', from.id, target[0], target[1], target[2])
       return
     }
 

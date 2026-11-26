@@ -1,23 +1,36 @@
-import { useEffect, useRef, useState, type MouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
-import { useDroppable } from '@dnd-kit/core'
+import { Fragment, useEffect, useRef, useState, type MouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
+import { useDndContext, useDroppable } from '@dnd-kit/core'
 import { rectSortingStrategy, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { FavoriteInfo, FolderInfo, OpenDisposition, SidebarSide } from '@shared/types'
 import { SETTINGS_PAGE_URL } from '@shared/ipc'
 import { selectActiveTab, useBrowserStore } from '../store/useBrowserStore'
-import { dndId, ROOT_ZONE } from '../lib/dnd'
-import { matchFavorite, rectOf } from '../lib/favorites'
+import { dndId, NEW_ROW, parseDndId, ROOT_ZONE } from '../lib/dnd'
+import { rectOf } from '../lib/favorites'
 import { ChevronIcon, GearIcon, GlobeIcon, PlusIcon, SidebarIcon } from './Icons'
 import { SidebarTabs } from './SidebarTabs'
+import { MediaCard } from './MediaCard'
 import { t } from '@shared/i18n'
 
 const api = window.zak
 export const SIDEBAR_COLLAPSED_WIDTH = 64
 export const SIDEBAR_DEFAULT_WIDTH = 300
 /** Same bounds as main's settings store. */
-const MIN_WIDTH = 220
+const MIN_WIDTH = 140
 const MAX_WIDTH = 380
+/** Narrower than this, the folders show their icon only (their name in a tooltip). */
+const NARROW_WIDTH = 190
+/** Dragging the edge narrower than this folds the sidebar (icons only). */
+const FOLD_WIDTH = 96
 const COLUMNS = 5
+const TILE_MIN = 28
+const TILE_GAP = 10
+
+/** Tiles per row: 5, fewer when the sidebar is narrow (a tile stays at least 28 px). */
+export function mosaicColumns(width: number): number {
+  const inner = width - 32
+  return Math.max(1, Math.min(COLUMNS, Math.floor((inner + TILE_GAP) / (TILE_MIN + TILE_GAP))))
+}
 
 /**
  * Folding / unfolding, calmly: the content fades out, the width glides (the page follows its edge
@@ -75,8 +88,12 @@ export function Sidebar(): JSX.Element {
     opacity: fading ? 0 : 1,
     transition: `opacity ${fading ? FADE_OUT_MS : FADE_IN_MS}ms var(--ease-calm)`
   }
-  const activeId = activeTab?.url ? matchFavorite(activeTab.url, favorites)?.id : undefined
+  // The favorite whose own tab is shown (CLAUDE.md §6.2).
+  const activeId = activeTab?.favoriteId ?? undefined
   const inFolder = (folderId: string | null): FavoriteInfo[] => favorites.filter((f) => f.folderId === folderId)
+  // Narrow: the folders as icons, fewer tiles per row (CLAUDE.md §6.2).
+  const iconsOnly = collapsed || layout.width < NARROW_WIDTH
+  const columns = collapsed ? 1 : mosaicColumns(layout.width)
 
   const newFolder = (e: MouseEvent<HTMLButtonElement>): void =>
     void api.invoke('overlay:open', {
@@ -100,7 +117,7 @@ export function Sidebar(): JSX.Element {
       className="no-drag relative flex shrink-0 flex-col bg-frame text-frame-text"
     >
       <div style={content} className={`no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto pt-4 ${collapsed ? 'px-2.5' : 'px-4'}`}>
-        <Mosaic zone={ROOT_ZONE} favorites={inFolder(null)} activeId={activeId} collapsed={collapsed} folderId={null} showAdd />
+        <RootMosaic favorites={inFolder(null)} activeId={activeId} collapsed={collapsed} columns={columns} />
 
         <div className="my-4 h-px shrink-0 bg-frame-line" />
 
@@ -112,7 +129,8 @@ export function Sidebar(): JSX.Element {
                 folder={folder}
                 favorites={inFolder(folder.id)}
                 activeId={activeId}
-                collapsed={collapsed}
+                collapsed={iconsOnly}
+                columns={columns}
               />
             ))}
           </div>
@@ -123,11 +141,11 @@ export function Sidebar(): JSX.Element {
           title={t('Nouveau dossier')}
           onClick={newFolder}
           className={`mt-1 mb-3 flex h-9 shrink-0 items-center gap-2.5 rounded-lg text-[14px] text-frame-text hover:bg-frame-2 ${
-            collapsed ? 'justify-center' : 'px-2'
+            iconsOnly ? 'justify-center' : 'px-2'
           }`}
         >
           <PlusIcon />
-          {!collapsed && t('Nouveau dossier')}
+          {!iconsOnly && t('Nouveau dossier')}
         </button>
 
         {layout.tabs === 'sidebar' && (
@@ -136,6 +154,10 @@ export function Sidebar(): JSX.Element {
             <SidebarTabs collapsed={collapsed} />
           </>
         )}
+      </div>
+
+      <div style={content} className="shrink-0">
+        <MediaCard collapsed={collapsed} />
       </div>
 
       <footer style={content} className={`flex shrink-0 items-center gap-2 pt-2 pb-3 ${collapsed ? 'flex-col justify-center' : 'justify-end px-3'}`}>
@@ -171,7 +193,9 @@ function FolderSection(props: {
   folder: FolderInfo
   favorites: FavoriteInfo[]
   activeId: string | undefined
+  /** Icons only: the sidebar is folded or narrow. */
   collapsed: boolean
+  columns: number
 }): JSX.Element {
   const { folder, collapsed } = props
   const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver, active } = useSortable({
@@ -210,7 +234,8 @@ function FolderSection(props: {
             <ChevronIcon open={!folder.collapsed} />
           </span>
         )}
-        {folder.emoji && <span className="emoji text-[17px] leading-none">{folder.emoji}</span>}
+        {/* Icons only: a folder without an emoji still shows something. */}
+        {(folder.emoji || collapsed) && <span className="emoji text-[17px] leading-none">{folder.emoji || '📁'}</span>}
         {!collapsed && <span className="min-w-0 flex-1 truncate text-left">{folder.name}</span>}
         {!collapsed && <span className="text-[13px] text-frame-dim tabular-nums">{props.favorites.length}</span>}
       </button>
@@ -221,6 +246,7 @@ function FolderSection(props: {
             favorites={props.favorites}
             activeId={props.activeId}
             collapsed
+            columns={props.columns}
             folderId={folder.id}
             showAdd={false}
           />
@@ -232,7 +258,7 @@ function FolderSection(props: {
 }
 
 /** Opens the favorite editor for the current page, filed in `folderId`. */
-function useAddCurrentPage(folderId: string | null): (e: MouseEvent<HTMLButtonElement>) => void {
+function useAddCurrentPage(folderId: string | null, row?: number): (e: MouseEvent<HTMLButtonElement>) => void {
   const tab = useBrowserStore(selectActiveTab)
   return (e) =>
     void api.invoke('overlay:open', {
@@ -244,7 +270,8 @@ function useAddCurrentPage(folderId: string | null): (e: MouseEvent<HTMLButtonEl
         url: tab?.url ?? '',
         emoji: null,
         folderId,
-        favicon: tab?.favicon ?? null
+        favicon: tab?.favicon ?? null,
+        row
       }
     })
 }
@@ -292,12 +319,135 @@ function FolderList(props: { folderId: string; favorites: FavoriteInfo[]; active
   )
 }
 
+/**
+ * The root favorites, in rows you choose (CLAUDE.md §6.2): each row is a grid of 5 square tiles
+ * (1 when the sidebar is collapsed), the rows one under the other. While a favorite or a tab is
+ * dragged, « Nouvelle ligne » under the last row starts another one (over the gap before the
+ * folders: nothing moves when it shows up); a row emptied goes away.
+ */
+function RootMosaic(props: { favorites: FavoriteInfo[]; activeId: string | undefined; collapsed: boolean; columns: number }): JSX.Element {
+  const { setNodeRef } = useDroppable({ id: dndId('zone', ROOT_ZONE) })
+  const { active } = useDndContext()
+  const dragged = active ? parseDndId(active.id).kind : null
+  // The row under the pointer shows a « + » in its next free place (adds the current page there).
+  const [hovered, setHovered] = useState<number | null>(null)
+  const rows: FavoriteInfo[][] = []
+  for (const favorite of props.favorites) (rows[favorite.row] ??= []).push(favorite)
+  const lines = rows.filter((row) => row !== undefined)
+  // While a favorite or a tab is dragged, the free places of each row show as dotted squares.
+  const dragging = dragged === 'fav' || dragged === 'tab'
+  const free = (count: number): number => (props.columns - (count % props.columns)) % props.columns
+  // The « + » only takes a free place: showing it never adds a line (an empty mosaic always shows it).
+  const addButton = (row: number, count: number): React.ReactNode =>
+    !props.collapsed && !dragging && (free(count) > 0 || count === 0) && <AddTile row={row} shown={hovered === row || lines.length === 0} />
+
+  return (
+    <div ref={setNodeRef} data-testid="mosaic" className="relative flex flex-col gap-2.5" onMouseLeave={() => setHovered(null)}>
+      {/* One sortable list per row: tiles make room within their own row only, so the preview shows where it lands. */}
+      {lines.map((row, r) => (
+        <Fragment key={r}>
+          {/* A straight hairline between rows (not the rounded edge of a row). */}
+          {r > 0 && <div aria-hidden className="h-px shrink-0 bg-frame-line/70" />}
+          <MosaicRow row={r} columns={props.columns} slots={dragging ? free(row.length) : 0} onHover={setHovered}>
+            <SortableContext items={row.map((f) => dndId('fav', f.id))} strategy={rectSortingStrategy}>
+              {row.map((favorite, i) => (
+                <FavoriteTile
+                  key={favorite.id}
+                  favorite={favorite}
+                  active={favorite.id === props.activeId}
+                  column={props.collapsed ? -1 : i % props.columns}
+                  columns={props.columns}
+                />
+              ))}
+            </SortableContext>
+            {addButton(r, row.length)}
+          </MosaicRow>
+        </Fragment>
+      ))}
+      {lines.length === 0 && (
+        <MosaicRow row={0} columns={props.columns} slots={dragging ? props.columns : 0} onHover={setHovered}>
+          {addButton(0, 0)}
+        </MosaicRow>
+      )}
+      {dragging && lines.length > 0 && <NewRowZone collapsed={props.collapsed} />}
+    </div>
+  )
+}
+
+/** A row of the root mosaic; `slots`: free places shown as dotted squares while dragging. */
+function MosaicRow(props: {
+  row: number
+  columns: number
+  slots: number
+  onHover: (row: number) => void
+  children: React.ReactNode
+}): JSX.Element {
+  const { setNodeRef, isOver } = useDroppable({ id: dndId('row', props.row) })
+  return (
+    <div
+      ref={setNodeRef}
+      onMouseEnter={() => props.onHover(props.row)}
+      data-testid="mosaic-row"
+      style={{ gridTemplateColumns: `repeat(${props.columns}, minmax(0, 1fr))` }}
+      className="grid min-h-4 gap-2.5"
+    >
+      {props.children}
+      {Array.from({ length: props.slots }, (_, i) => (
+        <div
+          key={`slot-${i}`}
+          aria-hidden
+          data-testid="mosaic-slot"
+          className={`aspect-square rounded-[10px] border border-dashed transition-colors ${
+            isOver ? 'border-iris-ring bg-frame-2/60' : 'border-frame-line'
+          }`}
+        />
+      ))}
+    </div>
+  )
+}
+
+/** « + » in a row's next free place, shown while the pointer is over that row: adds the current page to it. */
+function AddTile({ row, shown }: { row: number; shown: boolean }): JSX.Element {
+  const add = useAddCurrentPage(null, row)
+  return (
+    <button
+      data-testid="add-favorite"
+      title={t('Ajouter un favori')}
+      onClick={add}
+      tabIndex={shown ? 0 : -1}
+      aria-hidden={!shown || undefined}
+      className={`grid aspect-square place-items-center rounded-[10px] border border-dashed border-frame-line text-frame-sub transition-opacity duration-200 hover:border-frame-sub hover:text-frame-text focus-visible:opacity-100 ${
+        shown ? 'opacity-100' : 'pointer-events-none opacity-0'
+      }`}
+    >
+      <PlusIcon />
+    </button>
+  )
+}
+
+/** Under the last row while dragging: drop here to start a new line. */
+function NewRowZone({ collapsed }: { collapsed: boolean }): JSX.Element {
+  const { setNodeRef, isOver } = useDroppable({ id: dndId('row', NEW_ROW) })
+  return (
+    <div
+      ref={setNodeRef}
+      data-testid="new-row"
+      className={`absolute inset-x-0 top-[calc(100%+2px)] z-10 grid h-[30px] place-items-center rounded-[10px] border border-dashed bg-frame text-[12.5px] transition-colors ${
+        isOver ? 'border-iris-ring bg-frame-2 text-frame-text' : 'border-frame-line text-frame-sub'
+      }`}
+    >
+      {collapsed ? <PlusIcon /> : t('Nouvelle ligne')}
+    </div>
+  )
+}
+
 /** A grid of square tiles: 5 per row, 1 when the sidebar is collapsed. Also a drop zone. */
 function Mosaic(props: {
   zone: string
   favorites: FavoriteInfo[]
   activeId: string | undefined
   collapsed: boolean
+  columns: number
   folderId: string | null
   showAdd: boolean
 }): JSX.Element {
@@ -308,7 +458,8 @@ function Mosaic(props: {
     <div
       ref={setNodeRef}
       data-testid="mosaic"
-      className={`grid min-h-4 gap-2.5 rounded-[12px] transition-colors ${props.collapsed ? 'grid-cols-1' : 'grid-cols-5'} ${
+      style={{ gridTemplateColumns: `repeat(${props.columns}, minmax(0, 1fr))` }}
+      className={`grid min-h-4 gap-2.5 rounded-[12px] transition-colors ${
         isOver ? 'bg-frame-2 outline-2 outline-iris-ring/40 outline-dashed' : ''
       }`}
     >
@@ -318,7 +469,8 @@ function Mosaic(props: {
             key={favorite.id}
             favorite={favorite}
             active={favorite.id === props.activeId}
-            column={props.collapsed ? -1 : i % COLUMNS}
+            column={props.columns === 1 ? -1 : i % props.columns}
+            columns={props.columns}
           />
         ))}
       </SortableContext>
@@ -355,14 +507,18 @@ function favoriteHandlers(favorite: FavoriteInfo): {
   }
 }
 
-function FavoriteTile(props: { favorite: FavoriteInfo; active: boolean; column: number }): JSX.Element {
-  const { favorite, active, column } = props
+/** The favorite's own tab is open (a dot under its tile, CLAUDE.md §6.2). */
+const useFavoriteOpen = (id: string): boolean => useBrowserStore((s) => s.tabs.some((tab) => tab.favoriteId === id))
+
+function FavoriteTile(props: { favorite: FavoriteInfo; active: boolean; column: number; columns: number }): JSX.Element {
+  const { favorite, active, column, columns } = props
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: dndId('fav', favorite.id)
   })
+  const open = useFavoriteOpen(favorite.id)
   // Keep the tooltip inside the sidebar: first column aligned left, last aligned right.
   const tooltipPlace =
-    column === 0 ? 'left-0' : column === COLUMNS - 1 || column === -1 ? 'right-0' : 'left-1/2 -translate-x-1/2'
+    column === 0 && columns > 1 ? 'left-0' : column === columns - 1 || column === -1 ? 'right-0' : 'left-1/2 -translate-x-1/2'
 
   return (
     <button
@@ -372,13 +528,16 @@ function FavoriteTile(props: { favorite: FavoriteInfo; active: boolean; column: 
       {...favoriteHandlers(favorite)}
       data-testid="favorite"
       data-favorite-id={favorite.id}
+      data-open={open || undefined}
       aria-label={favorite.title}
+      aria-current={active ? 'page' : undefined}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       className={`group relative grid aspect-square place-items-center rounded-[10px] outline-none ${
         active ? 'bg-frame-3 ring-[1.5px] ring-iris-ring' : 'bg-frame-2 hover:bg-frame-3'
       } ${isDragging ? 'opacity-30' : ''}`}
     >
       <TileIcon favorite={favorite} />
+      {open && !active && <span aria-hidden className="absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-frame-sub" />}
       {!isDragging && (
         <span
           className={`pointer-events-none absolute top-[calc(100%+6px)] z-20 rounded-lg bg-black/85 px-2 py-1 text-xs font-medium whitespace-nowrap text-white opacity-0 transition-opacity delay-300 duration-100 group-hover:opacity-100 ${tooltipPlace}`}
@@ -394,6 +553,7 @@ function FavoriteRow({ favorite, active }: { favorite: FavoriteInfo; active: boo
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: dndId('fav', favorite.id)
   })
+  const open = useFavoriteOpen(favorite.id)
 
   return (
     <button
@@ -414,12 +574,19 @@ function FavoriteRow({ favorite, active }: { favorite: FavoriteInfo; active: boo
         <TileIcon favorite={favorite} small />
       </span>
       <span className="min-w-0 flex-1 truncate">{favorite.title}</span>
+      {open && !active && <span aria-hidden className="mr-1 h-1 w-1 shrink-0 rounded-full bg-frame-sub" />}
     </button>
   )
 }
 
-export function TileIcon(props: { favorite: Pick<FavoriteInfo, 'emoji' | 'favicon'>; small?: boolean }): JSX.Element {
+export function TileIcon(props: {
+  favorite: Pick<FavoriteInfo, 'emoji' | 'favicon'> & { image?: string | null }
+  small?: boolean
+}): JSX.Element {
   const { favorite, small } = props
+  if (favorite.image) {
+    return <img src={favorite.image} alt="" draggable={false} className={small ? 'h-4 w-4 rounded object-cover' : 'h-7 w-7 rounded-lg object-cover'} />
+  }
   if (favorite.emoji) {
     return <span className={`emoji leading-none ${small ? 'text-[15px]' : 'text-[22px]'}`}>{favorite.emoji}</span>
   }
@@ -433,7 +600,7 @@ export function TileIcon(props: { favorite: Pick<FavoriteInfo, 'emoji' | 'favico
   )
 }
 
-/** Drag the sidebar's edge next to the page: 220–380 px, saved on release. */
+/** Drag the sidebar's edge next to the page: 140–380 px, saved on release; much narrower folds it (icons only). */
 function ResizeHandle({ aside, side }: { aside: React.RefObject<HTMLElement | null>; side: SidebarSide }): JSX.Element {
   const setLayout = useBrowserStore((s) => s.setSidebarLayout)
 
@@ -442,12 +609,14 @@ function ResizeHandle({ aside, side }: { aside: React.RefObject<HTMLElement | nu
     if (!el) return
     e.preventDefault()
     const { left, right } = el.getBoundingClientRect()
-    const widthAt = (x: number): number => Math.round(Math.min(Math.max(side === 'left' ? x - left : right - x, MIN_WIDTH), MAX_WIDTH))
-    const move = (ev: PointerEvent): void => setLayout({ width: widthAt(ev.clientX), collapsed: false }, false)
+    const raw = (x: number): number => (side === 'left' ? x - left : right - x)
+    const layoutAt = (x: number): { width?: number; collapsed: boolean } =>
+      raw(x) < FOLD_WIDTH ? { collapsed: true } : { width: Math.round(Math.min(Math.max(raw(x), MIN_WIDTH), MAX_WIDTH)), collapsed: false }
+    const move = (ev: PointerEvent): void => setLayout(layoutAt(ev.clientX), false)
     const up = (ev: PointerEvent): void => {
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', up)
-      setLayout({ width: widthAt(ev.clientX), collapsed: false }, true)
+      setLayout(layoutAt(ev.clientX), true)
     }
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)

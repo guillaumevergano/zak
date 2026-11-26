@@ -1,5 +1,5 @@
 import '../lib/lang'
-import { StrictMode, useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { StrictMode, useEffect, useRef, useState, type FormEvent, type MouseEvent, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import type {
   AgentId,
@@ -12,6 +12,8 @@ import type {
   GeneralSettings,
   ImportSource,
   McpState,
+  McpToolInfo,
+  NewtabHeadlineSource,
   ModInfo,
   PipSettings,
   ProfileInfo,
@@ -24,7 +26,7 @@ import { SEARCH_ENGINES, type SearchEngine } from '@shared/url'
 import { callInternal } from './api'
 import { SmallButton, Toggle } from './ui'
 import '../styles.css'
-import { plural, t } from '@shared/i18n'
+import { LANGUAGES, LANG_CODES, plural, t } from '@shared/i18n'
 
 /** zak://settings (CLAUDE.md §6.7). Every change is saved at once (no save button). */
 function SettingsPage(): JSX.Element {
@@ -78,10 +80,13 @@ function SettingsPage(): JSX.Element {
   const { general, pip } = settings
 
   return (
-    <main className="mx-auto flex max-w-[760px] flex-col gap-6 px-6 py-10">
+    <div className="mx-auto flex max-w-[1010px] items-start gap-8 px-6 py-10">
+    <SettingsNav variant="side" />
+    <main className="flex min-w-0 max-w-[760px] flex-1 flex-col gap-6">
       <header>
         <h1 className="m-0 font-serif text-[34px] font-semibold text-cream-ink">{t('Réglages')}</h1>
       </header>
+      <SettingsNav variant="bar" />
 
       {error && (
         <p role="alert" className="m-0 rounded-[12px] bg-white/70 px-4 py-3 text-[13px] text-pink-button">
@@ -113,8 +118,11 @@ function SettingsPage(): JSX.Element {
             className={selectClass}
           >
             <option value="system">{t('Langue du système')}</option>
-            <option value="fr">Français</option>
-            <option value="en">English</option>
+            {LANG_CODES.map((code) => (
+              <option key={code} value={code} lang={code}>
+                {LANGUAGES[code]}
+              </option>
+            ))}
           </select>
         </Row>
         <Row title={t('Au démarrage')}>
@@ -145,6 +153,30 @@ function SettingsPage(): JSX.Element {
                 onClick={() => saveGeneral({ theme: value })}
                 className={`cursor-pointer rounded-[8px] border-0 px-3 py-1 text-[12.5px] font-semibold ${
                   general.theme === value ? 'bg-violet text-white' : 'bg-transparent text-sub hover:text-ink'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </Row>
+        <Row title={t('Apparence des sites')} detail={t('Le mode clair ou sombre que voient les sites web (YouTube…). « Système » suit l’ordinateur, quel que soit le thème de Zak.')}>
+          <div role="radiogroup" aria-label={t('Apparence des sites')} className="flex rounded-[10px] border border-cream-edge bg-cream-2 p-0.5">
+            {(
+              [
+                ['light', t('Clair')],
+                ['dark', t('Sombre')],
+                ['system', t('Système')]
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={general.sitesTheme === value}
+                onClick={() => saveGeneral({ sitesTheme: value })}
+                className={`cursor-pointer rounded-[8px] border-0 px-3 py-1 text-[12.5px] font-semibold ${
+                  general.sitesTheme === value ? 'bg-violet text-white' : 'bg-transparent text-sub hover:text-ink'
                 }`}
               >
                 {label}
@@ -220,6 +252,60 @@ function SettingsPage(): JSX.Element {
         onError={fail}
       />
 
+      <Section id="newtab" title={t('Nouvel onglet')}>
+        <Row
+          title={t('Sous le logo')}
+          detail={
+            t('À chaque nouvel onglet, l’un de ceux cochés, au hasard. Rien de coché : rien ne s’affiche.') +
+            (general.newtabHeadlines.includes('history') || general.newtabHeadlines.includes('wikipedia')
+              ? ` ${t('« Ce jour dans l’histoire » et « Le saviez-vous ? » viennent de Wikipédia, dans la langue de Zak.')}`
+              : '')
+          }
+        >
+          <fieldset aria-label={t('Sous le logo')} className="m-0 flex flex-col gap-1.5 border-0 p-0">
+            {HEADLINE_SOURCES.map(([source, label]) => (
+              <label key={source} className="flex items-center gap-2 text-[13.5px] text-ink">
+                <input
+                  type="checkbox"
+                  checked={general.newtabHeadlines.includes(source)}
+                  onChange={(e) =>
+                    saveGeneral({
+                      newtabHeadlines: e.target.checked
+                        ? [...general.newtabHeadlines, source]
+                        : general.newtabHeadlines.filter((s) => s !== source)
+                    })
+                  }
+                  className="size-4 accent-violet"
+                />
+                {label}
+              </label>
+            ))}
+          </fieldset>
+        </Row>
+        {general.newtabHeadlines.includes('custom') && (
+          <Row title={t('Mon texte')}>
+            <div className="flex w-[300px] flex-col gap-1.5">
+              <input
+                aria-label={t('Titre')}
+                placeholder={t('Un peu d’espace.')}
+                defaultValue={general.newtabTitle}
+                maxLength={80}
+                onBlur={(e) => e.target.value !== general.newtabTitle && saveGeneral({ newtabTitle: e.target.value })}
+                className="h-9 rounded-[10px] border border-cream-edge bg-cream-2 px-3 text-[13.5px] text-ink focus:border-pink focus:outline-none"
+              />
+              <input
+                aria-label={t('Sous-titre')}
+                placeholder={t('Pour vos prochaines idées.')}
+                defaultValue={general.newtabSubtitle}
+                maxLength={120}
+                onBlur={(e) => e.target.value !== general.newtabSubtitle && saveGeneral({ newtabSubtitle: e.target.value })}
+                className="h-9 rounded-[10px] border border-cream-edge bg-cream-2 px-3 text-[13.5px] text-ink focus:border-pink focus:outline-none"
+              />
+            </div>
+          </Row>
+        )}
+      </Section>
+
       <Section id="downloads" title={t('Téléchargements')}>
         <Row title={t('Dossier de téléchargement')} detail={general.downloadDir}>
           <SmallButton
@@ -244,6 +330,7 @@ function SettingsPage(): JSX.Element {
       <Section
         id="pip"
         title={t('Lecteur vidéo flottant')}
+        nav={t('Lecteur flottant')}
         intro={t(
           'Quand vous quittez un onglet où une vidéo est en lecture, elle continue dans une petite fenêtre flottante, toujours au premier plan.'
         )}
@@ -251,8 +338,28 @@ function SettingsPage(): JSX.Element {
         <Row title={t('Passer automatiquement en lecteur flottant')} detail={t("Au changement d'onglet ou quand la fenêtre est réduite.")}>
           <Toggle label={t('Lecteur flottant automatique')} on={pip.enabled} onChange={(enabled) => savePip({ ...pip, enabled })} />
         </Row>
+        <Row
+          title={t('Lecteur flottant')}
+          detail={t('Celui de Zak : coins arrondis, ses boutons (lecture, revenir à l’onglet, fermer), et on le déplace à la souris. Celui du système : le lecteur Picture-in-Picture de Chromium.')}
+        >
+          <select
+            aria-label={t('Lecteur flottant')}
+            value={pip.style}
+            onChange={(e) => savePip({ ...pip, style: e.target.value === 'system' ? 'system' : 'zak' })}
+            className={selectClass}
+          >
+            <option value="zak">{t('Celui de Zak')}</option>
+            <option value="system">{t('Celui du système')}</option>
+          </select>
+        </Row>
         <Row title={t("Fermer le lecteur flottant au retour sur l'onglet")}>
           <Toggle label={t('Fermer au retour')} on={pip.closeOnReturn} onChange={(closeOnReturn) => savePip({ ...pip, closeOnReturn })} />
+        </Row>
+        <Row
+          title={t('Aussi les vidéos qui se lancent toutes seules')}
+          detail={t('Par défaut, seule une vidéo que vous avez lancée (clic, touche) passe en lecteur flottant, pas celles qui démarrent seules dans un fil (X, Instagram…).')}
+        >
+          <Toggle label={t('Aussi les vidéos qui se lancent toutes seules')} on={pip.autoplayed} onChange={(autoplayed) => savePip({ ...pip, autoplayed })} />
         </Row>
         <Row title={t('Ignorer les vidéos muettes')} detail={t('Par défaut, une vidéo sans le son passe aussi en lecteur flottant.')}>
           <Toggle label={t('Ignorer les vidéos muettes')} on={pip.skipMuted} onChange={(skipMuted) => savePip({ ...pip, skipMuted })} />
@@ -263,6 +370,8 @@ function SettingsPage(): JSX.Element {
       <ProfilesSection onError={fail} />
 
       <CustomizeSection onError={fail} />
+
+      <McpSection onError={fail} />
 
       <Section id="passwords" title={t('Mots de passe')}>
         <Row title={t("Proposer d'enregistrer les mots de passe")} detail={t('Après une connexion. Chiffrés avec le trousseau de votre ordinateur.')}>
@@ -289,7 +398,7 @@ function SettingsPage(): JSX.Element {
         </Row>
       </Section>
 
-      <Section id="permissions" title={t('Autorisations des sites')} intro={t('Les réponses données aux demandes des sites, mémorisées par site.')}>
+      <Section id="permissions" title={t('Autorisations des sites')} nav={t('Autorisations')} intro={t('Les réponses données aux demandes des sites, mémorisées par site.')}>
         {settings.permissions.length === 0 ? (
           <p className="m-0 border-t border-violet/10 py-3 text-[13px] text-sub">{t('Aucune autorisation mémorisée.')}</p>
         ) : (
@@ -318,14 +427,92 @@ function SettingsPage(): JSX.Element {
 
       <ClearData onError={fail} />
     </main>
+    </div>
+  )
+}
+
+/**
+ * The menu of the page's sections: a column on the left that stays in view, or a bar under the
+ * title when the window is narrow. Built from the sections on the page (their `data-nav`), the
+ * one in view highlighted.
+ */
+function SettingsNav({ variant }: { variant: 'side' | 'bar' }): JSX.Element {
+  const [sections, setSections] = useState<{ id: string; label: string }[]>([])
+  const [current, setCurrent] = useState<string | null>(null)
+
+  useEffect(() => {
+    const list = [...document.querySelectorAll<HTMLElement>('main section[id][data-nav]')]
+    setSections(list.map((el) => ({ id: el.id, label: el.dataset['nav'] ?? el.id })))
+    // The section crossing the upper part of the window is the current one.
+    const seen = new Map<string, boolean>()
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) seen.set(entry.target.id, entry.isIntersecting)
+        const first = list.find((el) => seen.get(el.id))
+        if (first) setCurrent(first.id)
+      },
+      { rootMargin: '-15% 0px -70% 0px' }
+    )
+    list.forEach((el) => observer.observe(el))
+    return () => observer.disconnect()
+  }, [])
+
+  const go = (e: MouseEvent, id: string): void => {
+    e.preventDefault()
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+    document.getElementById(id)?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
+    history.replaceState(null, '', `#${id}`)
+    setCurrent(id)
+  }
+
+  // The bar keeps the current section's link in view.
+  const navRef = useRef<HTMLElement>(null)
+  useEffect(() => {
+    const bar = navRef.current
+    const link = bar?.querySelector<HTMLElement>('[aria-current]')
+    if (variant !== 'bar' || !bar || !link) return
+    bar.scrollTo({ left: link.offsetLeft - bar.clientWidth / 2 + link.offsetWidth / 2 })
+  }, [current, variant])
+
+  const side = variant === 'side'
+  return (
+    <nav
+      ref={navRef}
+      aria-label={t('Sections des réglages')}
+      data-testid={`settings-nav-${variant}`}
+      className={
+        side
+          ? 'sticky top-10 hidden w-[180px] shrink-0 flex-col gap-0.5 pt-[66px] min-[900px]:flex'
+          : 'sticky top-0 z-10 -mx-2 flex gap-1 overflow-x-auto rounded-[14px] [scrollbar-width:none] bg-cream/90 px-2 py-2 backdrop-blur min-[900px]:hidden'
+      }
+    >
+      {sections.map((section) => (
+        <a
+          key={section.id}
+          href={`#${section.id}`}
+          onClick={(e) => go(e, section.id)}
+          aria-current={current === section.id ? 'location' : undefined}
+          className={`shrink-0 rounded-[9px] px-3 py-1.5 text-[13px] whitespace-nowrap no-underline transition-colors ${
+            current === section.id ? 'bg-violet/12 font-semibold text-violet' : 'text-sub hover:bg-violet/6 hover:text-ink'
+          }`}
+        >
+          {section.label}
+        </a>
+      ))}
+    </nav>
   )
 }
 
 const selectClass = 'max-w-[300px] rounded-[10px] border border-cream-edge bg-cream-2 px-2 py-1.5 text-[13px] text-cream-ink'
 
-function Section(props: { id: string; title: string; intro?: string; children: ReactNode }): JSX.Element {
+function Section(props: { id: string; title: string; nav?: string; intro?: string; children: ReactNode }): JSX.Element {
   return (
-    <section id={props.id} aria-labelledby={`${props.id}-title`} className="glass-card flex flex-col rounded-[18px] px-5 py-4">
+    <section
+      id={props.id}
+      aria-labelledby={`${props.id}-title`}
+      data-nav={props.nav ?? props.title}
+      className="glass-card flex scroll-mt-16 flex-col rounded-[18px] px-5 py-4 min-[900px]:scroll-mt-6"
+    >
       <h2 id={`${props.id}-title`} className="m-0 text-[15px] font-bold text-title">
         {props.title}
       </h2>
@@ -371,6 +558,7 @@ function ExtensionBar(props: {
     <Section
       id="extension-bar"
       title={t('Extensions dans la barre latérale')}
+      nav={t('Extensions')}
       intro={t("Choisis les icônes d'extensions affichées en haut de la barre latérale, et leur ordre (de gauche à droite).")}
     >
       {extensions && extensions.length === 0 && (
@@ -557,6 +745,7 @@ function CustomizeSection({ onError }: { onError: (err: unknown) => void }): JSX
     <Section
       id="customize"
       title={t('Personnaliser avec Claude Code ou Codex')}
+      nav={t('Personnaliser')}
       intro={t('Zak se configure aussi en langage naturel : demandez à Claude Code ou à Codex de modifier vos réglages ou de vous écrire une extension.')}
     >
       <Row title={t('Fichier de réglages')} detail={path ?? ''}>
@@ -566,7 +755,6 @@ function CustomizeSection({ onError }: { onError: (err: unknown) => void }): JSX
         </div>
       </Row>
       <ModsBlock onError={onError} />
-      <McpBlock onError={onError} />
       <Row title={t('Extensions maison')} detail={t('Une extension écrite par l’IA se charge dans Extensions et se recharge à chaque modification.')}>
         <a href={EXTENSIONS_PAGE_URL} className="rounded-[10px] border border-cream-edge bg-cream-2 px-3 py-1 text-[12.5px] font-semibold text-violet no-underline hover:border-violet/40">
           {t('Extensions')}
@@ -596,6 +784,85 @@ function CustomizeSection({ onError }: { onError: (err: unknown) => void }): JSX
         </div>
       )}
     </Section>
+  )
+}
+
+/**
+ * Réglages → MCP: what the MCP server is for, how to connect an agent in three steps, and once
+ * it runs, the tools agents get.
+ */
+function McpSection({ onError }: { onError: (err: unknown) => void }): JSX.Element {
+  return (
+    <Section
+      id="mcp"
+      title={t('MCP : piloter Zak depuis un assistant IA')}
+      nav="MCP"
+      intro={t(
+        'Le MCP (Model Context Protocol) permet à Claude Code, Codex ou Claude Desktop de piloter Zak : ranger vos onglets, ajouter des favoris, changer vos réglages ou son apparence. Le serveur ne tourne que sur cet ordinateur.'
+      )}
+    >
+      <ol aria-label={t('Installer le MCP')} className="m-0 mb-3 flex list-none flex-col gap-2 p-0">
+        {[
+          t('Activez le serveur MCP ci-dessous.'),
+          t('Cliquez sur « Connecter à … » pour l’assistant installé sur cet ordinateur : Zak s’ajoute tout seul à sa configuration. Sinon, suivez la configuration manuelle.'),
+          t('Dans l’assistant, demandez par exemple : « Range mes onglets Zak par sujet ».')
+        ].map((step, i) => (
+          <li key={i} className="flex items-start gap-3 text-[13px] text-sub">
+            <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-violet/12 text-[12px] font-bold text-violet">
+              {i + 1}
+            </span>
+            <span className="pt-0.5">{step}</span>
+          </li>
+        ))}
+      </ol>
+      <McpBlock onError={onError} />
+    </Section>
+  )
+}
+
+/** What each tool does, for people (agents read the English description). */
+const MCP_TOOL_LABELS: Record<string, () => string> = {
+  list_tabs: () => t('Lister les fenêtres et leurs onglets'),
+  open_tab: () => t('Ouvrir une adresse ou une recherche dans un nouvel onglet'),
+  close_tabs: () => t('Fermer des onglets'),
+  activate_tab: () => t('Afficher un onglet'),
+  group_tabs: () => t('Regrouper des onglets, avec un nom et une couleur'),
+  list_favorites: () => t('Lister les favoris et les dossiers de la barre latérale'),
+  add_favorite: () => t('Ajouter un favori, avec un emoji, dans un dossier'),
+  get_settings: () => t('Lire les réglages'),
+  update_settings: () => t('Modifier les réglages (moteur de recherche, thème, barre latérale…)'),
+  get_appearance: () => t('Lire les couleurs et les polices'),
+  update_appearance: () => t('Changer les couleurs et les polices'),
+  list_mods: () => t('Lister les mods'),
+  use_mod: () => t('Utiliser un mod (thème, page Nouvel onglet)')
+}
+
+/** The tools of the running server: what an agent connected to Zak can do. */
+function McpTools(): JSX.Element | null {
+  const [tools, setTools] = useState<McpToolInfo[] | null>(null)
+  useEffect(() => {
+    callInternal('settings/mcpTools', null).then(setTools).catch(() => {})
+  }, [])
+  if (!tools) return null
+  return (
+    <div className="flex flex-col gap-2 border-t border-violet/10 py-3">
+      <span className="text-[13px] font-semibold text-ink">{t('Outils disponibles ({count})', { count: tools.length })}</span>
+      <ul aria-label={t('Outils du MCP')} data-testid="mcp-tools" className="m-0 flex list-none flex-col p-0">
+        {tools.map((tool) => (
+          <li key={tool.name} className="flex items-center gap-3 border-t border-violet/6 py-1.5 first:border-t-0">
+            <code className="w-[150px] shrink-0 truncate font-mono text-[12px] text-violet">{tool.name}</code>
+            <span className="min-w-0 flex-1 text-[12.5px] text-sub">{MCP_TOOL_LABELS[tool.name]?.() ?? tool.description}</span>
+            <span
+              className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                tool.readOnly ? 'bg-cream-2 text-sub' : 'bg-violet/12 text-violet'
+              }`}
+            >
+              {tool.readOnly ? t('Lecture seule') : t('Modifie Zak')}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 
@@ -681,6 +948,7 @@ export ZAK_MCP_TOKEN=${state.token}`
           </p>
         )}
       </div>
+      {state?.enabled && state.url && <McpTools />}
       {state?.enabled && state.url && (
         <details className="border-t border-violet/10 py-3" data-testid="mcp-setup">
           <summary className="cursor-pointer text-[13px] font-semibold text-ink">{t('Configuration manuelle')}</summary>
@@ -914,7 +1182,7 @@ function ClearData({ onError }: { onError: (err: unknown) => void }): JSX.Elemen
   )
 
   return (
-    <Section id="clear" title={t('Effacer les données de navigation')}>
+    <Section id="clear" title={t('Effacer les données de navigation')} nav={t('Effacer les données')}>
       <form onSubmit={submit} className="flex flex-col gap-3 border-t border-violet/10 pt-3">
         <label className="flex items-center gap-3 text-[13.5px] font-semibold text-ink">
           {t('Période')}
@@ -940,6 +1208,16 @@ function ClearData({ onError }: { onError: (err: unknown) => void }): JSX.Elemen
     </Section>
   )
 }
+
+/** The new tab page's sources, in the order of the settings page. */
+const HEADLINE_SOURCES: [NewtabHeadlineSource, string][] = [
+  ['zak', t('« Un peu d’espace. »')],
+  ['custom', t('Mon texte')],
+  ['quote', t('Une citation')],
+  ['proverb', t('Un proverbe')],
+  ['history', t('Ce jour dans l’histoire')],
+  ['wikipedia', t('Le saviez-vous ?')]
+]
 
 function Row(props: { title: string; detail?: string; children: ReactNode }): JSX.Element {
   return (

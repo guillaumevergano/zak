@@ -7,6 +7,9 @@ import { FindBar } from './FindBar'
 import { PermissionPrompt } from './PermissionPrompt'
 import { SavePasswordPrompt } from './SavePasswordPrompt'
 import { DownloadsPanel } from './DownloadsPanel'
+import { TranslationBubble } from './TranslationBubble'
+import { ScreenshotPicker } from './ScreenshotPicker'
+import { ScreenshotToast } from './ScreenshotToast'
 import { t } from '@shared/i18n'
 
 const api = window.zak
@@ -39,7 +42,8 @@ export function OverlayApp(): JSX.Element {
 
   useEffect(() => {
     // The permission prompt answers Esc itself (dismissed, not hidden: it would come back).
-    if (!request || request.kind === 'permission' || request.kind === 'save-password' || request.kind === 'suggestions') return
+    const own = ['permission', 'save-password', 'suggestions', 'translation', 'screenshot', 'screenshot-done']
+    if (!request || own.includes(request.kind)) return
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') close()
     }
@@ -54,6 +58,9 @@ export function OverlayApp(): JSX.Element {
   if (request.kind === 'find') return <FindBar key={serial} request={request} />
   if (request.kind === 'permission') return <PermissionPrompt key={serial} request={request} />
   if (request.kind === 'save-password') return <SavePasswordPrompt key={serial} request={request} />
+  if (request.kind === 'translation') return <TranslationBubble key={serial} request={request} />
+  if (request.kind === 'screenshot') return <ScreenshotPicker key={serial} />
+  if (request.kind === 'screenshot-done') return <ScreenshotToast key={serial} request={request} />
 
   return (
     <div className="fixed inset-0" onMouseDown={(e) => e.target === e.currentTarget && close()}>
@@ -83,6 +90,8 @@ function FavoriteEditor(props: {
 }): JSX.Element {
   const { favoriteId, draft, anchor } = props.request
   const [emoji, setEmoji] = useState(draft.emoji)
+  const [image, setImage] = useState(draft.image ?? null)
+  const [favicon, setFavicon] = useState(draft.favicon ?? null)
   const [title, setTitle] = useState(draft.title)
   const [url, setUrl] = useState(draft.url)
   const [folderId, setFolderId] = useState(draft.folderId)
@@ -90,7 +99,8 @@ function FavoriteEditor(props: {
   const submit = (e: FormEvent): void => {
     e.preventDefault()
     if (!url.trim()) return
-    const input = { title: title.trim() || url.trim(), url: normalizeUrl(url), emoji, folderId, favicon: draft.favicon ?? null }
+    // Added from a row's « + »: that row (unless filed in a folder instead).
+    const input = { title: title.trim() || url.trim(), url: normalizeUrl(url), emoji, image, folderId, favicon, row: folderId === null ? draft.row : undefined }
     void (favoriteId ? api.invoke('favorites:update', favoriteId, input) : api.invoke('favorites:add', input)).then(props.onDone)
   }
 
@@ -98,7 +108,28 @@ function FavoriteEditor(props: {
     <Popover anchor={anchor}>
       <form className="flex flex-col gap-3" onSubmit={submit} data-testid="favorite-editor">
         <span className="text-[15px] font-bold text-title">{favoriteId ? t('Modifier le favori') : t('Ajouter aux favoris')}</span>
-        <EmojiField emoji={emoji} favicon={draft.favicon} allowNone onChange={setEmoji} />
+        <EmojiField
+          emoji={emoji}
+          favicon={favicon}
+          allowNone
+          onChange={(next) => {
+            setEmoji(next)
+            setImage(null)
+          }}
+          sources={{
+            url: url.trim() ? normalizeUrl(url) : '',
+            image,
+            onSiteIcon: (icon) => {
+              setFavicon(icon)
+              setEmoji(null)
+              setImage(null)
+            },
+            onImage: (picked) => {
+              setImage(picked)
+              setEmoji(null)
+            }
+          }}
+        />
         <Field label={t('Titre')}>
           <input
             autoFocus
@@ -159,7 +190,7 @@ function FolderEditor(props: { request: Extract<OverlayRequest, { kind: 'folder-
   return (
     <Popover anchor={anchor}>
       <form className="flex flex-col gap-3" onSubmit={submit} data-testid="folder-editor">
-        <span className="text-[15px] font-bold text-title">{folderId ? t('Renommer le dossier') : t('Nouveau dossier')}</span>
+        <span className="text-[15px] font-bold text-title">{folderId ? t('Modifier le dossier') : t('Nouveau dossier')}</span>
         <EmojiField emoji={emoji} allowNone={false} onChange={setEmoji} />
         <Field label={t('Nom')}>
           <input

@@ -78,20 +78,26 @@ export class SidebarController {
     return this.change(() => this.settings.setSidebar(patch))
   }
 
-  addFromTab(handle: BrowserWindowHandle, tabId: TabId, folderId: string | null, index: number): string {
+  addFromTab(handle: BrowserWindowHandle, tabId: TabId, folderId: string | null, index: number, row?: number): string {
     const tab = handle.tabs.snapshot(tabId)
     if (!tab || !/^https?:/.test(tab.url)) return ''
     return this.change(() =>
-      this.favorites.addFavorite({ title: tab.title, url: tab.url, emoji: null, folderId, favicon: tab.favicon }, index)
+      this.favorites.addFavorite({ title: tab.title, url: tab.url, emoji: null, folderId, favicon: tab.favicon }, index, row)
     )
   }
 
   open(handle: BrowserWindowHandle, id: string, disposition: OpenDisposition): void {
     const favorite = this.favorites.favorite(id)
     if (!favorite) return
-    const activeId = handle.tabs.getActiveId()
-    if (disposition === 'current' && activeId !== null) handle.tabs.navigate(activeId, favorite.url)
+    // A plain click: the favorite's own tab (CLAUDE.md §6.2); Cmd/Ctrl or middle click: a new tab.
+    if (disposition === 'current') handle.tabs.openFavorite(id, favorite.url)
     else handle.tabs.create(favorite.url, { active: disposition !== 'background-tab' })
+  }
+
+  /** Deletes a favorite; its tab closes in every window. */
+  removeFavorite(id: string): void {
+    this.change(() => this.favorites.removeFavorite(id))
+    for (const handle of this.windows.all()) handle.tabs.closeFavorite(id)
   }
 
   showFavoriteMenu(handle: BrowserWindowHandle, id: string): void {
@@ -117,7 +123,7 @@ export class SidebarController {
       },
       { label: t("Copier l'adresse"), click: () => clipboard.writeText(favorite.url) },
       { type: 'separator' },
-      { label: t('Supprimer'), click: () => this.change(() => this.favorites.removeFavorite(id)) }
+      { label: t('Supprimer'), click: () => this.removeFavorite(id) }
     ]).popup({ window: handle.window })
   }
 
@@ -130,7 +136,7 @@ export class SidebarController {
         click: () => inside.forEach((f, i) => handle.tabs.create(f.url, { active: i === 0 }))
       },
       { type: 'separator' },
-      { label: t('Renommer…'), click: () => this.windows.send(handle, 'sidebar:edit', { kind: 'folder', id }) },
+      { label: t('Modifier le nom et l’icône…'), click: () => this.windows.send(handle, 'sidebar:edit', { kind: 'folder', id }) },
       {
         label: inside.length > 0 ? t('Supprimer le dossier (garder ses favoris)') : t('Supprimer le dossier'),
         click: () => this.change(() => this.favorites.removeFolder(id))

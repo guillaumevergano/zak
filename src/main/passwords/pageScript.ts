@@ -27,9 +27,12 @@ export function pageScript(config: PageScriptConfig): string {
   return `(${install.toString()})(${JSON.stringify(config)})`
 }
 
-/** Fills the last login form the user was in (run in the same isolated world). */
-export function fillScript(username: string, password: string): string {
-  return `(${fill.toString()})(${JSON.stringify(username)}, ${JSON.stringify(password)})`
+/**
+ * Fills the last login form the user was in (run in the same isolated world), only if the page is
+ * still on `origin`: it may have navigated since the click.
+ */
+export function fillScript(origin: string, username: string, password: string): string {
+  return `(${fill.toString()})(${JSON.stringify(origin)}, ${JSON.stringify(username)}, ${JSON.stringify(password)})`
 }
 
 // ─── Below: page code (no imports, no closures over module scope) ──────────────────────────────
@@ -47,6 +50,8 @@ function install(config: PageScriptConfig): void {
     return
   }
   const state: State = { config, lastField: null }
+  /** A click on the list counts only once it has been on screen this long (against clickjacking). */
+  const SHOWN_MS = 500
   g.__zakPasswords = state
 
   const send = (payload: object): void => console.debug(`zakpw:${state.config.nonce}:${JSON.stringify(payload)}`)
@@ -126,8 +131,15 @@ function install(config: PageScriptConfig): void {
     close()
     const logins = state.config.logins
     if (logins.length === 0) return
-    host = document.createElement('zak-passwords')
-    const root = host.attachShadow({ mode: 'closed' })
+    const list = document.createElement('zak-passwords')
+    host = list
+    // The page's styles can't reach inside the closed shadow root, but they can target the host:
+    // keep it visible and opaque (inline !important beats the page's stylesheets).
+    for (const [name, value] of [['display', 'block'], ['opacity', '1'], ['visibility', 'visible'], ['filter', 'none'], ['transform', 'none'], ['clip-path', 'none'], ['pointer-events', 'auto']]) {
+      list.style.setProperty(name!, value!, 'important')
+    }
+    const shownAt = performance.now()
+    const root = list.attachShadow({ mode: 'closed' })
     const r = field.getBoundingClientRect()
     const style = document.createElement('style')
     style.textContent = `
@@ -162,6 +174,11 @@ function install(config: PageScriptConfig): void {
       button.addEventListener('mousedown', (e) => e.preventDefault()) // keep the focus in the field
       button.addEventListener('click', (e) => {
         if (!e.isTrusted) return // a click from the page's scripts
+        // Clickjacking: the page may have hidden the list, covered it, or made it appear under the
+        // pointer just before a click. Only a click on the list as shown, after a moment, fills.
+        const style = getComputedStyle(list)
+        const shown = style.opacity === '1' && style.visibility === 'visible' && style.display !== 'none'
+        if (!shown || performance.now() - shownAt < SHOWN_MS || document.elementFromPoint(e.clientX, e.clientY) !== list) return
         state.lastField = field
         close()
         send({ t: 'fill', id: login.id })
@@ -184,13 +201,15 @@ function install(config: PageScriptConfig): void {
     true
   )
   document.addEventListener('input', (e) => e.target === state.lastField && close(), true)
-  document.addEventListener('focusout', () => setTimeout(() => document.activeElement !== host && close(), 150), true)
+  // Leaving the field closes the list, unless the focus went to the list or to the field it now belongs to.
+  document.addEventListener('focusout', () => setTimeout(() => document.activeElement !== host && document.activeElement !== state.lastField && close(), 150), true)
   document.addEventListener('keydown', (e) => e.key === 'Escape' && close(), true)
   window.addEventListener('scroll', close, true)
   window.addEventListener('resize', close)
 }
 
-function fill(username: string, password: string): void {
+function fill(origin: string, username: string, password: string): void {
+  if (location.origin !== origin) return
   const state = (globalThis as unknown as { __zakPasswords?: State }).__zakPasswords
   const field = state?.lastField
   const scope: ParentNode = field?.form ?? document

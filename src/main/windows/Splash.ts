@@ -1,4 +1,5 @@
 import { BrowserWindow } from 'electron'
+import { present } from './quietMode'
 import { getLang, t } from '@shared/i18n'
 
 const html = (): string => `<!doctype html><html lang="${getLang()}"><meta charset="utf-8"><title>Zak</title>
@@ -28,7 +29,7 @@ export function showSplash(): BrowserWindow {
     backgroundColor: '#2E1F2D',
     webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false }
   })
-  win.once('ready-to-show', () => win.show())
+  win.once('ready-to-show', () => present(win))
   void win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html())}`)
   return win
 }

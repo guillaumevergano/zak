@@ -3,9 +3,10 @@ import { closestCenter, pointerWithin, type CollisionDetection, type UniqueIdent
 /**
  * One DndContext for the whole chrome UI (tabs can be dropped into the sidebar), so draggable
  * ids are namespaced: `tab:<id>`, `fav:<id>`, `folder:<id>`, and drop zones `zone:root` /
- * `zone:<folderId>` (a folder's grid, or the root mosaic).
+ * `zone:<folderId>` (a folder's grid, or the root mosaic), `row:<n>` (a row of the root mosaic)
+ * and `row:new` (under its last row: a new line).
  */
-export type DndKind = 'tab' | 'fav' | 'folder' | 'zone'
+export type DndKind = 'tab' | 'fav' | 'folder' | 'zone' | 'row'
 
 export const dndId = (kind: DndKind, id: string | number): string => `${kind}:${id}`
 
@@ -16,17 +17,19 @@ export function parseDndId(id: UniqueIdentifier): { kind: DndKind; id: string } 
 }
 
 export const ROOT_ZONE = 'root'
+export const NEW_ROW = 'new'
 
 /** Which targets each kind of drag can land on. */
 const TARGETS: Record<DndKind, DndKind[]> = {
-  tab: ['tab', 'fav', 'zone', 'folder'],
-  fav: ['fav', 'zone', 'folder'],
+  tab: ['tab', 'fav', 'row', 'zone', 'folder'],
+  fav: ['fav', 'row', 'zone', 'folder'],
   folder: ['folder'],
-  zone: []
+  zone: [],
+  row: []
 }
 
-/** When the pointer is inside several targets, the most specific wins: a tile, then its grid, then the folder. */
-const specificity: Record<DndKind, number> = { tab: 0, fav: 0, zone: 1, folder: 2 }
+/** When the pointer is inside several targets, the most specific wins: a tile, its row, its grid, then the folder. */
+const specificity: Record<DndKind, number> = { tab: 0, fav: 0, row: 1, zone: 2, folder: 3 }
 
 /**
  * Pointer-based first (precise across the sidebar's grids: a tile beats the zone around it),

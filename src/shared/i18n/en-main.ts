@@ -74,8 +74,7 @@ export const EN_MAIN: Record<string, string> = {
   Retour: 'Back',
   Avancer: 'Forward',
   Recharger: 'Reload',
-  'Traduire en français': 'Translate to French',
-  'Traduire en anglais': 'Translate to English',
+  'Traduire cette page': 'Translate this page',
   Inspecter: 'Inspect',
   'Nouvel onglet': 'New tab',
   'Nouvel onglet à droite': 'New tab to the right',
@@ -120,7 +119,7 @@ export const EN_MAIN: Record<string, string> = {
   'Déplacer vers': 'Move to',
   "Copier l'adresse": 'Copy address',
   'Ouvrir tous dans des onglets': 'Open all in tabs',
-  'Renommer…': 'Rename…',
+  'Modifier le nom et l’icône…': 'Edit name and icon…',
   'Supprimer le dossier (garder ses favoris)': 'Delete folder (keep its favorites)',
   'Supprimer le dossier': 'Delete folder',
 
@@ -177,5 +176,10 @@ export const EN_MAIN: Record<string, string> = {
 
   // One-click agent connection (mcp/connect.ts)
   'Claude Desktop n’est pas installé.': 'Claude Desktop isn’t installed.',
-  'Claude Code n’est pas installé (commande « claude » introuvable).': 'Claude Code isn’t installed (no “claude” command found).'
+  'Claude Code n’est pas installé (commande « claude » introuvable).': 'Claude Code isn’t installed (no “claude” command found).',
+  'Proverbe': 'Proverb',
+  'Ce jour dans l’histoire · {date}': 'On this day · {date}',
+  'Le saviez-vous ? · {topic}': 'Did you know? · {topic}',
+  'Capture d’écran…': 'Take a screenshot…',
+  'Capture': 'Screenshot'
 }

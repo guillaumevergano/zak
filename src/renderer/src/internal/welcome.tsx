@@ -3,7 +3,7 @@ import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { DefaultBrowserStatus, GeneralSettings, ImportSource } from '@shared/types'
 import { NEWTAB_PAGE_URL } from '@shared/ipc'
-import { plural, t } from '@shared/i18n'
+import { LANGUAGES, LANG_CODES, plural, t } from '@shared/i18n'
 import logo from '../assets/brand/zak-logo-color.svg'
 import logoReverse from '../assets/brand/zak-logo-reverse.svg'
 import { callInternal } from './api'
@@ -133,8 +133,11 @@ function WelcomePage(): JSX.Element {
               className="h-10 rounded-[12px] border border-cream-edge bg-cream-2 px-3 text-[14px] text-cream-ink"
             >
               <option value="system">{t('Celle du système')}</option>
-              <option value="fr">Français</option>
-              <option value="en">English</option>
+              {LANG_CODES.map((code) => (
+                <option key={code} value={code} lang={code}>
+                  {LANGUAGES[code]}
+                </option>
+              ))}
             </select>
             {languageChanged && <span className="text-[13px] text-cream-sub">{t('Appliquée au prochain lancement de Zak.')}</span>}
           </div>

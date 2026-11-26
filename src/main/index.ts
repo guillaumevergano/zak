@@ -3,13 +3,16 @@ import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { app, BrowserWindow, components, dialog, ipcMain, nativeTheme, shell, webContents, type IpcMainInvokeEvent } from 'electron'
 import { DOWNLOADS_PAGE_URL, NEWTAB_PAGE_URL, SETTINGS_PAGE_URL, WELCOME_PAGE_URL, type InvokeChannel, type InvokeChannels, type SendChannel, type SendChannels } from '@shared/ipc'
-import type { McpState, WidevineStatus } from '@shared/types'
+import type { GeneralSettings, McpState, WidevineStatus } from '@shared/types'
 import { resolveLang, setLang, t, type LangSetting } from '@shared/i18n'
 import { chromeUserAgent, identitySettled } from './userAgent'
 import { SessionManager } from './sessions/SessionManager'
 import { WindowManager } from './windows/WindowManager'
+import { TranslateTool } from './tools/TranslateTool'
+import { ScreenshotTool } from './tools/ScreenshotTool'
 import { ExtensionsHost } from './extensions/ExtensionsHost'
 import { PipController } from './pip/PipController'
+import { MiniPlayer } from './pip/MiniPlayer'
 import { enableAdBlocker } from './adblock/AdBlocker'
 import { SafeBrowsing, leaveDangerousPage } from './safety/SafeBrowsing'
 import { detectBrowsers, readChromiumBookmarks, readChromiumHistory } from './import/chromium'
@@ -17,7 +20,8 @@ import { PasswordStore } from './passwords/PasswordStore'
 import { startCrashReporter } from './support/report'
 import { DEFAULT_PROFILE_ID, Profiles } from './profiles/Profiles'
 import { PasswordManager } from './passwords/PasswordManager'
-import { keychainCipher, passwordRoutes } from './passwords/routes'
+import { Headlines } from './newtab/headlines'
+import { keychainCipher, keychainIsSafe, passwordRoutes } from './passwords/routes'
 import type { ImportSource } from '@shared/types'
 
 /** Where the AI agents keep their configuration (ZAK_AGENTS_HOME: a fake home for the e2e tests). */
@@ -53,12 +57,16 @@ import { DownloadsStore } from './store/downloads'
 import { SitesStore } from './store/sites'
 import { SessionStore } from './store/sessions'
 import { SessionRestore } from './sessions/SessionRestore'
+import { enterQuietMode } from './windows/quietMode'
+import { fetchSiteIcon } from './sidebar/siteIcon'
 import { reloadPage, TabManager } from './tabs/TabManager'
+import { SiteColorScheme } from './tabs/colorScheme'
 import { recordHistory } from './history/HistoryRecorder'
 import { FindController } from './find/FindController'
 import { ZoomController } from './tabs/zoom'
 import { PermissionsHandler } from './permissions/PermissionsHandler'
 import { DownloadsManager } from './downloads/DownloadsManager'
+import { MediaController } from './media/MediaController'
 import { suggest } from './omnibox/suggest'
 import { SettingsStore } from './store/settings'
 import { SidebarController } from './sidebar/SidebarController'
@@ -86,6 +94,8 @@ if (currentProfile !== DEFAULT_PROFILE_ID) app.setPath('userData', profiles.dir(
 
 // Must be set before any session/webContents exists (CLAUDE.md §6.5).
 app.userAgentFallback = chromeUserAgent()
+// e2e tests: no Dock icon, windows that don't take the focus (windows/quietMode.ts).
+enterQuietMode()
 // zak://extensions… (privileged schemes must be registered before ready).
 registerInternalScheme()
 // Links from other apps once Zak is the default browser (they can arrive before ready).
@@ -140,9 +150,13 @@ interface Services {
   permissions: PermissionsHandler
   downloads: DownloadsManager
   passwords: PasswordManager
+  translateTool: TranslateTool
+  screenshotTool: ScreenshotTool
+  media: MediaController
+  miniPlayer: MiniPlayer
 }
 
-function registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords }: Services): void {
+function registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords, translateTool, screenshotTool, media, miniPlayer }: Services): void {
   const windowOf = (event: IpcMainInvokeEvent | Electron.IpcMainEvent) => {
     const handle = windows.fromWebContents(event.sender)
     if (!handle) throw new Error('IPC from unknown window')
@@ -182,11 +196,12 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
   handle('sidebar:setLayout', (_e, layout) => {
     sidebar.setLayout(layout)
   })
-  handle('favorites:add', (_e, input) => sidebar.change(() => favorites.addFavorite(input)))
-  handle('favorites:addFromTab', (e, tabId, folderId, index) => sidebar.addFromTab(windowOf(e), tabId, folderId, index))
+  handle('favorites:add', (_e, input) => sidebar.change(() => favorites.addFavorite(input, undefined, input.row)))
+  handle('favorites:addFromTab', (e, tabId, folderId, index, row) => sidebar.addFromTab(windowOf(e), tabId, folderId, index, row))
   handle('favorites:update', (_e, id, input) => sidebar.change(() => favorites.updateFavorite(id, input)))
-  handle('favorites:remove', (_e, id) => sidebar.change(() => favorites.removeFavorite(id)))
-  handle('favorites:move', (_e, id, folderId, index) => sidebar.change(() => favorites.moveFavorite(id, folderId, index)))
+  handle('favorites:fetchIcon', (_e, url) => fetchSiteIcon(url))
+  handle('favorites:remove', (_e, id) => sidebar.removeFavorite(id))
+  handle('favorites:move', (_e, id, folderId, index, row) => sidebar.change(() => favorites.moveFavorite(id, folderId, index, row)))
   handle('favorites:open', (e, id, disposition) => sidebar.open(windowOf(e), id, disposition))
   handle('favorites:showContextMenu', (e, id) => sidebar.showFavoriteMenu(windowOf(e), id))
   handle('folders:add', (_e, input) => sidebar.change(() => favorites.addFolder(input)))
@@ -200,12 +215,19 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
     const { overlay } = windowOf(e)
     if (overlay.showing()?.kind === kind) overlay.hide()
   })
+  handle('overlay:resize', (e, height) => windowOf(e).overlay.resize(height))
+  handle('tools:translate', (_e, text, target) => translateTool.translateForReader(text, target))
+  handle('tools:screenshot', (e, mode, rect) => screenshotTool.capture(windowOf(e), mode, rect))
+  handle('tools:screenshotReveal', () => screenshotTool.reveal())
   handle('omnibox:suggest', (_e, text) => suggest(text, settings.getGeneral().searchEngine, favorites, history))
   handle('find:query', (e, tabId, text, forward, findNext) => find.query(windowOf(e), tabId, text, forward, findNext))
   handle('find:close', (e) => windowOf(e).overlay.close())
   handle('permission:answer', (_e, requestId, granted) => permissions.answer(requestId, granted))
   handle('passwords:answer', (_e, promptId, choice) => passwords.answer(promptId, choice))
   handle('downloads:getState', (e) => downloads.stateFor(windowOf(e).session))
+  handle('media:getState', (e) => media.state(windowOf(e)))
+  handle('media:action', (e, action) => media.act(windowOf(e), action))
+  handle('media:setVolume', (e, volume) => media.setVolume(windowOf(e), volume))
   handle('downloads:action', (e, id, action) => downloads.act(id, action, windowOf(e).session))
   handle('downloads:openPage', (e) => {
     const handle = windowOf(e)
@@ -219,6 +241,11 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
 
   on('layout:update', (e, insets) => tabsOf(e).setInsets(insets))
   on('downloads:drag', (e, id) => downloads.drag(e.sender, id))
+  on('tools:screenshotDrag', (e) => screenshotTool.drag(e.sender))
+  on('miniplayer:move', (e, { x, y }) => miniPlayer.moveTo(e.sender, x, y))
+  handle('miniplayer:state', (e) => miniPlayer.state(e.sender))
+  handle('miniplayer:action', (e, action) => miniPlayer.act(e.sender, action))
+  handle('miniplayer:position', (e) => miniPlayer.position(e.sender))
 }
 
 app.whenReady().then(async () => {
@@ -239,7 +266,14 @@ app.whenReady().then(async () => {
   // Not awaited: the cached lists load in a moment, the first download must not delay the window.
   const safeBrowsing = new SafeBrowsing(() => settings.getGeneral().safeBrowsing)
   void safeBrowsing.start()
-  const windows = new WindowManager(sessions, new PipController(() => settings.getPip()))
+  const pip = new PipController(() => settings.getPip())
+  const windows = new WindowManager(sessions, pip)
+  const miniPlayer = new MiniPlayer(windows)
+  pip.miniPlayer = miniPlayer
+  const translateTool = new TranslateTool(settings)
+  windows.translateTool = translateTool
+  const screenshotTool = new ScreenshotTool(settings, () => settings.getGeneral().downloadDir)
+  windows.screenshotTool = screenshotTool
   const db = openDatabase(app.getPath('userData'))
   const favorites = new FavoritesStore(db)
   const history = new HistoryStore(db)
@@ -252,7 +286,17 @@ app.whenReady().then(async () => {
   if (testProfile) {
     Object.assign(globalThis, { zakSleepIdleTabs: () => windows.all().forEach((w) => w.tabs.sleepIdleTabs(Date.now() + 864e5)) })
   }
-  nativeTheme.themeSource = settings.getGeneral().theme
+  // Zak's theme for its own windows; web pages get the computer's light or dark mode (or the
+  // one chosen in Réglages), whatever Zak's theme (tabs/colorScheme.ts).
+  const siteScheme = new SiteColorScheme(() => settings.getGeneral().sitesTheme)
+  TabManager.colorScheme = siteScheme
+  const refreshSiteScheme = (): void => windows.all().forEach((w) => w.tabs.refreshColorScheme())
+  siteScheme.onSystemChange(refreshSiteScheme)
+  const applyTheme = (general: GeneralSettings): void => {
+    nativeTheme.themeSource = general.theme
+    refreshSiteScheme()
+  }
+  applyTheme(settings.getGeneral())
   recordHistory(windows, history)
   const sidebar = new SidebarController(favorites, settings, windows)
   windows.setTabsPosition(settings.getSidebar().tabs)
@@ -271,9 +315,7 @@ app.whenReady().then(async () => {
       sidebar,
       settings,
       mods,
-      applySettings: (general) => {
-        nativeTheme.themeSource = general.theme
-      }
+      applySettings: applyTheme
     })
   )
   let mcpError: string | null = null
@@ -312,8 +354,17 @@ app.whenReady().then(async () => {
   })
   // The settings file can be edited outside Zak (by hand, Claude Code, Codex): apply it at once.
   settings.markSchema()
+  const headlines = new Headlines(() => settings.getGeneral())
+  headlines.warmUp()
+  let screenshotInMenu = settings.getTools().screenshot.enabled
   settings.onChange(() => {
-    nativeTheme.themeSource = settings.getGeneral().theme
+    headlines.warmUp()
+    applyTheme(settings.getGeneral())
+    // The screenshot tool switched on or off: its menu entry (and ⌘⇧2) comes or goes.
+    if (settings.getTools().screenshot.enabled !== screenshotInMenu) {
+      screenshotInMenu = !screenshotInMenu
+      refreshMenu()
+    }
     sidebar.broadcast()
     const css = appearanceCss(settings.getAppearance())
     if (css !== shownAppearance) {
@@ -336,8 +387,8 @@ app.whenReady().then(async () => {
   permissions.attach(browsingSession, false)
   downloads.attach(browsingSession, true)
   const passwordStore = new PasswordStore(db, keychainCipher)
-  const passwords = new PasswordManager(passwordStore, windows, () => settings.getGeneral().savePasswords)
-  registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords })
+  const passwords = new PasswordManager(passwordStore, windows, () => settings.getGeneral().savePasswords && keychainIsSafe())
+  registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords, translateTool, screenshotTool, media: new MediaController(windows), miniPlayer })
   const menuCommands = {
     find,
     zoom,
@@ -348,7 +399,8 @@ app.whenReady().then(async () => {
       current: currentProfile,
       open: (id: string) => openProfile(id),
       manage: () => void windows.focusedNormal().tabs.create(`${SETTINGS_PAGE_URL}#profiles`)
-    }
+    },
+    screenshot: { enabled: () => screenshotTool.enabled(), start: (handle: Parameters<ScreenshotTool['start']>[0]) => screenshotTool.start(handle) }
   }
   const refreshMenu = (): void => installAppMenu(windows, menuCommands)
   refreshMenu()
@@ -403,6 +455,15 @@ app.whenReady().then(async () => {
     }) satisfies Pick<InternalApiHandlers, 'downloads/list' | 'downloads/action' | 'downloads/clear' | 'downloads/openFolder'>
   const internalApi: InternalApiHandlers = {
     'extensions/list': () => extensions.list(),
+    'extensions/tools': () => settings.getTools(),
+    'extensions/setTranslate': (patch) => {
+      const tools = settings.getTools()
+      return settings.setTools({ ...tools, translate: { ...tools.translate, ...patch } })
+    },
+    'extensions/setScreenshot': (patch) => {
+      const tools = settings.getTools()
+      return settings.setTools({ ...tools, screenshot: { ...tools.screenshot, ...patch } })
+    },
     'extensions/setEnabled': async ({ id, enabled }) => {
       await extensions.setEnabled(id, enabled)
       return null
@@ -445,6 +506,7 @@ app.whenReady().then(async () => {
       return result.canceled || !result.filePaths[0] ? null : sidebar.importBookmarks(result.filePaths[0])
     },
     'settings/mcp': () => mcpState(),
+    'settings/mcpTools': () => zakMcp.tools(),
     'settings/setMcp': async ({ enabled }) => {
       const current = settings.getMcp()
       settings.setMcp({ ...current, enabled, token: current.token || randomBytes(24).toString('base64url') })
@@ -527,7 +589,7 @@ app.whenReady().then(async () => {
     'appearance/set': (patch) => settings.setAppearance(patch),
     'appearance/reset': () => settings.setAppearance({}, true),
     'appearance/setTheme': ({ theme }) => {
-      nativeTheme.themeSource = settings.setGeneral({ theme }).theme
+      applyTheme(settings.setGeneral({ theme }))
       return null
     },
     'appearance/setLayout': ({ side, tabs }) => sidebar.setLayout({ side, tabs }),
@@ -535,7 +597,7 @@ app.whenReady().then(async () => {
       // The folder only changes through the picker below.
       const { downloadDir: _ignored, ...rest } = patch
       const general = settings.setGeneral(rest)
-      nativeTheme.themeSource = general.theme
+      applyTheme(general)
       return general
     },
     'settings/chooseDownloadDir': async () => {
@@ -572,6 +634,7 @@ app.whenReady().then(async () => {
       return null
     },
     ...downloadRoutes(browsingSession),
+    'newtab/headline': () => headlines.next(),
     'newtab/state': () => ({ canReopenSession: session.canReopenPrevious(), recent: history.recentByHost(4) }),
     'newtab/suggest': ({ text }) => suggest(text, settings.getGeneral().searchEngine, favorites, history),
     'newtab/reopenSession': () => {

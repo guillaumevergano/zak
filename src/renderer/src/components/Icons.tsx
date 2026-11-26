@@ -37,8 +37,8 @@ export const SearchIcon = (): JSX.Element => (
 export const GlobeIcon = (): JSX.Element => (
   <Icon width={14} height={14} strokeWidth={1.3}><circle cx="8" cy="8" r="5.5" /><path d="M2.5 8h11M8 2.5c1.7 1.6 2.5 3.4 2.5 5.5S9.7 11.9 8 13.5C6.3 11.9 5.5 10.1 5.5 8S6.3 4.1 8 2.5Z" /></Icon>
 )
-export const SpeakerIcon = ({ muted }: { muted: boolean }): JSX.Element => (
-  <Icon width={13} height={13}>
+export const SpeakerIcon = ({ muted, size = 13 }: { muted: boolean; size?: number }): JSX.Element => (
+  <Icon width={size} height={size}>
     <path d="M3 6.5h2L8 4v8L5 9.5H3z" />
     {muted ? <path d="m10.5 6.5 3 3M13.5 6.5l-3 3" /> : <path d="M10.5 6a3 3 0 0 1 0 4M12 4.5a5 5 0 0 1 0 7" />}
   </Icon>
@@ -96,4 +96,18 @@ export const SplitIcon = (): JSX.Element => (
     <rect x="2" y="3" width="12" height="10" rx="2" />
     <path d="M8 3v10" />
   </Icon>
+)
+
+/** Media controls (sidebar): filled shapes, like a player's. */
+export const PlayIcon = (): JSX.Element => (
+  <Icon fill="currentColor" stroke="none"><path d="M5 3.4v9.2a.6.6 0 0 0 .9.5l7.3-4.6a.6.6 0 0 0 0-1L5.9 2.9a.6.6 0 0 0-.9.5Z" /></Icon>
+)
+export const PauseIcon = (): JSX.Element => (
+  <Icon fill="currentColor" stroke="none"><rect x="3.8" y="3" width="3" height="10" rx=".8" /><rect x="9.2" y="3" width="3" height="10" rx=".8" /></Icon>
+)
+export const PreviousIcon = (): JSX.Element => (
+  <Icon width={14} height={14} fill="currentColor" stroke="none"><rect x="3" y="3.5" width="1.6" height="9" rx=".6" /><path d="M13 4.1v7.8a.5.5 0 0 1-.8.4L6.4 8.4a.5.5 0 0 1 0-.8l5.8-3.9a.5.5 0 0 1 .8.4Z" /></Icon>
+)
+export const NextIcon = (): JSX.Element => (
+  <Icon width={14} height={14} fill="currentColor" stroke="none"><rect x="11.4" y="3.5" width="1.6" height="9" rx=".6" /><path d="M3 4.1v7.8a.5.5 0 0 0 .8.4l5.8-3.9a.5.5 0 0 0 0-.8L3.8 3.7a.5.5 0 0 0-.8.4Z" /></Icon>
 )

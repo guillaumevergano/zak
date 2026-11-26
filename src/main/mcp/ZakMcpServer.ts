@@ -4,8 +4,10 @@ import type { AddressInfo } from 'node:net'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { z } from 'zod'
-import type { GeneralSettings, SidebarSide, TabGroupColor, TabsPosition } from '@shared/types'
+import type { GeneralSettings, McpToolInfo, SidebarSide, TabGroupColor, TabsPosition } from '@shared/types'
 import { COLOR_TOKENS, type AppearancePatch } from '@shared/appearance'
+import { LANG_SETTINGS } from '@shared/languages'
+import { NEWTAB_HEADLINE_SOURCES } from '@shared/types'
 
 /**
  * What the MCP tools can do with the running Zak (implemented in index.ts). Deliberately limited:
@@ -35,7 +37,7 @@ const COLORS = ['grey', 'blue', 'red', 'yellow', 'green', 'pink', 'purple', 'cya
 const MAX_BODY = 1_000_000
 
 /**
- * Zak's MCP server (Settings → Customize → « Laisser Claude Code ou Codex piloter Zak »): lets an
+ * Zak's MCP server (Réglages → MCP → « Laisser Claude Code ou Codex piloter Zak »): lets an
  * AI agent drive the running browser. Off by default. Streamable HTTP on 127.0.0.1 only, behind a
  * bearer token; requests from web pages are refused (Origin / Host checks against DNS rebinding).
  */
@@ -96,9 +98,25 @@ export class ZakMcpServer {
     await transport.handleRequest(req, res, body)
   }
 
-  private build(): McpServer {
+  /** The tools agents get (Réglages → MCP lists them), read from the server itself. */
+  tools(): McpToolInfo[] {
+    const tools: McpToolInfo[] = []
+    void this.build(tools).close()
+    return tools
+  }
+
+  /** A server with every tool; `record` also collects their names and descriptions. */
+  private build(record?: McpToolInfo[]): McpServer {
     const c = this.control
     const mcp = new McpServer({ name: 'zak', version: '1.0.0' })
+    if (record) {
+      const register = mcp.registerTool.bind(mcp) as (...args: unknown[]) => unknown
+      const spy = (name: string, config: { description?: string; annotations?: { readOnlyHint?: boolean } }, ...rest: unknown[]): unknown => {
+        record.push({ name, description: config.description ?? '', readOnly: config.annotations?.readOnlyHint === true })
+        return register(name, config, ...rest)
+      }
+      mcp.registerTool = spy as typeof mcp.registerTool
+    }
     const json = (value: unknown) => ({ content: [{ type: 'text' as const, text: JSON.stringify(value, null, 2) }] })
 
     mcp.registerTool(
@@ -155,16 +173,28 @@ export class ZakMcpServer {
       {
         description:
           'Changes general settings and the layout. Invalid values are ignored. The language applies at the next launch; ' +
+          'theme is Zak\'s own look; sitesTheme the light or dark mode web pages see (system: the computer\'s). ' +
           'sidebarSide (left or right of the page) and tabsPosition (top strip, or one per row in the sidebar) apply at once to every window.',
         inputSchema: {
-          language: z.enum(['system', 'fr', 'en']).optional(),
+          language: z.enum(LANG_SETTINGS).optional(),
           searchEngine: z.enum(['google', 'duckduckgo', 'brave', 'bing', 'qwant', 'ecosia']).optional(),
           startup: z.enum(['restore', 'newtab']).optional(),
           theme: z.enum(['system', 'light', 'dark']).optional(),
+          sitesTheme: z.enum(['system', 'light', 'dark']).optional(),
           safeBrowsing: z.boolean().optional(),
           savePasswords: z.boolean().optional(),
           askWhereToSave: z.boolean().optional(),
           sleepTabsAfter: z.union([z.literal(0), z.literal(15), z.literal(30), z.literal(60), z.literal(120)]).optional(),
+          newtabHeadlines: z
+            .array(z.enum(NEWTAB_HEADLINE_SOURCES))
+            .optional()
+            .describe(
+              'What the new tab page may show under its logo, one picked at random for each tab: zak (« Un peu d’espace. »), ' +
+                'custom (newtabTitle / newtabSubtitle), quote, proverb, history (on this day, from Wikipedia), wikipedia ' +
+                '(« did you know », a random article). An empty list shows nothing.'
+            ),
+          newtabTitle: z.string().max(80).optional(),
+          newtabSubtitle: z.string().max(120).optional(),
           sidebarSide: z.enum(['left', 'right']).optional(),
           tabsPosition: z.enum(['top', 'sidebar']).optional()
         }

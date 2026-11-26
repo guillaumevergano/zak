@@ -20,7 +20,8 @@ export function Toolbar({ widevine }: { widevine: WidevineStatus | null }): JSX.
   const sidebar = useBrowserStore((s) => s.sidebar)
   const collapsed = sidebar?.layout.collapsed ?? false
   // Sidebar on the left: the page's right edge has the scroll gutter (10 px) next to it.
-  const shape = sidebar?.layout.side === 'left' ? 'ml-2 mr-2.5 rounded-bl-[14px]' : 'mx-2 rounded-br-[14px]'
+  // Whole pixels, like the page under it (App), so their edges line up exactly.
+  const shape = sidebar?.layout.side === 'left' ? 'ml-[7px] mr-[8px] rounded-bl-[14px]' : 'mx-[7px] rounded-br-[14px]'
 
   return (
     <div

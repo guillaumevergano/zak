@@ -24,7 +24,8 @@ export function TabStrip(): JSX.Element {
   const groups = useBrowserStore((s) => s.groups)
   const splits = useBrowserStore((s) => s.splits)
   const merging = useBrowserStore((s) => s.mergeTarget !== null)
-  const pinned = tabs.filter((t) => t.pinned)
+  // The favorites' tabs aren't in the strip: their tiles are (CLAUDE.md §6.2).
+  const pinned = tabs.filter((t) => t.pinned && t.favoriteId === null)
   const regular = tabs.filter((t) => !t.pinned)
 
   return (
@@ -378,14 +379,16 @@ export function TabItem({
         <span
           // Not a focusable button inside the tab (nested controls): ⌘W and the tab's menu do the same.
           aria-hidden
+          data-testid="tab-sound"
           title={tab.muted ? t('Réactiver le son') : t('Couper le son')}
-          className={`grid shrink-0 place-items-center rounded-md ${
-            icon ? 'absolute -top-1 -right-1 h-4 w-4 bg-frame' : 'h-5 w-5 hover:bg-black/10'
-          } ${tab.muted ? 'opacity-50' : 'text-pink'}`}
+          // In the tab's top left corner, over its icon: a pinned tab widening on hover doesn't move it.
+          className={`absolute -top-1 -left-1 z-10 grid h-[17px] w-[17px] place-items-center rounded-full bg-frame ring-2 ring-frame ${
+            tab.muted ? 'text-frame-sub' : 'text-pink-soft'
+          } hover:bg-frame-3`}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={() => void api.invoke('tabs:toggleMute', tab.id)}
         >
-          <SpeakerIcon muted={tab.muted} />
+          <SpeakerIcon muted={tab.muted} size={11} />
         </span>
       )}
       {!tab.pinned && !icon && (

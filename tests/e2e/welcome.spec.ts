@@ -22,3 +22,13 @@ test('the interface speaks English when asked', async () => {
   await expect(newtab.locator('html')).toHaveAttribute('lang', 'en')
   await app.close()
 })
+
+test('the interface speaks German too', async () => {
+  const { app, chrome } = await launch('german', undefined, { ZAK_LANG: 'de' })
+  await expect.poll(() => activeTabTitle(chrome)).toBe('Neuer Tab')
+  const menus = await app.evaluate(({ Menu }) => Menu.getApplicationMenu()!.items.map((i) => i.label))
+  expect(menus).toEqual(expect.arrayContaining(['Datei', 'Bearbeiten', 'Verlauf', 'Tabs', 'Fenster', 'Hilfe']))
+  const newtab = await pageAt(app, 'zak://newtab')
+  await expect(newtab.locator('html')).toHaveAttribute('lang', 'de')
+  await app.close()
+})

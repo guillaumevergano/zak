@@ -1,10 +1,18 @@
 import type { Appearance, AppearancePatch } from './appearance'
+import type { Lang } from './languages'
+import type { ScreenshotMode, ScreenshotSettings, ToolsSettings, TranslateSettings } from './tools'
+import type { MediaAction, MediaState } from './media'
 import type {
+  MiniPlayerAction,
+  MiniPlayerState,
   PageScroll,
+  Rect,
+  NewtabHeadline,
   AgentId,
   AgentStatus,
   ImportSource,
   McpState,
+  McpToolInfo,
   ModInfo,
   ProfileInfo,
   TabGroupInfo,
@@ -79,10 +87,14 @@ export interface InvokeChannels {
   'sidebar:setLayout': { args: [layout: Partial<SidebarLayout>]; result: void }
   'favorites:add': { args: [input: FavoriteInput]; result: string }
   /** Drag of a tab from the strip into the sidebar: main knows its title, URL and favicon. */
-  'favorites:addFromTab': { args: [tabId: TabId, folderId: string | null, index: number]; result: string }
+  /** `row`: in the root, the row of the mosaic (past the last one: a new row). */
+  'favorites:addFromTab': { args: [tabId: TabId, folderId: string | null, index: number, row?: number]; result: string }
   'favorites:update': { args: [id: string, input: FavoriteInput]; result: void }
+  /** The site's icon for a favorite's URL, as a data: URL (null: none found). */
+  'favorites:fetchIcon': { args: [url: string]; result: string | null }
   'favorites:remove': { args: [id: string]; result: void }
-  'favorites:move': { args: [id: string, folderId: string | null, index: number]; result: void }
+  /** `index` within `row` in the root (past the last row: a new row). */
+  'favorites:move': { args: [id: string, folderId: string | null, index: number, row?: number]; result: void }
   'favorites:open': { args: [id: string, disposition: OpenDisposition]; result: void }
   'favorites:showContextMenu': { args: [id: string]; result: void }
   'folders:add': { args: [input: FolderInput]; result: string }
@@ -97,6 +109,14 @@ export interface InvokeChannels {
   'overlay:close': { args: []; result: void }
   /** Hides the overlay if it shows `kind`, without moving the focus (omnibox suggestions). */
   'overlay:hide': { args: [kind: OverlayRequest['kind']]; result: void }
+  /** A framed panel whose content changed size (the translation bubble): main fits the view to it. */
+  'overlay:resize': { args: [height: number]; result: void }
+  /** Translation bubble (CLAUDE.md §6.8): `text` into `target`; the choice is remembered. */
+  'tools:translate': { args: [text: string, target: string]; result: { text: string; source: string } }
+  /** From the capture mode: takes the screenshot (`rect`, in the page's coordinates, for a region). */
+  'tools:screenshot': { args: [mode: ScreenshotMode, rect?: Rect]; result: void }
+  /** « Afficher dans le Finder » on the last screenshot. */
+  'tools:screenshotReveal': { args: []; result: void }
 
   /** Omnibox dropdown for `text`: what Enter does first, then history and favorites. */
   'omnibox:suggest': { args: [text: string]; result: OmniboxSuggestion[] }
@@ -114,6 +134,17 @@ export interface InvokeChannels {
   'downloads:openPage': { args: []; result: void }
   /** Toolbar zoom badge: back to 100 %. */
   'tabs:resetZoom': { args: [id: TabId]; result: void }
+  /** Sidebar media controls: what plays in this window, if anything. */
+  'media:getState': { args: []; result: MediaState | null }
+  /** ⏮ ⏯ ⏭, the sound on or off, or « show me the tab ». */
+  'media:action': { args: [action: MediaAction]; result: void }
+  /** The player's volume, 0–1. */
+  'media:setVolume': { args: [volume: number]; result: void }
+  /** Zak's floating player (its controls view only): what its buttons show. */
+  'miniplayer:state': { args: []; result: MiniPlayerState | null }
+  'miniplayer:action': { args: [action: MiniPlayerAction]; result: void }
+  /** Its window's position, as a drag starts. */
+  'miniplayer:position': { args: []; result: [number, number] | null }
 }
 
 /** renderer → main, fire-and-forget (ipcRenderer.send / ipcMain.on). */
@@ -121,6 +152,10 @@ export interface SendChannels {
   'layout:update': LayoutInsets
   /** A completed download dragged out of the panel (webContents.startDrag needs the sender). */
   'downloads:drag': string
+  /** The last screenshot's thumbnail dragged out (to a message, the Finder…). */
+  'tools:screenshotDrag': null
+  /** Zak's floating player dragged by its controls: its window's new position. */
+  'miniplayer:move': { x: number; y: number }
 }
 
 /** main → renderer events (webContents.send / ipcRenderer.on). */
@@ -144,6 +179,8 @@ export interface EventChannels {
   'find:result': FindResult
   /** Downloads list changed (chrome UIs and overlays). */
   'downloads:state': DownloadInfo[]
+  /** What plays in the window changed (null: nothing any more). */
+  'media:state': MediaState | null
 }
 
 export type InvokeChannel = keyof InvokeChannels
@@ -176,6 +213,7 @@ export const INVOKE_CHANNELS = [
   'favorites:add',
   'favorites:addFromTab',
   'favorites:update',
+  'favorites:fetchIcon',
   'favorites:remove',
   'favorites:move',
   'favorites:open',
@@ -188,6 +226,10 @@ export const INVOKE_CHANNELS = [
   'overlay:open',
   'overlay:close',
   'overlay:hide',
+  'overlay:resize',
+  'tools:translate',
+  'tools:screenshot',
+  'tools:screenshotReveal',
   'omnibox:suggest',
   'find:query',
   'find:close',
@@ -196,10 +238,16 @@ export const INVOKE_CHANNELS = [
   'downloads:getState',
   'downloads:action',
   'downloads:openPage',
-  'tabs:resetZoom'
+  'tabs:resetZoom',
+  'media:getState',
+  'media:action',
+  'media:setVolume',
+  'miniplayer:state',
+  'miniplayer:action',
+  'miniplayer:position'
 ] as const satisfies readonly InvokeChannel[]
 
-export const SEND_CHANNELS = ['layout:update', 'downloads:drag'] as const satisfies readonly SendChannel[]
+export const SEND_CHANNELS = ['layout:update', 'downloads:drag', 'tools:screenshotDrag', 'miniplayer:move'] as const satisfies readonly SendChannel[]
 export const EVENT_CHANNELS = [
   'tabs:state',
   'tabs:scroll',
@@ -210,13 +258,14 @@ export const EVENT_CHANNELS = [
   'tabGroups:rename',
   'overlay:show',
   'find:result',
-  'downloads:state'
+  'downloads:state',
+  'media:state'
 ] as const satisfies readonly EventChannel[]
 
 /** Shape of `window.zak` exposed by src/preload/chrome.ts. */
 export interface ZakApi {
   /** Interface language (src/shared/i18n.ts). */
-  lang: 'fr' | 'en'
+  lang: Lang
   /** « 🏠 Perso » when there are several profiles (src/main/profiles/), else null. */
   profile: string | null
   invoke<C extends InvokeChannel>(
@@ -270,6 +319,10 @@ export interface InternalApiRoutes {
   /** « Charger une extension non empaquetée… » (folder picker); null when cancelled. */
   'extensions/loadUnpacked': { body: null; result: string | null }
   'extensions/reload': { body: { id: string }; result: null }
+  /** Zak's own tools (CLAUDE.md §6.8), on zak://extensions. */
+  'extensions/tools': { body: null; result: ToolsSettings }
+  'extensions/setTranslate': { body: Partial<Pick<TranslateSettings, 'enabled' | 'target'>>; result: ToolsSettings }
+  'extensions/setScreenshot': { body: Partial<ScreenshotSettings>; result: ToolsSettings }
   'settings/get': { body: null; result: BrowserSettings }
   /** Saves the PiP section; returns it normalized (cleaned-up domains). */
   'settings/setPip': { body: PipSettings; result: PipSettings }
@@ -294,6 +347,7 @@ export interface InternalApiRoutes {
   'settings/mcp': { body: null; result: McpState }
   'settings/setMcp': { body: { enabled: boolean }; result: McpState }
   'settings/newMcpToken': { body: null; result: McpState }
+  'settings/mcpTools': { body: null; result: McpToolInfo[] }
   /** One-click connection of Claude Code, Codex, Claude Desktop (turns the server on if needed). */
   'settings/agents': { body: null; result: AgentStatus[] }
   'settings/connectAgent': { body: { agent: AgentId }; result: { agents: AgentStatus[]; mcp: McpState } }
@@ -329,6 +383,8 @@ export interface InternalApiRoutes {
   /** New tab page: « Reprendre la navigation » available, and « Récemment ». */
   'newtab/state': { body: null; result: { canReopenSession: boolean; recent: HistoryEntry[] } }
   'newtab/reopenSession': { body: null; result: null }
+  /** What to show under the logo (null: Zak's own words). */
+  'newtab/headline': { body: null; result: NewtabHeadline | null }
   /** The page's « Où voulez-vous aller ? » field: same suggestions as the omnibox. */
   'newtab/suggest': { body: { text: string }; result: OmniboxSuggestion[] }
   /** zak://passwords. `reveal` asks the system (Touch ID…) first, null when refused. */
@@ -365,6 +421,9 @@ export const INTERNAL_API_ROUTES = [
   'extensions/openStore',
   'extensions/loadUnpacked',
   'extensions/reload',
+  'extensions/tools',
+  'extensions/setTranslate',
+  'extensions/setScreenshot',
   'settings/get',
   'settings/setPip',
   'settings/setGeneral',
@@ -378,6 +437,7 @@ export const INTERNAL_API_ROUTES = [
   'settings/mcp',
   'settings/setMcp',
   'settings/newMcpToken',
+  'settings/mcpTools',
   'settings/agents',
   'settings/connectAgent',
   'settings/mods',
@@ -403,6 +463,7 @@ export const INTERNAL_API_ROUTES = [
   'downloads/openFolder',
   'newtab/state',
   'newtab/reopenSession',
+  'newtab/headline',
   'newtab/suggest',
   'passwords/list',
   'passwords/reveal',

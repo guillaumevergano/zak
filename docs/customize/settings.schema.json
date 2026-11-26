@@ -8,15 +8,19 @@
     "general": {
       "type": "object",
       "properties": {
-        "language": { "enum": ["system", "fr", "en"], "default": "system", "description": "Interface language; applied at the next launch." },
+        "language": { "enum": ["system", "en", "fr", "es", "de", "it", "pt"], "default": "system", "description": "Interface language; applied at the next launch." },
         "searchEngine": { "enum": ["google", "duckduckgo", "brave", "bing", "qwant", "ecosia"], "default": "google" },
         "startup": { "enum": ["restore", "newtab"], "default": "restore", "description": "Reopen the last session's tabs, or start on a new tab." },
-        "theme": { "enum": ["system", "light", "dark"], "default": "light" },
+        "theme": { "enum": ["system", "light", "dark"], "default": "light", "description": "Zak's own look (tab strip, sidebar, internal pages)." },
+        "sitesTheme": { "enum": ["system", "light", "dark"], "default": "system", "description": "Light or dark mode web pages see (prefers-color-scheme); system = the computer's, whatever Zak's theme." },
         "downloadDir": { "type": "string", "description": "Absolute path of the downloads folder. Defaults to the system's Downloads folder." },
         "askWhereToSave": { "type": "boolean", "default": false, "description": "Ask where to save each download instead of saving it straight into downloadDir." },
         "safeBrowsing": { "type": "boolean", "default": true, "description": "Warn before opening known phishing or malware pages." },
         "savePasswords": { "type": "boolean", "default": true, "description": "Offer to save passwords after a sign-in." },
-        "sleepTabsAfter": { "enum": [0, 15, 30, 60, 120], "default": 0, "description": "Minutes before a background tab is unloaded; 0 = never." }
+        "sleepTabsAfter": { "enum": [0, 15, 30, 60, 120], "default": 0, "description": "Minutes before a background tab is unloaded; 0 = never." },
+        "newtabHeadlines": { "type": "array", "items": { "enum": ["zak", "custom", "quote", "proverb", "history", "wikipedia"] }, "uniqueItems": true, "default": ["zak"], "description": "What may show under the new tab page logo, one picked at random for each tab: Zak's words, newtabTitle/newtabSubtitle, a quote, a proverb, on this day in history or a random article (Wikipedia, in Zak's language). Empty: nothing." },
+        "newtabTitle": { "type": "string", "maxLength": 80, "default": "" },
+        "newtabSubtitle": { "type": "string", "maxLength": 120, "default": "" }
       },
       "additionalProperties": false
     },
@@ -27,13 +31,15 @@
         "enabled": { "type": "boolean", "default": true },
         "closeOnReturn": { "type": "boolean", "default": true },
         "skipMuted": { "type": "boolean", "default": false },
-        "excludedDomains": { "type": "array", "items": { "type": "string" }, "description": "Domains (subdomains included) where it never triggers, e.g. \"youtube.com\"." }
+        "autoplayed": { "type": "boolean", "default": false, "description": "Also videos a page starts by itself (feeds). By default, only videos the user started (a click or a key press) go to picture-in-picture." },
+        "excludedDomains": { "type": "array", "items": { "type": "string" }, "description": "Domains (subdomains included) where it never triggers, e.g. \"youtube.com\"." },
+        "style": { "enum": ["zak", "system"], "default": "zak", "description": "zak: Zak's own floating window (rounded corners, Zak's buttons, the tab moved into it); system: Chromium's Picture-in-Picture." }
       }
     },
     "sidebar": {
       "type": "object",
       "properties": {
-        "width": { "type": "number", "minimum": 220, "maximum": 380, "default": 300 },
+        "width": { "type": "number", "minimum": 140, "maximum": 380, "default": 300 },
         "collapsed": { "type": "boolean", "default": false, "description": "Icons-only sidebar (⌘B)." },
         "side": { "enum": ["left", "right"], "default": "right", "description": "Which side of the page the sidebar sits on." },
         "tabs": {
@@ -126,6 +132,28 @@
       "type": "array",
       "items": { "type": "string" },
       "description": "Absolute paths of folders loaded as unpacked Chrome extensions (each with a manifest.json). Zak reloads them when their files change."
+    },
+    "tools": {
+      "type": "object",
+      "description": "Zak's own tools, on zak://extensions (Zak tools). A tool switched off leaves no menu item or button.",
+      "properties": {
+        "translate": {
+          "type": "object",
+          "description": "Right-click on a selection: translated in place in a field one types in, in a bubble elsewhere. Text goes to Google Translate only on that click.",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "target": { "type": "string", "default": "", "description": "Language a text one reads is translated into (a Google Translate code such as \"en\" or \"zh-CN\"); empty = Zak's language." },
+            "recent": { "type": "array", "items": { "type": "string" }, "maxItems": 4, "description": "Languages last chosen in « Translate into », most recent first." }
+          }
+        },
+        "screenshot": {
+          "type": "object",
+          "description": "Screenshots of a page (File menu, Cmd/Ctrl+Shift+2, or the page's right-click menu): an area drawn, the visible page or the full page, copied to the clipboard and saved in the downloads folder.",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true }
+          }
+        }
+      }
     },
     "disabledExtensions": { "type": "array", "items": { "type": "string" }, "description": "Ids of extensions switched off." },
     "onboarded": { "type": "boolean", "description": "The welcome page has been shown." }

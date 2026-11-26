@@ -8,8 +8,10 @@ interface FavoriteRow {
   url: string
   emoji: string | null
   favicon: string | null
+  image: string | null
   folder_id: string | null
   position: number
+  row: number
 }
 
 interface FolderRow {
@@ -22,7 +24,8 @@ interface FolderRow {
 
 /**
  * Sidebar favorites and folders (CLAUDE.md §6.2), persisted immediately. Positions are dense
- * (0..n-1) within each container: the root, or a folder. One folder level only.
+ * (0..n-1) within each container: the root, or a folder. One folder level only. The root is also
+ * cut in rows (`row`, dense from 0, never empty): positions follow the rows, then the order in a row.
  */
 export class FavoritesStore {
   constructor(private readonly db: Db) {}
@@ -34,7 +37,7 @@ export class FavoritesStore {
 
   favorites(): FavoriteInfo[] {
     const rows = this.db
-      .prepare('SELECT * FROM favorites ORDER BY folder_id IS NOT NULL, folder_id, position')
+      .prepare('SELECT * FROM favorites ORDER BY folder_id IS NOT NULL, folder_id, row, position')
       .all() as FavoriteRow[]
     return rows.map((r) => ({
       id: r.id,
@@ -42,35 +45,40 @@ export class FavoritesStore {
       url: r.url,
       emoji: r.emoji,
       favicon: r.favicon,
+      image: r.image,
       folderId: r.folder_id,
-      position: r.position
+      position: r.position,
+      row: r.folder_id === null ? r.row : 0
     }))
   }
 
-  /** Appends to the container, or inserts at `index`. */
-  addFavorite(input: FavoriteInput, index?: number): string {
+  /** Appends to the container (the root's last row), or inserts at `index` (in `row`, for the root). */
+  addFavorite(input: FavoriteInput, index?: number, row?: number): string {
     const id = randomUUID()
     this.db.transaction(() => {
       const folderId = this.existingFolder(input.folderId)
       this.db
         .prepare(
-          `INSERT INTO favorites (id, title, url, emoji, favicon, folder_id, position, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+          `INSERT INTO favorites (id, title, url, emoji, favicon, image, folder_id, position, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
-        .run(id, input.title, input.url, input.emoji, input.favicon ?? null, folderId, this.favoriteCount(folderId), Date.now())
-      if (index !== undefined) this.placeFavorite(id, folderId, index)
+        .run(id, input.title, input.url, input.emoji, iconUrl(input.favicon), imageUrl(input.image), folderId, this.favoriteCount(folderId), Date.now())
+      this.placeFavorite(id, folderId, index ?? Number.MAX_SAFE_INTEGER, row)
     })()
     return id
   }
 
-  /** Edits title, URL, emoji and folder (moving to another folder appends there). */
+  /**
+   * Edits title, URL, icon (emoji, own image, and the site's icon when one is given) and folder
+   * (moving to another folder appends there).
+   */
   updateFavorite(id: string, input: FavoriteInput): void {
     this.db.transaction(() => {
       const row = this.favoriteRow(id)
       if (!row) return
       this.db
-        .prepare('UPDATE favorites SET title = ?, url = ?, emoji = ? WHERE id = ?')
-        .run(input.title, input.url, input.emoji, id)
+        .prepare('UPDATE favorites SET title = ?, url = ?, emoji = ?, image = ?, favicon = COALESCE(?, favicon) WHERE id = ?')
+        .run(input.title, input.url, input.emoji, imageUrl(input.image), iconUrl(input.favicon), id)
       const folderId = this.existingFolder(input.folderId)
       if (folderId !== row.folder_id) this.placeFavorite(id, folderId, Number.MAX_SAFE_INTEGER)
     })()
@@ -85,12 +93,18 @@ export class FavoritesStore {
     })()
   }
 
-  /** Drag & drop: to `folderId` (null = root) at `index`. */
-  moveFavorite(id: string, folderId: string | null, index: number): void {
-    this.db.transaction(() => this.placeFavorite(id, this.existingFolder(folderId), index))()
+  /**
+   * Drag & drop: to `folderId` (null = root) at `index`. In the root, `index` is within `row`; a row
+   * past the last one starts a new line. Without a row: the last one.
+   */
+  moveFavorite(id: string, folderId: string | null, index: number, row?: number): void {
+    this.db.transaction(() => this.placeFavorite(id, this.existingFolder(folderId), index, row))()
   }
 
-  /** Remembers the favicon of pages whose URL starts with a favorite's origin. */
+  /**
+   * Remembers the favicon of pages whose URL starts with a favorite's origin. An icon kept as a
+   * data: URL (fetched sharp from the editor, or imported) isn't replaced by the page's small one.
+   */
   updateFavicon(pageUrl: string, favicon: string): boolean {
     let origin: string
     try {
@@ -102,7 +116,7 @@ export class FavoritesStore {
     const result = this.db
       .prepare(
         `UPDATE favorites SET favicon = ?
-         WHERE (url = ? OR url LIKE ? || '/%') AND (favicon IS NULL OR favicon != ?)`
+         WHERE (url = ? OR url LIKE ? || '/%') AND (favicon IS NULL OR (favicon != ? AND favicon NOT LIKE 'data:%'))`
       )
       .run(favicon, origin, origin, favicon)
     return result.changes > 0
@@ -140,8 +154,9 @@ export class FavoritesStore {
       const inside = this.db.prepare('SELECT id FROM favorites WHERE folder_id = ? ORDER BY position').all(id) as {
         id: string
       }[]
-      const update = this.db.prepare('UPDATE favorites SET folder_id = NULL, position = ? WHERE id = ?')
-      inside.forEach((row, i) => update.run(base + i, row.id))
+      const lastRow = this.rootRows().length - 1
+      const update = this.db.prepare('UPDATE favorites SET folder_id = NULL, position = ?, row = ? WHERE id = ?')
+      inside.forEach((row, i) => update.run(base + i, Math.max(0, lastRow), row.id))
       this.db.prepare('DELETE FROM folders WHERE id = ?').run(id)
       this.renumberFolders()
     })()
@@ -159,18 +174,49 @@ export class FavoritesStore {
     })()
   }
 
-  private placeFavorite(id: string, folderId: string | null, index: number): void {
+  private placeFavorite(id: string, folderId: string | null, index: number, rowIndex?: number): void {
     const row = this.favoriteRow(id)
     if (!row) return
+    if (folderId === null) {
+      const rows = this.rootRows().map((ids) => ids.filter((other) => other !== id))
+      const target = Math.max(0, Math.min(rowIndex ?? rows.length - 1, rows.length))
+      if (target === rows.length) rows.push([])
+      rows[target]!.splice(clamp(index, 0, rows[target]!.length), 0, id)
+      this.db.prepare('UPDATE favorites SET folder_id = NULL WHERE id = ?').run(id)
+      this.writeRoot(rows)
+      if (row.folder_id !== null) this.renumberFavorites(row.folder_id)
+      return
+    }
     const ids = this.containerIds(folderId).filter((other) => other !== id)
     ids.splice(clamp(index, 0, ids.length), 0, id)
-    this.db.prepare('UPDATE favorites SET folder_id = ? WHERE id = ?').run(folderId, id)
+    this.db.prepare('UPDATE favorites SET folder_id = ?, row = 0 WHERE id = ?').run(folderId, id)
     const update = this.db.prepare('UPDATE favorites SET position = ? WHERE id = ?')
     ids.forEach((favoriteId, i) => update.run(i, favoriteId))
     if (row.folder_id !== folderId) this.renumberFavorites(row.folder_id)
   }
 
+  /** The root favorites' ids, row by row. */
+  private rootRows(): string[][] {
+    const rows = this.db.prepare('SELECT id, row FROM favorites WHERE folder_id IS NULL ORDER BY row, position').all() as { id: string; row: number }[]
+    const out: string[][] = []
+    let last: number | null = null
+    for (const r of rows) {
+      if (r.row !== last) out.push([])
+      last = r.row
+      out[out.length - 1]!.push(r.id)
+    }
+    return out
+  }
+
+  /** Saves the root's rows: empty rows go, rows and positions are renumbered. */
+  private writeRoot(rows: string[][]): void {
+    const update = this.db.prepare('UPDATE favorites SET row = ?, position = ? WHERE id = ?')
+    let position = 0
+    rows.filter((ids) => ids.length > 0).forEach((ids, r) => ids.forEach((id) => update.run(r, position++, id)))
+  }
+
   private renumberFavorites(folderId: string | null): void {
+    if (folderId === null) return this.writeRoot(this.rootRows())
     const update = this.db.prepare('UPDATE favorites SET position = ? WHERE id = ?')
     this.containerIds(folderId).forEach((id, i) => update.run(i, id))
   }
@@ -184,7 +230,7 @@ export class FavoritesStore {
   private containerIds(folderId: string | null): string[] {
     const rows = (
       folderId === null
-        ? this.db.prepare('SELECT id FROM favorites WHERE folder_id IS NULL ORDER BY position').all()
+        ? this.db.prepare('SELECT id FROM favorites WHERE folder_id IS NULL ORDER BY row, position').all()
         : this.db.prepare('SELECT id FROM favorites WHERE folder_id = ? ORDER BY position').all(folderId)
     ) as { id: string }[]
     return rows.map((r) => r.id)
@@ -207,4 +253,19 @@ export class FavoritesStore {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max)
+}
+
+/** Largest own image kept (a data: URL of a 128 px PNG is far smaller). */
+const MAX_IMAGE_LENGTH = 400_000
+
+/** An own image: a data: URL of a raster image only (no SVG: it could carry script). */
+export function imageUrl(value: string | null | undefined): string | null {
+  if (typeof value !== 'string' || value.length > MAX_IMAGE_LENGTH) return null
+  return /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(value) ? value : null
+}
+
+/** A site icon: an http(s) URL, or a data: URL of an image. */
+function iconUrl(value: string | null | undefined): string | null {
+  if (typeof value !== 'string' || value.length > MAX_IMAGE_LENGTH) return null
+  return /^https?:\/\//.test(value) || /^data:image\/[a-z+.-]+;base64,[A-Za-z0-9+/=]+$/.test(value) ? value : null
 }

@@ -93,7 +93,8 @@ export class SessionRestore {
 function snapshot(handle: BrowserWindowHandle): SessionTab[] {
   const { tabs, activeId, groups, splits } = handle.tabs.getState()
   return tabs
-    .filter((t) => t.url !== '' && !t.url.startsWith('zak://newtab'))
+    // The favorites' tabs open again from their tiles.
+    .filter((t) => t.url !== '' && !t.url.startsWith('zak://newtab') && t.favoriteId === null)
     .map((t) => {
       const split = splits.find((s) => s.tabs.includes(t.id))
       return {

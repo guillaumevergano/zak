@@ -7,6 +7,7 @@ import type { SettingsStore } from '../store/settings'
 import type { SidebarController } from '../sidebar/SidebarController'
 import type { ModsManager } from '../mods/ModsManager'
 import type { BrowserWindowHandle, WindowManager } from '../windows/WindowManager'
+import { present } from '../windows/quietMode'
 import type { McpSettings, ZakControl } from './ZakMcpServer'
 
 /** The MCP tools' view of the running Zak (see ZakControl for what is, and isn't, reachable). */
@@ -32,7 +33,7 @@ export function zakControl(deps: {
         const { tabs, activeId, groups } = h.tabs.getState()
         return {
           window: i + 1,
-          tabs: tabs.map((t) => ({ id: t.id, title: t.title, url: t.url, pinned: t.pinned, active: t.id === activeId, groupId: t.groupId })),
+          tabs: tabs.map((t) => ({ id: t.id, title: t.title, url: t.url, pinned: t.pinned, active: t.id === activeId, groupId: t.groupId, favoriteId: t.favoriteId })),
           groups
         }
       }),
@@ -55,8 +56,7 @@ export function zakControl(deps: {
       const handle = windowOf(id)
       if (!handle) return false
       handle.tabs.activate(id)
-      handle.window.show()
-      handle.window.focus()
+      present(handle.window, true)
       return true
     },
     groupTabs: (ids, name, color) => {
@@ -67,7 +67,7 @@ export function zakControl(deps: {
         { name, ...(color ? { color } : {}) }
       )
     },
-    favorites: () => ({ folders: favorites.folders(), favorites: favorites.favorites().map(({ favicon: _icon, ...f }) => f) }),
+    favorites: () => ({ folders: favorites.folders(), favorites: favorites.favorites().map(({ favicon: _icon, image: _image, ...f }) => f) }),
     addFavorite: ({ url, title, emoji, folder }) => {
       let folderId: string | null = null
       if (folder) {
