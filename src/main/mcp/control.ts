@@ -67,7 +67,7 @@ export function zakControl(deps: {
         { name, ...(color ? { color } : {}) }
       )
     },
-    favorites: () => ({ folders: favorites.folders(), favorites: favorites.favorites().map(({ favicon: _icon, ...f }) => f) }),
+    favorites: () => ({ folders: favorites.folders(), favorites: favorites.favorites().map(({ favicon: _icon, image: _image, ...f }) => f) }),
     addFavorite: ({ url, title, emoji, folder }) => {
       let folderId: string | null = null
       if (folder) {

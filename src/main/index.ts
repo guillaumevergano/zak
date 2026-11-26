@@ -55,6 +55,7 @@ import { SitesStore } from './store/sites'
 import { SessionStore } from './store/sessions'
 import { SessionRestore } from './sessions/SessionRestore'
 import { enterQuietMode } from './windows/quietMode'
+import { fetchSiteIcon } from './sidebar/siteIcon'
 import { reloadPage, TabManager } from './tabs/TabManager'
 import { SiteColorScheme } from './tabs/colorScheme'
 import { recordHistory } from './history/HistoryRecorder'
@@ -190,6 +191,7 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
   handle('favorites:add', (_e, input) => sidebar.change(() => favorites.addFavorite(input, undefined, input.row)))
   handle('favorites:addFromTab', (e, tabId, folderId, index, row) => sidebar.addFromTab(windowOf(e), tabId, folderId, index, row))
   handle('favorites:update', (_e, id, input) => sidebar.change(() => favorites.updateFavorite(id, input)))
+  handle('favorites:fetchIcon', (_e, url) => fetchSiteIcon(url))
   handle('favorites:remove', (_e, id) => sidebar.removeFavorite(id))
   handle('favorites:move', (_e, id, folderId, index, row) => sidebar.change(() => favorites.moveFavorite(id, folderId, index, row)))
   handle('favorites:open', (e, id, disposition) => sidebar.open(windowOf(e), id, disposition))

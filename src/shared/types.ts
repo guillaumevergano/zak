@@ -90,6 +90,8 @@ export interface FavoriteInfo {
   /** Shown in the mosaic tile; null → the site's favicon. */
   emoji: string | null
   favicon: string | null
+  /** The user's own image (data: URL), shown before the emoji and the favicon. */
+  image: string | null
   folderId: string | null
   position: number
   /** Row of the root mosaic (0, 1, …: a new line of tiles); 0 in a folder. */
@@ -139,7 +141,10 @@ export interface FavoriteInput {
   url: string
   emoji: string | null
   folderId: string | null
+  /** The site's icon (a URL, or a data: URL fetched by favorites:fetchIcon); kept when omitted. */
   favicon?: string | null
+  /** The user's own image (data: URL); null or omitted: none. */
+  image?: string | null
   /** A new favorite of the root: the mosaic row it goes to (default: the last one). */
   row?: number
 }

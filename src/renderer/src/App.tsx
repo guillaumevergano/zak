@@ -159,7 +159,7 @@ function openEditor({ kind, id }: { kind: 'favorite' | 'folder'; id: string }): 
       kind: 'favorite-editor',
       anchor,
       favoriteId: id,
-      draft: { title: f.title, url: f.url, emoji: f.emoji, folderId: f.folderId, favicon: f.favicon }
+      draft: { title: f.title, url: f.url, emoji: f.emoji, folderId: f.folderId, favicon: f.favicon, image: f.image }
     })
   } else {
     const f = sidebar.folders.find((x) => x.id === id)
