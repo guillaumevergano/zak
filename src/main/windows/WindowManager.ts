@@ -12,6 +12,7 @@ import type { SessionManager } from '../sessions/SessionManager'
 import { buildPageMenu, buildGroupMenu, buildTabMenu } from '../menu/ContextMenu'
 import { Overlay } from './Overlay'
 import type { TranslateTool } from '../tools/TranslateTool'
+import type { ScreenshotTool } from '../tools/ScreenshotTool'
 
 export interface BrowserWindowHandle {
   window: BrowserWindow
@@ -57,6 +58,7 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
 
   /** Zak's own tools in the page menu (CLAUDE.md §6.8), set at startup. */
   translateTool: TranslateTool | null = null
+  screenshotTool: ScreenshotTool | null = null
 
   constructor(
     private readonly sessions: SessionManager,
@@ -140,7 +142,8 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
         addLinkToFavorites: this.addLinkToFavorites,
         openInPrivateWindow: isPrivate ? null : (url) => this.create([url], { private: true }),
         toolItems: this.translateTool?.menuItems(handle, wc, params) ?? [],
-        translatePage: this.translateTool?.enabled() ?? false
+        translatePage: this.translateTool?.enabled() ?? false,
+        pageItems: this.screenshotTool?.menuItems(handle, wc) ?? []
       }).popup({ window })
     })
 

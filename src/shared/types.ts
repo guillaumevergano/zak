@@ -171,6 +171,10 @@ export type FramedOverlayRequest =
   | { kind: 'save-password'; frame: Rect; promptId: number; origin: string; username: string; update: boolean }
   /** A selection's translation (CLAUDE.md §6.8), under it; `error`: the translation of an edited text failed. */
   | { kind: 'translation'; frame: Rect; tabId: TabId; text: string; target: string; error?: boolean }
+  /** Screenshot (§6.8): drawing a region over the page, which the view covers exactly. */
+  | { kind: 'screenshot'; frame: Rect; tabId: TabId }
+  /** The screenshot just taken: its thumbnail (a data: URL), copied and saved. Doesn't take the focus. */
+  | { kind: 'screenshot-done'; frame: Rect; preview: string; name: string }
 
 /** A row of the omnibox dropdown (CLAUDE.md §6.7). */
 export interface OmniboxSuggestion {

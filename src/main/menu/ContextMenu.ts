@@ -22,6 +22,8 @@ export function buildPageMenu(
     toolItems: Electron.MenuItemConstructorOptions[]
     /** Translating the whole page: part of the translation tool. */
     translatePage: boolean
+    /** Zak's tools for the page itself (« Capture d’écran… »), none when they are off. */
+    pageItems: Electron.MenuItemConstructorOptions[]
   }
 ): Menu {
   const menu = new Menu()
@@ -103,8 +105,9 @@ export function buildPageMenu(
         add({ label: getLang() === 'fr' ? t('Traduire en français') : t('Traduire en anglais'), click: () => tabs.create(translateUrl(pageUrl, getLang()), { index: openerIndex }) })
       }
       add({ label: t('Imprimer…'), click: () => wc.print() })
-      separator()
     }
+    hooks.pageItems.forEach(add)
+    separator()
   }
 
   hooks.addExtensionItems(menu)

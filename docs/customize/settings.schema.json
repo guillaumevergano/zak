@@ -139,6 +139,13 @@
             "target": { "type": "string", "default": "", "description": "Language a text one reads is translated into (a Google Translate code such as \"en\" or \"zh-CN\"); empty = Zak's language." },
             "recent": { "type": "array", "items": { "type": "string" }, "maxItems": 4, "description": "Languages last chosen in « Translate into », most recent first." }
           }
+        },
+        "screenshot": {
+          "type": "object",
+          "description": "Screenshots of a page (File menu, Cmd/Ctrl+Shift+2, or the page's right-click menu): an area drawn, the visible page or the full page, copied to the clipboard and saved in the downloads folder.",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true }
+          }
         }
       }
     },

@@ -1,7 +1,8 @@
 import type { Appearance, AppearancePatch } from './appearance'
-import type { ToolsSettings, TranslateSettings } from './tools'
+import type { ScreenshotMode, ScreenshotSettings, ToolsSettings, TranslateSettings } from './tools'
 import type {
   PageScroll,
+  Rect,
   AgentId,
   AgentStatus,
   ImportSource,
@@ -102,6 +103,10 @@ export interface InvokeChannels {
   'overlay:resize': { args: [height: number]; result: void }
   /** Translation bubble (CLAUDE.md §6.8): `text` into `target`; the choice is remembered. */
   'tools:translate': { args: [text: string, target: string]; result: { text: string; source: string } }
+  /** From the capture mode: takes the screenshot (`rect`, in the page's coordinates, for a region). */
+  'tools:screenshot': { args: [mode: ScreenshotMode, rect?: Rect]; result: void }
+  /** « Afficher dans le Finder » on the last screenshot. */
+  'tools:screenshotReveal': { args: []; result: void }
 
   /** Omnibox dropdown for `text`: what Enter does first, then history and favorites. */
   'omnibox:suggest': { args: [text: string]; result: OmniboxSuggestion[] }
@@ -126,6 +131,8 @@ export interface SendChannels {
   'layout:update': LayoutInsets
   /** A completed download dragged out of the panel (webContents.startDrag needs the sender). */
   'downloads:drag': string
+  /** The last screenshot's thumbnail dragged out (to a message, the Finder…). */
+  'tools:screenshotDrag': null
 }
 
 /** main → renderer events (webContents.send / ipcRenderer.on). */
@@ -195,6 +202,8 @@ export const INVOKE_CHANNELS = [
   'overlay:hide',
   'overlay:resize',
   'tools:translate',
+  'tools:screenshot',
+  'tools:screenshotReveal',
   'omnibox:suggest',
   'find:query',
   'find:close',
@@ -206,7 +215,7 @@ export const INVOKE_CHANNELS = [
   'tabs:resetZoom'
 ] as const satisfies readonly InvokeChannel[]
 
-export const SEND_CHANNELS = ['layout:update', 'downloads:drag'] as const satisfies readonly SendChannel[]
+export const SEND_CHANNELS = ['layout:update', 'downloads:drag', 'tools:screenshotDrag'] as const satisfies readonly SendChannel[]
 export const EVENT_CHANNELS = [
   'tabs:state',
   'tabs:scroll',
@@ -280,6 +289,7 @@ export interface InternalApiRoutes {
   /** Zak's own tools (CLAUDE.md §6.8), on zak://extensions. */
   'extensions/tools': { body: null; result: ToolsSettings }
   'extensions/setTranslate': { body: Partial<Pick<TranslateSettings, 'enabled' | 'target'>>; result: ToolsSettings }
+  'extensions/setScreenshot': { body: Partial<ScreenshotSettings>; result: ToolsSettings }
   'settings/get': { body: null; result: BrowserSettings }
   /** Saves the PiP section; returns it normalized (cleaned-up domains). */
   'settings/setPip': { body: PipSettings; result: PipSettings }
@@ -377,6 +387,7 @@ export const INTERNAL_API_ROUTES = [
   'extensions/reload',
   'extensions/tools',
   'extensions/setTranslate',
+  'extensions/setScreenshot',
   'settings/get',
   'settings/setPip',
   'settings/setGeneral',

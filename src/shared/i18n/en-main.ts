@@ -177,5 +177,7 @@ export const EN_MAIN: Record<string, string> = {
 
   // One-click agent connection (mcp/connect.ts)
   'Claude Desktop n’est pas installé.': 'Claude Desktop isn’t installed.',
-  'Claude Code n’est pas installé (commande « claude » introuvable).': 'Claude Code isn’t installed (no “claude” command found).'
+  'Claude Code n’est pas installé (commande « claude » introuvable).': 'Claude Code isn’t installed (no “claude” command found).',
+  'Capture d’écran…': 'Take a screenshot…',
+  'Capture': 'Screenshot',
 }
