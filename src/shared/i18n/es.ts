@@ -441,6 +441,9 @@ export const ES: Record<string, string> = {
   'Fermer le lecteur flottant au retour sur l\'onglet': 'Cerrar el reproductor flotante al volver a la pestaña',
   'Fermer au retour': 'Cerrar al volver',
   'Ignorer les vidéos muettes': 'Omitir los vídeos silenciados',
+  'Aussi les vidéos qui se lancent toutes seules': 'También los vídeos que se inician solos',
+  'Par défaut, seule une vidéo que vous avez lancée (clic, touche) passe en lecteur flottant, pas celles qui démarrent seules dans un fil (X, Instagram…).':
+    'Por defecto, solo un vídeo que has iniciado tú (clic, tecla) pasa al reproductor flotante, no los que empiezan solos en un feed (X, Instagram…).',
   'Par défaut, une vidéo sans le son passe aussi en lecteur flottant.': 'De forma predeterminada, un vídeo sin sonido también pasa a imagen en imagen.',
   'Proposer d\'enregistrer les mots de passe': 'Ofrecer guardar contraseñas',
   'Après une connexion. Chiffrés avec le trousseau de votre ordinateur.': 'Después de iniciar sesión. Cifradas con el llavero de tu ordenador.',

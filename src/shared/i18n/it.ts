@@ -441,6 +441,9 @@ export const IT: Record<string, string> = {
   'Fermer le lecteur flottant au retour sur l\'onglet': 'Chiudi il lettore mobile quando torni sulla scheda',
   'Fermer au retour': 'Chiudi al ritorno',
   'Ignorer les vidéos muettes': 'Ignora i video senza audio',
+  'Aussi les vidéos qui se lancent toutes seules': 'Anche i video che partono da soli',
+  'Par défaut, seule une vidéo que vous avez lancée (clic, touche) passe en lecteur flottant, pas celles qui démarrent seules dans un fil (X, Instagram…).':
+    'Per impostazione predefinita, solo un video avviato da te (clic, tasto) passa al lettore mobile, non quelli che partono da soli in un feed (X, Instagram…).',
   'Par défaut, une vidéo sans le son passe aussi en lecteur flottant.': 'Per impostazione predefinita, anche un video senza audio passa in picture-in-picture.',
   'Proposer d\'enregistrer les mots de passe': 'Proponi di salvare le password',
   'Après une connexion. Chiffrés avec le trousseau de votre ordinateur.': 'Dopo l’accesso. Crittografate con il portachiavi del tuo computer.',

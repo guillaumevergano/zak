@@ -441,6 +441,9 @@ export const PT: Record<string, string> = {
   'Fermer le lecteur flottant au retour sur l\'onglet': 'Fechar o player flutuante ao voltar para a guia',
   'Fermer au retour': 'Fechar ao voltar',
   'Ignorer les vidéos muettes': 'Ignorar vídeos sem som',
+  'Aussi les vidéos qui se lancent toutes seules': 'Também os vídeos que começam sozinhos',
+  'Par défaut, seule une vidéo que vous avez lancée (clic, touche) passe en lecteur flottant, pas celles qui démarrent seules dans un fil (X, Instagram…).':
+    'Por padrão, só um vídeo que você iniciou (clique, tecla) vai para o player flutuante, não os que começam sozinhos em um feed (X, Instagram…).',
   'Par défaut, une vidéo sans le son passe aussi en lecteur flottant.': 'Por padrão, um vídeo sem som também vai para picture-in-picture.',
   'Proposer d\'enregistrer les mots de passe': 'Oferecer para salvar senhas',
   'Après une connexion. Chiffrés avec le trousseau de votre ordinateur.': 'Depois que você faz login. Criptografadas com as chaves do seu computador.',

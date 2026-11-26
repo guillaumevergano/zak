@@ -441,6 +441,9 @@ export const DE: Record<string, string> = {
   'Fermer le lecteur flottant au retour sur l\'onglet': 'Schwebenden Player bei Rückkehr zum Tab schließen',
   'Fermer au retour': 'Bei Rückkehr schließen',
   'Ignorer les vidéos muettes': 'Stumme Videos überspringen',
+  'Aussi les vidéos qui se lancent toutes seules': 'Auch Videos, die von selbst starten',
+  'Par défaut, seule une vidéo que vous avez lancée (clic, touche) passe en lecteur flottant, pas celles qui démarrent seules dans un fil (X, Instagram…).':
+    'Standardmäßig wechselt nur ein Video, das Sie gestartet haben (Klick, Taste), in den schwebenden Player, nicht die, die in einem Feed von selbst starten (X, Instagram…).',
   'Par défaut, une vidéo sans le son passe aussi en lecteur flottant.': 'Standardmäßig wechselt auch ein Video ohne Ton zu Bild-im-Bild.',
   'Proposer d\'enregistrer les mots de passe': 'Speichern von Passwörtern anbieten',
   'Après une connexion. Chiffrés avec le trousseau de votre ordinateur.': 'Nach einer Anmeldung. Verschlüsselt mit dem Schlüsselbund Ihres Computers.',
