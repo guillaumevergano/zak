@@ -10,6 +10,7 @@ import { clampRatio, splitRects, SPLIT_ZOOM } from '@shared/split'
 import { manageIdentity, trackIdentitySetup } from '../userAgent'
 import { NEW_TAB_URL, errorPageUrl, failedUrlOf, isNewTabUrl, toUrl, type SearchEngine } from '@shared/url'
 import { isInternalUrl } from '../internal/InternalProtocol'
+import type { SiteColorScheme } from './colorScheme'
 import { INTERNAL_FAVICON } from '../internal/favicon'
 import { blockedThreat } from '../safety/SafeBrowsing'
 
@@ -147,6 +148,9 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
   /** Zoom remembered for the site of a URL (ZoomController); set once by index.ts. */
   static siteZoom: (url: string) => number = () => 1
 
+  /** Light or dark for web pages, apart from Zak's theme (colorScheme.ts); set once by index.ts. */
+  static colorScheme: SiteColorScheme | null = null
+
   constructor(
     private readonly window: BaseWindow,
     private readonly session: Session
@@ -239,9 +243,9 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     // Client Hints must be in place before the first request goes out.
     // The CDP target only exists once something is loaded, hence about:blank first.
     // If something else navigates the tab meanwhile (the omnibox, an extension), it wins.
-    let navigatedElsewhere = false
+    let navigatedElsewhere: string | null = null
     const onStart = (details: Electron.Event<Electron.WebContentsDidStartNavigationEventParams>): void => {
-      if (details.isMainFrame && details.url !== 'about:blank') navigatedElsewhere = true
+      if (details.isMainFrame && details.url !== 'about:blank') navigatedElsewhere = details.url
     }
     wc.on('did-start-navigation', onStart)
     tab.setup = trackIdentitySetup(wc.loadURL('about:blank').then(() => manageIdentity(wc)))
@@ -249,7 +253,8 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
       .then(() => {
         if (wc.isDestroyed()) return undefined
         wc.off('did-start-navigation', onStart)
-        if (url !== 'about:blank' && !navigatedElsewhere) return wc.loadURL(url)
+        TabManager.colorScheme?.apply(wc, navigatedElsewhere ?? url)
+        if (url !== 'about:blank' && navigatedElsewhere === null) return wc.loadURL(url)
         return undefined
       })
       .catch(() => {
@@ -678,6 +683,11 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
     return this.order.indexOf(id)
   }
 
+  /** Light or dark changed (computer, or Réglages): every page gets its new scheme. */
+  refreshColorScheme(): void {
+    for (const tab of this.tabs.values()) TabManager.colorScheme?.apply(tab.wc, tab.wc.getURL())
+  }
+
   /** The pages of every tab (asleep ones show about:blank). */
   webContentsList(): WebContents[] {
     return [...this.tabs.values()].map((t) => t.wc).filter((wc) => !wc.isDestroyed())
@@ -863,6 +873,10 @@ export class TabManager extends EventEmitter<TabManagerEvents> {
       tab.url = url
       tab.favicon = null
       changed()
+    })
+    // Web pages get the light or dark mode of the computer (or the one chosen), not Zak's theme.
+    wc.on('did-start-navigation', (details) => {
+      if (details.isMainFrame && !details.isSameDocument) TabManager.colorScheme?.apply(wc, details.url)
     })
     wc.on('did-navigate-in-page', (_e, url, isMainFrame) => {
       if (isMainFrame) tab.url = url

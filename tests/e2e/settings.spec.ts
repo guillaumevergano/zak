@@ -30,9 +30,9 @@ test('search engine, theme and sidebar settings apply at once', async () => {
 
   // Theme: dark switches the whole app (nativeTheme; Playwright pins pages' own media to light).
   await chrome.locator('[data-testid="tab"][title="Réglages"]').click()
-  await settings.getByRole('radio', { name: 'Sombre' }).click()
+  await settings.getByRole('radiogroup', { name: 'Thème' }).getByRole('radio', { name: 'Sombre' }).click()
   await expect.poll(() => app.evaluate(({ nativeTheme }) => nativeTheme.themeSource)).toBe('dark')
-  await settings.getByRole('radio', { name: 'Clair' }).click()
+  await settings.getByRole('radiogroup', { name: 'Thème' }).getByRole('radio', { name: 'Clair' }).click()
   await expect.poll(() => app.evaluate(({ nativeTheme }) => nativeTheme.themeSource)).toBe('light')
 
   // Sidebar collapsed from the settings page.

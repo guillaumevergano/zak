@@ -12,10 +12,17 @@ const electronPath = require('electron') as unknown as string
 export async function launch(
   name: string,
   profile?: string,
-  env: Record<string, string> = {}
+  env: Record<string, string> = {},
+  /** Playwright pins pages' `prefers-color-scheme` to light; null leaves it to Zak. */
+  colorScheme: 'light' | null = 'light'
 ): Promise<{ app: ElectronApplication; chrome: Page; profile: string }> {
   const dir = profile ?? mkdtempSync(join(tmpdir(), `zak-e2e-${name}-`))
-  const app = await electron.launch({ executablePath: electronPath, args: [root], env: { ...process.env, ZAK_USER_DATA: dir, ZAK_E2E: '1', ZAK_LANG: 'fr', ...env } })
+  const app = await electron.launch({
+    executablePath: electronPath,
+    args: [root],
+    env: { ...process.env, ZAK_USER_DATA: dir, ZAK_E2E: '1', ZAK_LANG: 'fr', ...env },
+    colorScheme
+  })
   try {
     const chrome = await firstChrome(app)
     await expect(chrome.getByTestId('tab').first()).toBeVisible()

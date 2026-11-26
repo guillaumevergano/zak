@@ -152,6 +152,30 @@ function SettingsPage(): JSX.Element {
             ))}
           </div>
         </Row>
+        <Row title={t('Apparence des sites')} detail={t('Le mode clair ou sombre que voient les sites web (YouTube…). « Système » suit l’ordinateur, quel que soit le thème de Zak.')}>
+          <div role="radiogroup" aria-label={t('Apparence des sites')} className="flex rounded-[10px] border border-cream-edge bg-cream-2 p-0.5">
+            {(
+              [
+                ['light', t('Clair')],
+                ['dark', t('Sombre')],
+                ['system', t('Système')]
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={general.sitesTheme === value}
+                onClick={() => saveGeneral({ sitesTheme: value })}
+                className={`cursor-pointer rounded-[8px] border-0 px-3 py-1 text-[12.5px] font-semibold ${
+                  general.sitesTheme === value ? 'bg-violet text-white' : 'bg-transparent text-sub hover:text-ink'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </Row>
         <ImportFromBrowser onError={fail} />
         <ImportBookmarks onError={fail} />
         <Row

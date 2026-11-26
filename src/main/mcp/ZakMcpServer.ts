@@ -155,12 +155,14 @@ export class ZakMcpServer {
       {
         description:
           'Changes general settings and the layout. Invalid values are ignored. The language applies at the next launch; ' +
+          'theme is Zak\'s own look; sitesTheme the light or dark mode web pages see (system: the computer\'s). ' +
           'sidebarSide (left or right of the page) and tabsPosition (top strip, or one per row in the sidebar) apply at once to every window.',
         inputSchema: {
           language: z.enum(['system', 'fr', 'en']).optional(),
           searchEngine: z.enum(['google', 'duckduckgo', 'brave', 'bing', 'qwant', 'ecosia']).optional(),
           startup: z.enum(['restore', 'newtab']).optional(),
           theme: z.enum(['system', 'light', 'dark']).optional(),
+          sitesTheme: z.enum(['system', 'light', 'dark']).optional(),
           safeBrowsing: z.boolean().optional(),
           savePasswords: z.boolean().optional(),
           askWhereToSave: z.boolean().optional(),

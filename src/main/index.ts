@@ -3,7 +3,7 @@ import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { app, BrowserWindow, components, dialog, ipcMain, nativeTheme, shell, webContents, type IpcMainInvokeEvent } from 'electron'
 import { DOWNLOADS_PAGE_URL, NEWTAB_PAGE_URL, SETTINGS_PAGE_URL, WELCOME_PAGE_URL, type InvokeChannel, type InvokeChannels, type SendChannel, type SendChannels } from '@shared/ipc'
-import type { McpState, WidevineStatus } from '@shared/types'
+import type { GeneralSettings, McpState, WidevineStatus } from '@shared/types'
 import { resolveLang, setLang, t, type LangSetting } from '@shared/i18n'
 import { chromeUserAgent, identitySettled } from './userAgent'
 import { SessionManager } from './sessions/SessionManager'
@@ -54,6 +54,7 @@ import { SitesStore } from './store/sites'
 import { SessionStore } from './store/sessions'
 import { SessionRestore } from './sessions/SessionRestore'
 import { reloadPage, TabManager } from './tabs/TabManager'
+import { SiteColorScheme } from './tabs/colorScheme'
 import { recordHistory } from './history/HistoryRecorder'
 import { FindController } from './find/FindController'
 import { ZoomController } from './tabs/zoom'
@@ -252,7 +253,17 @@ app.whenReady().then(async () => {
   if (testProfile) {
     Object.assign(globalThis, { zakSleepIdleTabs: () => windows.all().forEach((w) => w.tabs.sleepIdleTabs(Date.now() + 864e5)) })
   }
-  nativeTheme.themeSource = settings.getGeneral().theme
+  // Zak's theme for its own windows; web pages get the computer's light or dark mode (or the
+  // one chosen in Réglages), whatever Zak's theme (tabs/colorScheme.ts).
+  const siteScheme = new SiteColorScheme(() => settings.getGeneral().sitesTheme)
+  TabManager.colorScheme = siteScheme
+  const refreshSiteScheme = (): void => windows.all().forEach((w) => w.tabs.refreshColorScheme())
+  siteScheme.onSystemChange(refreshSiteScheme)
+  const applyTheme = (general: GeneralSettings): void => {
+    nativeTheme.themeSource = general.theme
+    refreshSiteScheme()
+  }
+  applyTheme(settings.getGeneral())
   recordHistory(windows, history)
   const sidebar = new SidebarController(favorites, settings, windows)
   windows.setTabsPosition(settings.getSidebar().tabs)
@@ -271,9 +282,7 @@ app.whenReady().then(async () => {
       sidebar,
       settings,
       mods,
-      applySettings: (general) => {
-        nativeTheme.themeSource = general.theme
-      }
+      applySettings: applyTheme
     })
   )
   let mcpError: string | null = null
@@ -313,7 +322,7 @@ app.whenReady().then(async () => {
   // The settings file can be edited outside Zak (by hand, Claude Code, Codex): apply it at once.
   settings.markSchema()
   settings.onChange(() => {
-    nativeTheme.themeSource = settings.getGeneral().theme
+    applyTheme(settings.getGeneral())
     sidebar.broadcast()
     const css = appearanceCss(settings.getAppearance())
     if (css !== shownAppearance) {
@@ -527,7 +536,7 @@ app.whenReady().then(async () => {
     'appearance/set': (patch) => settings.setAppearance(patch),
     'appearance/reset': () => settings.setAppearance({}, true),
     'appearance/setTheme': ({ theme }) => {
-      nativeTheme.themeSource = settings.setGeneral({ theme }).theme
+      applyTheme(settings.setGeneral({ theme }))
       return null
     },
     'appearance/setLayout': ({ side, tabs }) => sidebar.setLayout({ side, tabs }),
@@ -535,7 +544,7 @@ app.whenReady().then(async () => {
       // The folder only changes through the picker below.
       const { downloadDir: _ignored, ...rest } = patch
       const general = settings.setGeneral(rest)
-      nativeTheme.themeSource = general.theme
+      applyTheme(general)
       return general
     },
     'settings/chooseDownloadDir': async () => {

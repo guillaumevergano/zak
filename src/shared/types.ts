@@ -220,6 +220,8 @@ export interface GeneralSettings {
   /** At launch: reopen the last session's tabs, or a single new tab. */
   startup: 'restore' | 'newtab'
   theme: 'system' | 'light' | 'dark'
+  /** Light or dark mode web pages see (`prefers-color-scheme`); 'system': the computer's, whatever Zak's theme. */
+  sitesTheme: 'system' | 'light' | 'dark'
   /** Where downloads go (private windows too, like Chrome). */
   downloadDir: string
   /** Ask where to save each file (a save dialog) instead of saving straight into downloadDir. */
