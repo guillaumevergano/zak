@@ -53,6 +53,7 @@ import { DownloadsStore } from './store/downloads'
 import { SitesStore } from './store/sites'
 import { SessionStore } from './store/sessions'
 import { SessionRestore } from './sessions/SessionRestore'
+import { enterQuietMode } from './windows/quietMode'
 import { reloadPage, TabManager } from './tabs/TabManager'
 import { recordHistory } from './history/HistoryRecorder'
 import { FindController } from './find/FindController'
@@ -86,6 +87,8 @@ if (currentProfile !== DEFAULT_PROFILE_ID) app.setPath('userData', profiles.dir(
 
 // Must be set before any session/webContents exists (CLAUDE.md §6.5).
 app.userAgentFallback = chromeUserAgent()
+// e2e tests: no Dock icon, windows that don't take the focus (windows/quietMode.ts).
+enterQuietMode()
 // zak://extensions… (privileged schemes must be registered before ready).
 registerInternalScheme()
 // Links from other apps once Zak is the default browser (they can arrive before ready).
