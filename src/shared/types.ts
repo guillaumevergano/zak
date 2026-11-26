@@ -322,6 +322,15 @@ export interface McpState {
   error: string | null
 }
 
+/** A tool of Zak's MCP server, as agents see it (Réglages → MCP lists them). */
+export interface McpToolInfo {
+  name: string
+  /** The description sent to agents (English). */
+  description: string
+  /** Only reads (readOnlyHint); otherwise it changes something in Zak. */
+  readOnly: boolean
+}
+
 /** A mod (src/main/mods/): a theme and/or a new tab page, from the profile's mods folder. */
 export interface ModInfo {
   /** Its folder's name. */

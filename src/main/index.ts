@@ -458,6 +458,7 @@ app.whenReady().then(async () => {
       return result.canceled || !result.filePaths[0] ? null : sidebar.importBookmarks(result.filePaths[0])
     },
     'settings/mcp': () => mcpState(),
+    'settings/mcpTools': () => zakMcp.tools(),
     'settings/setMcp': async ({ enabled }) => {
       const current = settings.getMcp()
       settings.setMcp({ ...current, enabled, token: current.token || randomBytes(24).toString('base64url') })

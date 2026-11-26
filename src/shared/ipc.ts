@@ -7,6 +7,7 @@ import type {
   AgentStatus,
   ImportSource,
   McpState,
+  McpToolInfo,
   ModInfo,
   ProfileInfo,
   TabGroupInfo,
@@ -298,6 +299,7 @@ export interface InternalApiRoutes {
   'settings/mcp': { body: null; result: McpState }
   'settings/setMcp': { body: { enabled: boolean }; result: McpState }
   'settings/newMcpToken': { body: null; result: McpState }
+  'settings/mcpTools': { body: null; result: McpToolInfo[] }
   /** One-click connection of Claude Code, Codex, Claude Desktop (turns the server on if needed). */
   'settings/agents': { body: null; result: AgentStatus[] }
   'settings/connectAgent': { body: { agent: AgentId }; result: { agents: AgentStatus[]; mcp: McpState } }
@@ -384,6 +386,7 @@ export const INTERNAL_API_ROUTES = [
   'settings/mcp',
   'settings/setMcp',
   'settings/newMcpToken',
+  'settings/mcpTools',
   'settings/agents',
   'settings/connectAgent',
   'settings/mods',
