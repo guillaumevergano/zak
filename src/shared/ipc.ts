@@ -82,6 +82,8 @@ export interface InvokeChannels {
   /** `row`: in the root, the row of the mosaic (past the last one: a new row). */
   'favorites:addFromTab': { args: [tabId: TabId, folderId: string | null, index: number, row?: number]; result: string }
   'favorites:update': { args: [id: string, input: FavoriteInput]; result: void }
+  /** The site's icon for a favorite's URL, as a data: URL (null: none found). */
+  'favorites:fetchIcon': { args: [url: string]; result: string | null }
   'favorites:remove': { args: [id: string]; result: void }
   /** `index` within `row` in the root (past the last row: a new row). */
   'favorites:move': { args: [id: string, folderId: string | null, index: number, row?: number]; result: void }
@@ -178,6 +180,7 @@ export const INVOKE_CHANNELS = [
   'favorites:add',
   'favorites:addFromTab',
   'favorites:update',
+  'favorites:fetchIcon',
   'favorites:remove',
   'favorites:move',
   'favorites:open',

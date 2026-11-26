@@ -8,6 +8,7 @@ interface FavoriteRow {
   url: string
   emoji: string | null
   favicon: string | null
+  image: string | null
   folder_id: string | null
   position: number
   row: number
@@ -44,6 +45,7 @@ export class FavoritesStore {
       url: r.url,
       emoji: r.emoji,
       favicon: r.favicon,
+      image: r.image,
       folderId: r.folder_id,
       position: r.position,
       row: r.folder_id === null ? r.row : 0
@@ -57,23 +59,26 @@ export class FavoritesStore {
       const folderId = this.existingFolder(input.folderId)
       this.db
         .prepare(
-          `INSERT INTO favorites (id, title, url, emoji, favicon, folder_id, position, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+          `INSERT INTO favorites (id, title, url, emoji, favicon, image, folder_id, position, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
-        .run(id, input.title, input.url, input.emoji, input.favicon ?? null, folderId, this.favoriteCount(folderId), Date.now())
+        .run(id, input.title, input.url, input.emoji, iconUrl(input.favicon), imageUrl(input.image), folderId, this.favoriteCount(folderId), Date.now())
       this.placeFavorite(id, folderId, index ?? Number.MAX_SAFE_INTEGER, row)
     })()
     return id
   }
 
-  /** Edits title, URL, emoji and folder (moving to another folder appends there). */
+  /**
+   * Edits title, URL, icon (emoji, own image, and the site's icon when one is given) and folder
+   * (moving to another folder appends there).
+   */
   updateFavorite(id: string, input: FavoriteInput): void {
     this.db.transaction(() => {
       const row = this.favoriteRow(id)
       if (!row) return
       this.db
-        .prepare('UPDATE favorites SET title = ?, url = ?, emoji = ? WHERE id = ?')
-        .run(input.title, input.url, input.emoji, id)
+        .prepare('UPDATE favorites SET title = ?, url = ?, emoji = ?, image = ?, favicon = COALESCE(?, favicon) WHERE id = ?')
+        .run(input.title, input.url, input.emoji, imageUrl(input.image), iconUrl(input.favicon), id)
       const folderId = this.existingFolder(input.folderId)
       if (folderId !== row.folder_id) this.placeFavorite(id, folderId, Number.MAX_SAFE_INTEGER)
     })()
@@ -96,7 +101,10 @@ export class FavoritesStore {
     this.db.transaction(() => this.placeFavorite(id, this.existingFolder(folderId), index, row))()
   }
 
-  /** Remembers the favicon of pages whose URL starts with a favorite's origin. */
+  /**
+   * Remembers the favicon of pages whose URL starts with a favorite's origin. An icon kept as a
+   * data: URL (fetched sharp from the editor, or imported) isn't replaced by the page's small one.
+   */
   updateFavicon(pageUrl: string, favicon: string): boolean {
     let origin: string
     try {
@@ -108,7 +116,7 @@ export class FavoritesStore {
     const result = this.db
       .prepare(
         `UPDATE favorites SET favicon = ?
-         WHERE (url = ? OR url LIKE ? || '/%') AND (favicon IS NULL OR favicon != ?)`
+         WHERE (url = ? OR url LIKE ? || '/%') AND (favicon IS NULL OR (favicon != ? AND favicon NOT LIKE 'data:%'))`
       )
       .run(favicon, origin, origin, favicon)
     return result.changes > 0
@@ -245,4 +253,19 @@ export class FavoritesStore {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max)
+}
+
+/** Largest own image kept (a data: URL of a 128 px PNG is far smaller). */
+const MAX_IMAGE_LENGTH = 400_000
+
+/** An own image: a data: URL of a raster image only (no SVG: it could carry script). */
+export function imageUrl(value: string | null | undefined): string | null {
+  if (typeof value !== 'string' || value.length > MAX_IMAGE_LENGTH) return null
+  return /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(value) ? value : null
+}
+
+/** A site icon: an http(s) URL, or a data: URL of an image. */
+function iconUrl(value: string | null | undefined): string | null {
+  if (typeof value !== 'string' || value.length > MAX_IMAGE_LENGTH) return null
+  return /^https?:\/\//.test(value) || /^data:image\/[a-z+.-]+;base64,[A-Za-z0-9+/=]+$/.test(value) ? value : null
 }

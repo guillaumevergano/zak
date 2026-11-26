@@ -94,4 +94,28 @@ describe('FavoritesStore', () => {
     store.updateFavorite(id, { title: 'A', url: 'https://a.test/', emoji: '🅰️', folderId: folder })
     expect(store.favorite(id)).toMatchObject({ title: 'A', emoji: '🅰️', folderId: folder, position: 0 })
   })
+
+  it('keeps an own image (raster data: URL only) and the site icon fetched, apart from site visits', () => {
+    const png = 'data:image/png;base64,iVBORw0KGgo='
+    const id = store.addFavorite({ ...fav('a'), emoji: null, image: png })
+    expect(store.favorite(id)).toMatchObject({ image: png, emoji: null })
+
+    // A visit to the site updates its icon, never the own image.
+    store.updateFavicon('https://a.test/page', 'https://a.test/favicon.ico')
+    expect(store.favorite(id)).toMatchObject({ image: png, favicon: 'https://a.test/favicon.ico' })
+
+    // No SVG (it could carry script), nothing that isn't a data: URL.
+    store.updateFavorite(id, { ...fav('a'), image: 'data:image/svg+xml;base64,PHN2Zz4=' })
+    expect(store.favorite(id)?.image).toBeNull()
+    store.updateFavorite(id, { ...fav('a'), image: 'https://a.test/me.png' })
+    expect(store.favorite(id)?.image).toBeNull()
+
+    // The site's icon fetched from the editor replaces the one known; omitted, it stays, and a
+    // visit doesn't swap it for the page's small one.
+    store.updateFavorite(id, { ...fav('a'), favicon: 'data:image/png;base64,AAAA' })
+    expect(store.favorite(id)?.favicon).toBe('data:image/png;base64,AAAA')
+    store.updateFavorite(id, fav('a'))
+    expect(store.updateFavicon('https://a.test/', 'https://a.test/small.ico')).toBe(false)
+    expect(store.favorite(id)?.favicon).toBe('data:image/png;base64,AAAA')
+  })
 })

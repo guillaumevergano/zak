@@ -574,8 +574,14 @@ function FavoriteRow({ favorite, active }: { favorite: FavoriteInfo; active: boo
   )
 }
 
-export function TileIcon(props: { favorite: Pick<FavoriteInfo, 'emoji' | 'favicon'>; small?: boolean }): JSX.Element {
+export function TileIcon(props: {
+  favorite: Pick<FavoriteInfo, 'emoji' | 'favicon'> & { image?: string | null }
+  small?: boolean
+}): JSX.Element {
   const { favorite, small } = props
+  if (favorite.image) {
+    return <img src={favorite.image} alt="" draggable={false} className={small ? 'h-4 w-4 rounded object-cover' : 'h-7 w-7 rounded-lg object-cover'} />
+  }
   if (favorite.emoji) {
     return <span className={`emoji leading-none ${small ? 'text-[15px]' : 'text-[22px]'}`}>{favorite.emoji}</span>
   }
