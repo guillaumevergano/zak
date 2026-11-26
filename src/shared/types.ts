@@ -218,6 +218,8 @@ export interface PipSettings {
   closeOnReturn: boolean
   /** Don't trigger for a muted video (default: trigger anyway). */
   skipMuted: boolean
+  /** Also videos the page started by itself (feeds); by default, only those the user started. */
+  autoplayed: boolean
   /** Sites where PiP never triggers (a domain covers its subdomains). */
   excludedDomains: string[]
 }

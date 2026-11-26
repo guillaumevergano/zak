@@ -116,7 +116,10 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
     tabs.on('scroll', (tabId, scroll) => {
       if (!window.isDestroyed()) this.sendTo(window, 'tabs:scroll', { tabId, scroll })
     })
-    tabs.on('created', (wc) => this.emit('tab-created', wc, window))
+    tabs.on('created', (wc) => {
+      this.pip.watch(wc)
+      this.emit('tab-created', wc, window)
+    })
     tabs.on('removed', (wc) => this.emit('tab-removed', wc))
     tabs.on('empty', () => window.close())
     // A private window records nothing, not even a favorite's favicon.

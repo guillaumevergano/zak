@@ -168,6 +168,7 @@ Les fenêtres privées n'écrivent **rien** dans `history` ni `tab_sessions`.
   2. `previous.webContents.executeJavaScript(ENTER_PIP_SCRIPT, /* userGesture */ true)` — le `true` est **indispensable** : `requestPictureInPicture()` exige une activation utilisateur, et Electron permet de la simuler ainsi.
   3. `ENTER_PIP_SCRIPT` : sélectionne la vidéo en lecture la plus grande, retire l'attribut `disablepictureinpicture` si présent, appelle `video.requestPictureInPicture()`, retourne `true/false`.
   4. Sur retour à l'onglet → `executeJavaScript('document.pictureInPictureElement && document.exitPictureInPicture()')` (réglage « Fermer le PiP au retour » activable/désactivable).
+- Seulement une vidéo **lancée par l'utilisateur** : un script en monde isolé (`PIP_WORLD_ID`) retient les vidéos dont la lecture (ou la remise du son) suit un clic ou une touche dans la page (`navigator.userActivation.isActive`) ; celles qu'un fil lance tout seul (X, Instagram…) ne partent pas en PiP, sauf réglage « Aussi les vidéos qui se lancent toutes seules » (`pip.autoplayed`).
 - Réglages : activer/désactiver ; liste de domaines exclus ; ne pas déclencher si la vidéo est muette (par défaut : déclencher quand même).
 - YouTube est la référence de test ; vérifier aussi Twitch, Vimeo, un lecteur HTML5 nu, et Netflix (le PiP sur contenu DRM peut être refusé par le site — acceptable).
 - v2 : Document Picture-in-Picture API (fenêtre PiP custom avec nos contrôles) si disponible dans la version d'Electron utilisée.

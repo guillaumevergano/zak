@@ -347,6 +347,9 @@ export const EN_UI: Record<string, string> = {
   "Fermer le lecteur flottant au retour sur l'onglet": 'Close the floating player when you return to the tab',
   'Fermer au retour': 'Close on return',
   'Ignorer les vidéos muettes': 'Skip muted videos',
+  'Aussi les vidéos qui se lancent toutes seules': 'Also videos that start by themselves',
+  'Par défaut, seule une vidéo que vous avez lancée (clic, touche) passe en lecteur flottant, pas celles qui démarrent seules dans un fil (X, Instagram…).':
+    'By default, only a video you started (click, key) goes to the floating player, not those that start by themselves in a feed (X, Instagram…).',
   'Par défaut, une vidéo sans le son passe aussi en lecteur flottant.': 'By default, a video without sound also goes picture-in-picture.',
   "Proposer d'enregistrer les mots de passe": 'Offer to save passwords',
   'Après une connexion. Chiffrés avec le trousseau de votre ordinateur.': 'After you sign in. Encrypted with your computer’s keychain.',

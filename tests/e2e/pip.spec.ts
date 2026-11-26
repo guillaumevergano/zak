@@ -9,8 +9,12 @@ import { firstChrome, forceClose } from './helpers'
 const root = join(__dirname, '../..')
 const electronPath = require('electron') as unknown as string
 
-/** A plain HTML5 player: a 640×360 <video> fed by an animated canvas, so no media file is needed. */
+/**
+ * A plain HTML5 player: a 640×360 <video> fed by an animated canvas, so no media file is needed.
+ * It starts by itself, like a video in a feed; « Lire » is the user starting it.
+ */
 const VIDEO_PAGE = `<!doctype html><title>Video</title>
+<button id="play" onclick="document.getElementById('v').play()">Lire</button>
 <video id="v" width="640" height="360" playsinline></video>
 <canvas id="c" width="320" height="180" hidden></canvas>
 <script>
@@ -76,15 +80,31 @@ async function leaveAndCheck(video: Page, expected: boolean): Promise<void> {
   }
 }
 
-test('a playing video goes to PiP when leaving its tab, and comes back', async () => {
+test('a video the user started goes to PiP when leaving its tab, and comes back', async () => {
   await openInNewTab(videoUrl)
   const video = await pageAt(videoUrl)
   await expect(chrome.getByTestId('tab').last()).toHaveAttribute('title', 'Video')
   await expect.poll(() => video.evaluate(() => (document.getElementById('v') as HTMLVideoElement).readyState)).toBeGreaterThan(2)
 
+  // Started by the page itself (a feed): it stays in its tab.
   await openInNewTab('zak://settings')
   const settings = await pageAt('zak://settings')
   await expect(chrome.getByTestId('tab').last()).toHaveAttribute('title', 'Réglages')
+  await video.waitForTimeout(600)
+  expect(await inPip(video)).toBe(false)
+
+  // Unless « Aussi les vidéos qui se lancent toutes seules » is on.
+  await settings.getByRole('switch', { name: 'Aussi les vidéos qui se lancent toutes seules' }).click()
+  await leaveAndCheck(video, true)
+  await activate('Video')
+  await settings.getByRole('switch', { name: 'Aussi les vidéos qui se lancent toutes seules' }).click()
+  await leaveAndCheck(video, false)
+
+  // Started by the user: it goes to PiP.
+  await activate('Video')
+  await video.evaluate(() => (document.getElementById('v') as HTMLVideoElement).pause())
+  await video.getByRole('button', { name: 'Lire' }).click()
+  await activate('Réglages')
   await expect.poll(() => inPip(video)).toBe(true)
 
   // Back on the video tab: the PiP window closes.

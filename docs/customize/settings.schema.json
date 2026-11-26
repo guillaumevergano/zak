@@ -31,6 +31,7 @@
         "enabled": { "type": "boolean", "default": true },
         "closeOnReturn": { "type": "boolean", "default": true },
         "skipMuted": { "type": "boolean", "default": false },
+        "autoplayed": { "type": "boolean", "default": false, "description": "Also videos a page starts by itself (feeds). By default, only videos the user started (a click or a key press) go to picture-in-picture." },
         "excludedDomains": { "type": "array", "items": { "type": "string" }, "description": "Domains (subdomains included) where it never triggers, e.g. \"youtube.com\"." }
       }
     },
