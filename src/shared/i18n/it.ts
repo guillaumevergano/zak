@@ -418,6 +418,9 @@ export const IT: Record<string, string> = {
   'Ouvrir un nouvel onglet': 'Apri una nuova scheda',
   'Thème': 'Tema',
   '« Système » suit le mode clair ou sombre de l\'ordinateur.': '“Sistema” segue la modalità chiara o scura del computer.',
+  'Apparence des sites': 'Aspetto dei siti',
+  'Le mode clair ou sombre que voient les sites web (YouTube…). « Système » suit l’ordinateur, quel que soit le thème de Zak.':
+    'La modalità chiara o scura che vedono i siti web (YouTube…). “Sistema” segue il computer, qualunque sia il tema di Zak.',
   'Clair': 'Chiaro',
   'Sombre': 'Scuro',
   'Système': 'Sistema',

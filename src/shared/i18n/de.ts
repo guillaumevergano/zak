@@ -418,6 +418,9 @@ export const DE: Record<string, string> = {
   'Ouvrir un nouvel onglet': 'Neuen Tab öffnen',
   'Thème': 'Design',
   '« Système » suit le mode clair ou sombre de l\'ordinateur.': '„System“ folgt dem hellen oder dunklen Modus Ihres Computers.',
+  'Apparence des sites': 'Darstellung der Websites',
+  'Le mode clair ou sombre que voient les sites web (YouTube…). « Système » suit l’ordinateur, quel que soit le thème de Zak.':
+    'Der helle oder dunkle Modus, den Websites sehen (YouTube…). „System“ folgt Ihrem Computer, unabhängig vom Design von Zak.',
   'Clair': 'Hell',
   'Sombre': 'Dunkel',
   'Système': 'System',

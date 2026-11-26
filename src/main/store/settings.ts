@@ -190,6 +190,7 @@ export function normalizeGeneral(raw: Partial<GeneralSettings>): GeneralSettings
     searchEngine: pick(raw.searchEngine, Object.keys(SEARCH_ENGINES) as (keyof typeof SEARCH_ENGINES)[], 'google'),
     startup: pick(raw.startup, ['restore', 'newtab'] as const, 'restore'),
     theme: pick(raw.theme, ['system', 'light', 'dark'] as const, 'light'),
+    sitesTheme: pick(raw.sitesTheme, ['system', 'light', 'dark'] as const, 'system'),
     downloadDir: typeof raw.downloadDir === 'string' && raw.downloadDir !== '' ? raw.downloadDir : app.getPath('downloads'),
     askWhereToSave: raw.askWhereToSave === true,
     safeBrowsing: raw.safeBrowsing !== false,

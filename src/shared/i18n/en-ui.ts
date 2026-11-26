@@ -321,6 +321,9 @@ export const EN_UI: Record<string, string> = {
   'Ouvrir un nouvel onglet': 'Open a new tab',
   Thème: 'Theme',
   "« Système » suit le mode clair ou sombre de l'ordinateur.": '“System” follows your computer’s light or dark mode.',
+  'Apparence des sites': 'Website appearance',
+  'Le mode clair ou sombre que voient les sites web (YouTube…). « Système » suit l’ordinateur, quel que soit le thème de Zak.':
+    'The light or dark mode websites see (YouTube…). “System” follows your computer, whatever Zak’s theme.',
   Clair: 'Light',
   Sombre: 'Dark',
   Système: 'System',
