@@ -59,6 +59,7 @@ import { FindController } from './find/FindController'
 import { ZoomController } from './tabs/zoom'
 import { PermissionsHandler } from './permissions/PermissionsHandler'
 import { DownloadsManager } from './downloads/DownloadsManager'
+import { MediaController } from './media/MediaController'
 import { suggest } from './omnibox/suggest'
 import { SettingsStore } from './store/settings'
 import { SidebarController } from './sidebar/SidebarController'
@@ -140,9 +141,10 @@ interface Services {
   permissions: PermissionsHandler
   downloads: DownloadsManager
   passwords: PasswordManager
+  media: MediaController
 }
 
-function registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords }: Services): void {
+function registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords, media }: Services): void {
   const windowOf = (event: IpcMainInvokeEvent | Electron.IpcMainEvent) => {
     const handle = windows.fromWebContents(event.sender)
     if (!handle) throw new Error('IPC from unknown window')
@@ -206,6 +208,9 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
   handle('permission:answer', (_e, requestId, granted) => permissions.answer(requestId, granted))
   handle('passwords:answer', (_e, promptId, choice) => passwords.answer(promptId, choice))
   handle('downloads:getState', (e) => downloads.stateFor(windowOf(e).session))
+  handle('media:getState', (e) => media.state(windowOf(e)))
+  handle('media:action', (e, action) => media.act(windowOf(e), action))
+  handle('media:setVolume', (e, volume) => media.setVolume(windowOf(e), volume))
   handle('downloads:action', (e, id, action) => downloads.act(id, action, windowOf(e).session))
   handle('downloads:openPage', (e) => {
     const handle = windowOf(e)
@@ -337,7 +342,7 @@ app.whenReady().then(async () => {
   downloads.attach(browsingSession, true)
   const passwordStore = new PasswordStore(db, keychainCipher)
   const passwords = new PasswordManager(passwordStore, windows, () => settings.getGeneral().savePasswords)
-  registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords })
+  registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords, media: new MediaController(windows) })
   const menuCommands = {
     find,
     zoom,

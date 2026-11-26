@@ -484,5 +484,11 @@ export const EN_UI: Record<string, string> = {
   'C’est fait. Redémarrez Claude Desktop, puis demandez-lui par exemple : « Range mes onglets Zak par sujet ».':
     'Done. Restart Claude Desktop, then ask it for example: “Sort my Zak tabs by topic”.',
   'C’est fait. Dans {name}, demandez par exemple : « Range mes onglets Zak par sujet ».': 'Done. In {name}, ask for example: “Sort my Zak tabs by topic”.',
-  'Configuration manuelle': 'Manual setup'
+  'Configuration manuelle': 'Manual setup',
+  'Lecture': 'Play',
+  'Précédent': 'Previous',
+  'Suivant': 'Next',
+  'Volume': 'Volume',
+  'En cours de lecture': 'Now playing',
+  'Afficher l’onglet': 'Show the tab',
 }
