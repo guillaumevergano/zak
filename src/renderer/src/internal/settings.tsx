@@ -254,6 +254,12 @@ function SettingsPage(): JSX.Element {
         <Row title={t("Fermer le lecteur flottant au retour sur l'onglet")}>
           <Toggle label={t('Fermer au retour')} on={pip.closeOnReturn} onChange={(closeOnReturn) => savePip({ ...pip, closeOnReturn })} />
         </Row>
+        <Row
+          title={t('Aussi les vidéos qui se lancent toutes seules')}
+          detail={t('Par défaut, seule une vidéo que vous avez lancée (clic, touche) passe en lecteur flottant, pas celles qui démarrent seules dans un fil (X, Instagram…).')}
+        >
+          <Toggle label={t('Aussi les vidéos qui se lancent toutes seules')} on={pip.autoplayed} onChange={(autoplayed) => savePip({ ...pip, autoplayed })} />
+        </Row>
         <Row title={t('Ignorer les vidéos muettes')} detail={t('Par défaut, une vidéo sans le son passe aussi en lecteur flottant.')}>
           <Toggle label={t('Ignorer les vidéos muettes')} on={pip.skipMuted} onChange={(skipMuted) => savePip({ ...pip, skipMuted })} />
         </Row>

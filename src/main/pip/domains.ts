@@ -33,6 +33,7 @@ export const DEFAULT_PIP_SETTINGS: PipSettings = {
   enabled: true,
   closeOnReturn: true,
   skipMuted: false,
+  autoplayed: false,
   excludedDomains: []
 }
 
@@ -45,6 +46,7 @@ export function normalizePipSettings(input: Partial<PipSettings>): PipSettings {
     enabled: input.enabled ?? DEFAULT_PIP_SETTINGS.enabled,
     closeOnReturn: input.closeOnReturn ?? DEFAULT_PIP_SETTINGS.closeOnReturn,
     skipMuted: input.skipMuted ?? DEFAULT_PIP_SETTINGS.skipMuted,
+    autoplayed: input.autoplayed ?? DEFAULT_PIP_SETTINGS.autoplayed,
     excludedDomains: [...new Set(domains)].sort()
   }
 }
