@@ -646,4 +646,10 @@ export const DE: Record<string, string> = {
   'Une zone tracée, la page visible ou la page entière : menu Fichier ({shortcut}) ou clic droit sur la page. L’image est copiée dans le presse-papiers et enregistrée dans le dossier des téléchargements.': 'Ein aufgezogener Bereich, der sichtbare Teil oder die ganze Seite: Menü Ablage ({shortcut}) oder Rechtsklick auf die Seite. Das Bild wird in die Zwischenablage kopiert und im Download-Ordner gespeichert.',
   'Tout reste sur votre ordinateur.': 'Alles bleibt auf Ihrem Computer.',
   'Ctrl+Maj+2': 'Strg+Umschalt+2',
+  'Lecture': 'Wiedergabe',
+  'Précédent': 'Zurück',
+  'Suivant': 'Weiter',
+  'Volume': 'Lautstärke',
+  'En cours de lecture': 'Wird abgespielt',
+  'Afficher l’onglet': 'Tab anzeigen',
 }

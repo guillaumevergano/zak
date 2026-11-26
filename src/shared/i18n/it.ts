@@ -646,4 +646,10 @@ export const IT: Record<string, string> = {
   'Une zone tracée, la page visible ou la page entière : menu Fichier ({shortcut}) ou clic droit sur la page. L’image est copiée dans le presse-papiers et enregistrée dans le dossier des téléchargements.': 'Un’area tracciata, la pagina visibile o la pagina intera: menu File ({shortcut}) o clic destro sulla pagina. L’immagine viene copiata negli appunti e salvata nella cartella dei download.',
   'Tout reste sur votre ordinateur.': 'Tutto resta sul tuo computer.',
   'Ctrl+Maj+2': 'Ctrl+Maiusc+2',
+  'Lecture': 'Riproduci',
+  'Précédent': 'Precedente',
+  'Suivant': 'Successivo',
+  'Volume': 'Volume',
+  'En cours de lecture': 'In riproduzione',
+  'Afficher l’onglet': 'Mostra la scheda',
 }

@@ -646,4 +646,10 @@ export const ES: Record<string, string> = {
   'Une zone tracée, la page visible ou la page entière : menu Fichier ({shortcut}) ou clic droit sur la page. L’image est copiée dans le presse-papiers et enregistrée dans le dossier des téléchargements.': 'Una zona que dibujas, la página visible o la página completa: menú Archivo ({shortcut}) o clic derecho en la página. La imagen se copia al portapapeles y se guarda en la carpeta de descargas.',
   'Tout reste sur votre ordinateur.': 'Todo se queda en tu ordenador.',
   'Ctrl+Maj+2': 'Ctrl+Mayús+2',
+  'Lecture': 'Reproducir',
+  'Précédent': 'Anterior',
+  'Suivant': 'Siguiente',
+  'Volume': 'Volumen',
+  'En cours de lecture': 'Reproduciendo',
+  'Afficher l’onglet': 'Mostrar la pestaña',
 }
