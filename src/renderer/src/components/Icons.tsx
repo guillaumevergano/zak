@@ -37,8 +37,8 @@ export const SearchIcon = (): JSX.Element => (
 export const GlobeIcon = (): JSX.Element => (
   <Icon width={14} height={14} strokeWidth={1.3}><circle cx="8" cy="8" r="5.5" /><path d="M2.5 8h11M8 2.5c1.7 1.6 2.5 3.4 2.5 5.5S9.7 11.9 8 13.5C6.3 11.9 5.5 10.1 5.5 8S6.3 4.1 8 2.5Z" /></Icon>
 )
-export const SpeakerIcon = ({ muted }: { muted: boolean }): JSX.Element => (
-  <Icon width={13} height={13}>
+export const SpeakerIcon = ({ muted, size = 13 }: { muted: boolean; size?: number }): JSX.Element => (
+  <Icon width={size} height={size}>
     <path d="M3 6.5h2L8 4v8L5 9.5H3z" />
     {muted ? <path d="m10.5 6.5 3 3M13.5 6.5l-3 3" /> : <path d="M10.5 6a3 3 0 0 1 0 4M12 4.5a5 5 0 0 1 0 7" />}
   </Icon>
