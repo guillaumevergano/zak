@@ -552,5 +552,16 @@ export const EN_UI: Record<string, string> = {
   'Fermer': 'Close',
   'Traduction…': 'Translating…',
   'La traduction n’a pas abouti. Vérifiez votre connexion.': 'The translation didn’t go through. Check your connection.',
-  'Google Traduction': 'Google Translate'
+  'Google Traduction': 'Google Translate',
+  'Capture d’écran': 'Screenshot',
+  'Tracez une zone, ou :': 'Draw an area, or:',
+  'Page visible': 'Visible page',
+  'Page entière': 'Full page',
+  'Glissez l’image dans un message ou un dossier': 'Drag the image into a message or a folder',
+  'Capture copiée': 'Screenshot copied',
+  'Enregistrée dans Téléchargements': 'Saved in Downloads',
+  'Afficher dans le Finder': 'Show in Finder',
+  'Une zone tracée, la page visible ou la page entière : menu Fichier ({shortcut}) ou clic droit sur la page. L’image est copiée dans le presse-papiers et enregistrée dans le dossier des téléchargements.': 'An area you draw, the visible page or the full page: File menu ({shortcut}) or right-click on the page. The image is copied to the clipboard and saved in your downloads folder.',
+  'Tout reste sur votre ordinateur.': 'Everything stays on your computer.',
+  'Ctrl+Maj+2': 'Ctrl+Shift+2'
 }

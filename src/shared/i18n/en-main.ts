@@ -179,5 +179,7 @@ export const EN_MAIN: Record<string, string> = {
   'Claude Code n’est pas installé (commande « claude » introuvable).': 'Claude Code isn’t installed (no “claude” command found).',
   'Proverbe': 'Proverb',
   'Ce jour dans l’histoire · {date}': 'On this day · {date}',
-  'Le saviez-vous ? · {topic}': 'Did you know? · {topic}'
+  'Le saviez-vous ? · {topic}': 'Did you know? · {topic}',
+  'Capture d’écran…': 'Take a screenshot…',
+  'Capture': 'Screenshot'
 }

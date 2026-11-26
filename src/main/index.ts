@@ -9,6 +9,7 @@ import { chromeUserAgent, identitySettled } from './userAgent'
 import { SessionManager } from './sessions/SessionManager'
 import { WindowManager } from './windows/WindowManager'
 import { TranslateTool } from './tools/TranslateTool'
+import { ScreenshotTool } from './tools/ScreenshotTool'
 import { ExtensionsHost } from './extensions/ExtensionsHost'
 import { PipController } from './pip/PipController'
 import { enableAdBlocker } from './adblock/AdBlocker'
@@ -148,9 +149,10 @@ interface Services {
   downloads: DownloadsManager
   passwords: PasswordManager
   translateTool: TranslateTool
+  screenshotTool: ScreenshotTool
 }
 
-function registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords, translateTool }: Services): void {
+function registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords, translateTool, screenshotTool }: Services): void {
   const windowOf = (event: IpcMainInvokeEvent | Electron.IpcMainEvent) => {
     const handle = windows.fromWebContents(event.sender)
     if (!handle) throw new Error('IPC from unknown window')
@@ -211,6 +213,8 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
   })
   handle('overlay:resize', (e, height) => windowOf(e).overlay.resize(height))
   handle('tools:translate', (_e, text, target) => translateTool.translateForReader(text, target))
+  handle('tools:screenshot', (e, mode, rect) => screenshotTool.capture(windowOf(e), mode, rect))
+  handle('tools:screenshotReveal', () => screenshotTool.reveal())
   handle('omnibox:suggest', (_e, text) => suggest(text, settings.getGeneral().searchEngine, favorites, history))
   handle('find:query', (e, tabId, text, forward, findNext) => find.query(windowOf(e), tabId, text, forward, findNext))
   handle('find:close', (e) => windowOf(e).overlay.close())
@@ -230,6 +234,7 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
 
   on('layout:update', (e, insets) => tabsOf(e).setInsets(insets))
   on('downloads:drag', (e, id) => downloads.drag(e.sender, id))
+  on('tools:screenshotDrag', (e) => screenshotTool.drag(e.sender))
 }
 
 app.whenReady().then(async () => {
@@ -253,6 +258,8 @@ app.whenReady().then(async () => {
   const windows = new WindowManager(sessions, new PipController(() => settings.getPip()))
   const translateTool = new TranslateTool(settings)
   windows.translateTool = translateTool
+  const screenshotTool = new ScreenshotTool(settings, () => settings.getGeneral().downloadDir)
+  windows.screenshotTool = screenshotTool
   const db = openDatabase(app.getPath('userData'))
   const favorites = new FavoritesStore(db)
   const history = new HistoryStore(db)
@@ -335,9 +342,15 @@ app.whenReady().then(async () => {
   settings.markSchema()
   const headlines = new Headlines(() => settings.getGeneral())
   headlines.warmUp()
+  let screenshotInMenu = settings.getTools().screenshot.enabled
   settings.onChange(() => {
     headlines.warmUp()
     applyTheme(settings.getGeneral())
+    // The screenshot tool switched on or off: its menu entry (and ⌘⇧2) comes or goes.
+    if (settings.getTools().screenshot.enabled !== screenshotInMenu) {
+      screenshotInMenu = !screenshotInMenu
+      refreshMenu()
+    }
     sidebar.broadcast()
     const css = appearanceCss(settings.getAppearance())
     if (css !== shownAppearance) {
@@ -361,7 +374,7 @@ app.whenReady().then(async () => {
   downloads.attach(browsingSession, true)
   const passwordStore = new PasswordStore(db, keychainCipher)
   const passwords = new PasswordManager(passwordStore, windows, () => settings.getGeneral().savePasswords && keychainIsSafe())
-  registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords, translateTool })
+  registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords, translateTool, screenshotTool })
   const menuCommands = {
     find,
     zoom,
@@ -372,7 +385,8 @@ app.whenReady().then(async () => {
       current: currentProfile,
       open: (id: string) => openProfile(id),
       manage: () => void windows.focusedNormal().tabs.create(`${SETTINGS_PAGE_URL}#profiles`)
-    }
+    },
+    screenshot: { enabled: () => screenshotTool.enabled(), start: (handle: Parameters<ScreenshotTool['start']>[0]) => screenshotTool.start(handle) }
   }
   const refreshMenu = (): void => installAppMenu(windows, menuCommands)
   refreshMenu()
@@ -431,6 +445,10 @@ app.whenReady().then(async () => {
     'extensions/setTranslate': (patch) => {
       const tools = settings.getTools()
       return settings.setTools({ ...tools, translate: { ...tools.translate, ...patch } })
+    },
+    'extensions/setScreenshot': (patch) => {
+      const tools = settings.getTools()
+      return settings.setTools({ ...tools, screenshot: { ...tools.screenshot, ...patch } })
     },
     'extensions/setEnabled': async ({ id, enabled }) => {
       await extensions.setEnabled(id, enabled)

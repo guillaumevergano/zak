@@ -44,6 +44,8 @@ turn this protection off in Settings → Security.
 - **Translate a selection** (right-click on selected text → Translate into…) sends that text, and
   nothing else (no cookies), to Google Translate. You can turn translation off under Zak tools on
   the Extensions page.
+- **Screenshots** (File → Take a screenshot…) never leave your computer: the image is copied to
+  the clipboard and saved in your downloads folder.
 
 ## AI agents (MCP)
 

@@ -8,6 +8,8 @@ import { PermissionPrompt } from './PermissionPrompt'
 import { SavePasswordPrompt } from './SavePasswordPrompt'
 import { DownloadsPanel } from './DownloadsPanel'
 import { TranslationBubble } from './TranslationBubble'
+import { ScreenshotPicker } from './ScreenshotPicker'
+import { ScreenshotToast } from './ScreenshotToast'
 import { t } from '@shared/i18n'
 
 const api = window.zak
@@ -40,7 +42,8 @@ export function OverlayApp(): JSX.Element {
 
   useEffect(() => {
     // The permission prompt answers Esc itself (dismissed, not hidden: it would come back).
-    if (!request || request.kind === 'permission' || request.kind === 'save-password' || request.kind === 'suggestions' || request.kind === 'translation') return
+    const own = ['permission', 'save-password', 'suggestions', 'translation', 'screenshot', 'screenshot-done']
+    if (!request || own.includes(request.kind)) return
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') close()
     }
@@ -56,6 +59,8 @@ export function OverlayApp(): JSX.Element {
   if (request.kind === 'permission') return <PermissionPrompt key={serial} request={request} />
   if (request.kind === 'save-password') return <SavePasswordPrompt key={serial} request={request} />
   if (request.kind === 'translation') return <TranslationBubble key={serial} request={request} />
+  if (request.kind === 'screenshot') return <ScreenshotPicker key={serial} />
+  if (request.kind === 'screenshot-done') return <ScreenshotToast key={serial} request={request} />
 
   return (
     <div className="fixed inset-0" onMouseDown={(e) => e.target === e.currentTarget && close()}>

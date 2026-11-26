@@ -55,5 +55,6 @@ All three checks must pass before you finish.
 - Zak's own tools (CLAUDE.md §6.8, `src/main/tools/`, `src/shared/tools.ts`) are built in, not
   Chrome extensions: each one has its switch under « Outils Zak » on `zak://extensions` and its
   settings under `tools` in `config.json`. Switched off, a tool leaves nothing behind (no menu item,
-  no button, no page script). Translation (right-click on a selection) sends text only on that click.
+  no button, no page script). Translation (right-click on a selection) sends text only on that click;
+  screenshots (⌘⇧2, page right-click) stay local: clipboard + downloads folder.
 - DRM streaming can't be tested in development or in your own builds (it needs the signed release).

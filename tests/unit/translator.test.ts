@@ -48,9 +48,10 @@ describe('translator', () => {
 
 describe('tools settings', () => {
   it('falls back to the defaults for anything unknown', () => {
-    expect(normalizeTools(undefined)).toEqual({ translate: { enabled: true, target: '', recent: [] } })
-    expect(normalizeTools({ translate: { enabled: false, target: 'xx', recent: ['en', 'en', 'zz', 'de'] } })).toEqual({
-      translate: { enabled: false, target: '', recent: ['en', 'de'] }
+    expect(normalizeTools(undefined)).toEqual({ translate: { enabled: true, target: '', recent: [] }, screenshot: { enabled: true } })
+    expect(normalizeTools({ translate: { enabled: false, target: 'xx', recent: ['en', 'en', 'zz', 'de'] }, screenshot: { enabled: false } })).toEqual({
+      translate: { enabled: false, target: '', recent: ['en', 'de'] },
+      screenshot: { enabled: false }
     })
   })
 

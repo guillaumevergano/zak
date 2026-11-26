@@ -167,9 +167,10 @@ function ZakTools(): JSX.Element | null {
   }, [])
   if (!tools) return null
   const lang = getLang()
-  const { translate } = tools
-  const set = (patch: InternalApiRoutes['extensions/setTranslate']['body']): void =>
+  const { translate, screenshot } = tools
+  const setTranslate = (patch: InternalApiRoutes['extensions/setTranslate']['body']): void =>
     void callInternal('extensions/setTranslate', patch).then(setTools)
+  const isMac = navigator.platform.startsWith('Mac')
 
   return (
     <section aria-labelledby="zak-tools" className="flex flex-col gap-3">
@@ -180,44 +181,73 @@ function ZakTools(): JSX.Element | null {
         <p className="m-0 mt-1 text-[13px] text-sub">{t('Intégrés à Zak : activez seulement ceux qui vous servent.')}</p>
       </div>
       <ul className="m-0 flex list-none flex-col gap-3 p-0" aria-label={t('Outils Zak')}>
-        <li data-tool-id="translate" className={`glass-card flex gap-4 rounded-[18px] px-5 py-4 ${translate.enabled ? '' : 'opacity-70'}`}>
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-[12px] bg-white text-[24px]" aria-hidden>
-            🌐
-          </div>
-          <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <h3 className="m-0 text-[15px] font-bold text-title">{t('Traduction')}</h3>
-            <p className="m-0 text-[13px] text-sub">
-              {t('Sélectionnez un texte puis clic droit : « Traduire en… ». Dans un champ où vous écrivez (un e-mail, un message), le texte sélectionné est remplacé par sa traduction (⌘Z pour revenir) ; ailleurs, la traduction s’affiche dans une bulle.')}
-            </p>
-            <p className="m-0 text-[12px] text-sub/80">
-              {t('Le texte n’est envoyé à Google Traduction qu’au moment où vous le demandez.')}
-            </p>
-            {translate.enabled && (
-              <label className="mt-2 flex items-center gap-2 text-[13px] text-ink">
-                {t('Traduire ce que je lis en')}
-                <select
-                  value={translate.target}
-                  onChange={(e) => set({ target: e.target.value })}
-                  className="h-8 rounded-lg border border-track bg-white px-2 text-[13px] font-semibold text-title"
-                >
-                  <option value="">{t('Langue de Zak ({language})', { language: languageName(lang, lang, false) })}</option>
-                  {languageMenu([], lang).others.map((code) => (
-                    <option key={code} value={code}>
-                      {languageName(code, lang)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-          </div>
-          <Toggle
-            label={translate.enabled ? t('Désactiver {name}', { name: t('Traduction') }) : t('Activer {name}', { name: t('Traduction') })}
-            on={translate.enabled}
-            onChange={(enabled) => set({ enabled })}
-          />
-        </li>
+        <ToolCard
+          id="translate"
+          icon="🌐"
+          name={t('Traduction')}
+          enabled={translate.enabled}
+          onToggle={(enabled) => setTranslate({ enabled })}
+          description={t('Sélectionnez un texte puis clic droit : « Traduire en… ». Dans un champ où vous écrivez (un e-mail, un message), le texte sélectionné est remplacé par sa traduction (⌘Z pour revenir) ; ailleurs, la traduction s’affiche dans une bulle.')}
+          note={t('Le texte n’est envoyé à Google Traduction qu’au moment où vous le demandez.')}
+        >
+          <label className="mt-2 flex items-center gap-2 text-[13px] text-ink">
+            {t('Traduire ce que je lis en')}
+            <select
+              value={translate.target}
+              onChange={(e) => setTranslate({ target: e.target.value })}
+              className="h-8 rounded-lg border border-track bg-white px-2 text-[13px] font-semibold text-title"
+            >
+              <option value="">{t('Langue de Zak ({language})', { language: languageName(lang, lang, false) })}</option>
+              {languageMenu([], lang).others.map((code) => (
+                <option key={code} value={code}>
+                  {languageName(code, lang)}
+                </option>
+              ))}
+            </select>
+          </label>
+        </ToolCard>
+        <ToolCard
+          id="screenshot"
+          icon="📸"
+          name={t('Capture d’écran')}
+          enabled={screenshot.enabled}
+          onToggle={(enabled) => void callInternal('extensions/setScreenshot', { enabled }).then(setTools)}
+          description={t('Une zone tracée, la page visible ou la page entière : menu Fichier ({shortcut}) ou clic droit sur la page. L’image est copiée dans le presse-papiers et enregistrée dans le dossier des téléchargements.', { shortcut: isMac ? '⌘⇧2' : t('Ctrl+Maj+2') })}
+          note={t('Tout reste sur votre ordinateur.')}
+        />
       </ul>
     </section>
+  )
+}
+
+function ToolCard(props: {
+  id: string
+  icon: string
+  name: string
+  enabled: boolean
+  onToggle: (enabled: boolean) => void
+  description: string
+  note: string
+  /** Its options, shown while it is on. */
+  children?: JSX.Element
+}): JSX.Element {
+  return (
+    <li data-tool-id={props.id} className={`glass-card flex gap-4 rounded-[18px] px-5 py-4 ${props.enabled ? '' : 'opacity-70'}`}>
+      <div className="flex size-11 shrink-0 items-center justify-center rounded-[12px] bg-white text-[24px]" aria-hidden>
+        {props.icon}
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <h3 className="m-0 text-[15px] font-bold text-title">{props.name}</h3>
+        <p className="m-0 text-[13px] text-sub">{props.description}</p>
+        <p className="m-0 text-[12px] text-sub/80">{props.note}</p>
+        {props.enabled && props.children}
+      </div>
+      <Toggle
+        label={props.enabled ? t('Désactiver {name}', { name: props.name }) : t('Activer {name}', { name: props.name })}
+        on={props.enabled}
+        onChange={props.onToggle}
+      />
+    </li>
   )
 }
 

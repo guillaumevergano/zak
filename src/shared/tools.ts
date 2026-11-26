@@ -3,7 +3,7 @@
  * A tool switched off leaves no trace: no menu entry, no button, nothing in the pages.
  */
 
-export type ZakToolId = 'translate'
+export type ZakToolId = 'translate' | 'screenshot'
 
 /** Translation of a selection (right-click), on demand only. */
 export interface TranslateSettings {
@@ -14,12 +14,19 @@ export interface TranslateSettings {
   recent: string[]
 }
 
+/** Screenshots of the page: a region drawn, the visible part or the whole page. Nothing leaves the computer. */
+export interface ScreenshotSettings {
+  enabled: boolean
+}
+
 export interface ToolsSettings {
   translate: TranslateSettings
+  screenshot: ScreenshotSettings
 }
 
 export const DEFAULT_TOOLS: ToolsSettings = {
-  translate: { enabled: true, target: '', recent: [] }
+  translate: { enabled: true, target: '', recent: [] },
+  screenshot: { enabled: true }
 }
 
 /** Languages offered (Google Translate codes); names come from Intl.DisplayNames, in Zak's language. */
@@ -34,13 +41,14 @@ const isLanguage = (value: unknown): value is string => typeof value === 'string
 
 /** The file can be edited by hand: anything unknown falls back to the default. */
 export function normalizeTools(raw: unknown): ToolsSettings {
-  const translate = (raw as { translate?: Partial<TranslateSettings> } | undefined)?.translate
+  const { translate, screenshot } = (raw ?? {}) as { translate?: Partial<TranslateSettings>; screenshot?: Partial<ScreenshotSettings> }
   return {
     translate: {
       enabled: translate?.enabled !== false,
       target: isLanguage(translate?.target) ? translate.target : '',
       recent: Array.isArray(translate?.recent) ? [...new Set(translate.recent.filter(isLanguage))].slice(0, RECENT_MAX) : []
-    }
+    },
+    screenshot: { enabled: screenshot?.enabled !== false }
   }
 }
 
@@ -73,3 +81,6 @@ export function languageMenu(recent: string[], uiLanguage: string): { recent: st
   const byName = (a: string, b: string): number => languageName(a, uiLanguage).localeCompare(languageName(b, uiLanguage), uiLanguage)
   return { recent, others: TRANSLATE_LANGUAGES.filter((l) => !recent.includes(l)).sort(byName) }
 }
+
+/** What a screenshot takes: a region drawn on the page, the visible part, or the whole page. */
+export type ScreenshotMode = 'region' | 'visible' | 'full'

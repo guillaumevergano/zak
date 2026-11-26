@@ -57,7 +57,8 @@ export class Overlay {
     // Re-adding moves it above every tab view.
     this.window.contentView.addChildView(view)
     view.setVisible(true)
-    if (request.kind !== 'suggestions') view.webContents.focus()
+    // Suggestions keep the focus in the omnibox; a screenshot's thumbnail leaves it where it was.
+    if (request.kind !== 'suggestions' && request.kind !== 'screenshot-done') view.webContents.focus()
     view.webContents.send('overlay:show', request)
   }
 
