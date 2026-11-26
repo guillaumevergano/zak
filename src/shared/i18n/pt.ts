@@ -652,4 +652,9 @@ export const PT: Record<string, string> = {
   'Volume': 'Volume',
   'En cours de lecture': 'Tocando agora',
   'Afficher l’onglet': 'Mostrar a guia',
+  'Revenir à l’onglet « {title} »': 'Voltar à guia “{title}”',
+  'Revenir à l’onglet': 'Voltar à guia',
+  'Fermer le lecteur': 'Fechar o player',
+  'Celui de Zak : coins arrondis, ses boutons (lecture, revenir à l’onglet, fermer), et on le déplace à la souris. Celui du système : le lecteur Picture-in-Picture de Chromium.': 'O do Zak: cantos arredondados, botões próprios (reproduzir, voltar à guia, fechar) e você o move com o mouse. O do sistema: o player Picture-in-Picture do Chromium.',
+  'Celui du système': 'O do sistema',
 }

@@ -652,4 +652,9 @@ export const IT: Record<string, string> = {
   'Volume': 'Volume',
   'En cours de lecture': 'In riproduzione',
   'Afficher l’onglet': 'Mostra la scheda',
+  'Revenir à l’onglet « {title} »': 'Torna alla scheda «{title}»',
+  'Revenir à l’onglet': 'Torna alla scheda',
+  'Fermer le lecteur': 'Chiudi il lettore',
+  'Celui de Zak : coins arrondis, ses boutons (lecture, revenir à l’onglet, fermer), et on le déplace à la souris. Celui du système : le lecteur Picture-in-Picture de Chromium.': 'Quello di Zak: angoli arrotondati, i suoi pulsanti (riproduci, torna alla scheda, chiudi) e si sposta con il mouse. Quello di sistema: il lettore Picture-in-Picture di Chromium.',
+  'Celui du système': 'Quello di sistema',
 }

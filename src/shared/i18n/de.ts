@@ -652,4 +652,9 @@ export const DE: Record<string, string> = {
   'Volume': 'Lautstärke',
   'En cours de lecture': 'Wird abgespielt',
   'Afficher l’onglet': 'Tab anzeigen',
+  'Revenir à l’onglet « {title} »': 'Zurück zum Tab „{title}“',
+  'Revenir à l’onglet': 'Zurück zum Tab',
+  'Fermer le lecteur': 'Player schließen',
+  'Celui de Zak : coins arrondis, ses boutons (lecture, revenir à l’onglet, fermer), et on le déplace à la souris. Celui du système : le lecteur Picture-in-Picture de Chromium.': 'Der von Zak: abgerundete Ecken, eigene Tasten (Wiedergabe, zurück zum Tab, schließen), mit der Maus verschiebbar. Der des Systems: der Bild-im-Bild-Player von Chromium.',
+  'Celui du système': 'Der des Systems',
 }

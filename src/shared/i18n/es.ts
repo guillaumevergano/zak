@@ -652,4 +652,9 @@ export const ES: Record<string, string> = {
   'Volume': 'Volumen',
   'En cours de lecture': 'Reproduciendo',
   'Afficher l’onglet': 'Mostrar la pestaña',
+  'Revenir à l’onglet « {title} »': 'Volver a la pestaña «{title}»',
+  'Revenir à l’onglet': 'Volver a la pestaña',
+  'Fermer le lecteur': 'Cerrar el reproductor',
+  'Celui de Zak : coins arrondis, ses boutons (lecture, revenir à l’onglet, fermer), et on le déplace à la souris. Celui du système : le lecteur Picture-in-Picture de Chromium.': 'El de Zak: esquinas redondeadas, sus botones (reproducir, volver a la pestaña, cerrar) y se mueve con el ratón. El del sistema: el reproductor Picture-in-Picture de Chromium.',
+  'Celui du système': 'El del sistema',
 }
