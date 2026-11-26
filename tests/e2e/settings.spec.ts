@@ -86,3 +86,20 @@ test('links sent by other apps open in a new tab; the default browser row explai
   await expect(settings.getByText("Disponible dans l'application installée, pas en mode développement.")).toBeVisible()
   await expect(settings.getByRole('button', { name: 'Définir par défaut' })).toHaveCount(0)
 })
+
+test('the settings menu leads to each section', async () => {
+  const { app, chrome } = await launch('settings-nav')
+  try {
+    await visit(chrome, 'zak://settings')
+    const settings = await pageAt(app, 'zak://settings')
+    const nav = settings.locator('nav[aria-label="Sections des réglages"]:visible')
+    await expect(nav.getByRole('link')).toContainText(['Général', 'Téléchargements', 'Personnaliser', 'MCP', 'Effacer les données'])
+    await nav.getByRole('link', { name: 'MCP', exact: true }).click()
+    await expect(settings.getByRole('heading', { name: 'MCP : piloter Zak depuis un assistant IA' })).toBeInViewport()
+    await expect(nav.getByRole('link', { name: 'MCP', exact: true })).toHaveAttribute('aria-current', 'location')
+    await expect(settings.getByRole('list', { name: 'Installer le MCP' }).getByRole('listitem')).toHaveCount(3)
+    await expect(settings).toHaveURL(/#mcp$/)
+  } finally {
+    await forceClose(app)
+  }
+})

@@ -29,6 +29,12 @@ test('Claude Code or Codex can drive Zak through its MCP server, once allowed', 
   const tools = (await client.listTools()).tools.map((t) => t.name)
   expect(tools).toEqual(expect.arrayContaining(['list_tabs', 'open_tab', 'group_tabs', 'add_favorite', 'update_settings', 'use_mod']))
   expect(tools.some((t) => /history|password|cookie|content/.test(t))).toBe(false)
+  // Réglages → MCP lists the same tools, explained.
+  const listed0 = settings.getByTestId('mcp-tools').getByRole('listitem')
+  await expect(listed0).toHaveCount(tools.length)
+  await expect(listed0.filter({ hasText: 'list_tabs' })).toContainText('Lister les fenêtres et leurs onglets')
+  await expect(listed0.filter({ hasText: 'list_tabs' })).toContainText('Lecture seule')
+  await expect(listed0.filter({ hasText: 'close_tabs' })).toContainText('Modifie Zak')
 
   const text = (r: unknown): string => ((r as { content: { text: string }[] }).content[0]!.text)
   const opened = JSON.parse(text(await client.callTool({ name: 'open_tab', arguments: { url: `${origin}/agent` } }))) as { tabId: number }
