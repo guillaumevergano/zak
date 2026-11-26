@@ -9,6 +9,7 @@ import { dndId, NEW_ROW, parseDndId, ROOT_ZONE } from '../lib/dnd'
 import { rectOf } from '../lib/favorites'
 import { ChevronIcon, GearIcon, GlobeIcon, PlusIcon, SidebarIcon } from './Icons'
 import { SidebarTabs } from './SidebarTabs'
+import { MediaCard } from './MediaCard'
 import { t } from '@shared/i18n'
 
 const api = window.zak
@@ -153,6 +154,10 @@ export function Sidebar(): JSX.Element {
             <SidebarTabs collapsed={collapsed} />
           </>
         )}
+      </div>
+
+      <div style={content} className="shrink-0">
+        <MediaCard collapsed={collapsed} />
       </div>
 
       <footer style={content} className={`flex shrink-0 items-center gap-2 pt-2 pb-3 ${collapsed ? 'flex-col justify-center' : 'justify-end px-3'}`}>

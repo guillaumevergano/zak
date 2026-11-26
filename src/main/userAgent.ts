@@ -1,4 +1,5 @@
 import { release } from 'node:os'
+import { MEDIA_HOOK } from './media/pageScripts'
 
 
 /**
@@ -158,6 +159,10 @@ export async function manageIdentity(wc: Electron.WebContents): Promise<void> {
   try {
     await wc.debugger.sendCommand('Page.enable')
     await wc.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: CHROME_OBJECT_SHIM })
+    // The media controls of the sidebar: the site's Media Session handlers and its players (media/pageScripts.ts).
+    await wc.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: MEDIA_HOOK })
+    // The media controls of the sidebar: the site's Media Session handlers and its players (media/pageScripts.ts).
+    await wc.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: MEDIA_HOOK })
   } catch (err) {
     console.warn('[ua] could not install window.chrome shim', err)
   }

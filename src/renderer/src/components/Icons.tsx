@@ -97,3 +97,17 @@ export const SplitIcon = (): JSX.Element => (
     <path d="M8 3v10" />
   </Icon>
 )
+
+/** Media controls (sidebar): filled shapes, like a player's. */
+export const PlayIcon = (): JSX.Element => (
+  <Icon fill="currentColor" stroke="none"><path d="M5 3.4v9.2a.6.6 0 0 0 .9.5l7.3-4.6a.6.6 0 0 0 0-1L5.9 2.9a.6.6 0 0 0-.9.5Z" /></Icon>
+)
+export const PauseIcon = (): JSX.Element => (
+  <Icon fill="currentColor" stroke="none"><rect x="3.8" y="3" width="3" height="10" rx=".8" /><rect x="9.2" y="3" width="3" height="10" rx=".8" /></Icon>
+)
+export const PreviousIcon = (): JSX.Element => (
+  <Icon width={14} height={14} fill="currentColor" stroke="none"><rect x="3" y="3.5" width="1.6" height="9" rx=".6" /><path d="M13 4.1v7.8a.5.5 0 0 1-.8.4L6.4 8.4a.5.5 0 0 1 0-.8l5.8-3.9a.5.5 0 0 1 .8.4Z" /></Icon>
+)
+export const NextIcon = (): JSX.Element => (
+  <Icon width={14} height={14} fill="currentColor" stroke="none"><rect x="11.4" y="3.5" width="1.6" height="9" rx=".6" /><path d="M3 4.1v7.8a.5.5 0 0 0 .8.4l5.8-3.9a.5.5 0 0 0 0-.8L3.8 3.7a.5.5 0 0 0-.8.4Z" /></Icon>
+)

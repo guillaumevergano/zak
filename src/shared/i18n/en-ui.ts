@@ -563,5 +563,11 @@ export const EN_UI: Record<string, string> = {
   'Afficher dans le Finder': 'Show in Finder',
   'Une zone tracée, la page visible ou la page entière : menu Fichier ({shortcut}) ou clic droit sur la page. L’image est copiée dans le presse-papiers et enregistrée dans le dossier des téléchargements.': 'An area you draw, the visible page or the full page: File menu ({shortcut}) or right-click on the page. The image is copied to the clipboard and saved in your downloads folder.',
   'Tout reste sur votre ordinateur.': 'Everything stays on your computer.',
-  'Ctrl+Maj+2': 'Ctrl+Shift+2'
+  'Ctrl+Maj+2': 'Ctrl+Shift+2',
+  'Lecture': 'Play',
+  'Précédent': 'Previous',
+  'Suivant': 'Next',
+  'Volume': 'Volume',
+  'En cours de lecture': 'Now playing',
+  'Afficher l’onglet': 'Show the tab'
 }

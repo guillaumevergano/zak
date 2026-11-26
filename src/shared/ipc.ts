@@ -1,6 +1,7 @@
 import type { Appearance, AppearancePatch } from './appearance'
 import type { Lang } from './languages'
 import type { ScreenshotMode, ScreenshotSettings, ToolsSettings, TranslateSettings } from './tools'
+import type { MediaAction, MediaState } from './media'
 import type {
   PageScroll,
   Rect,
@@ -131,6 +132,12 @@ export interface InvokeChannels {
   'downloads:openPage': { args: []; result: void }
   /** Toolbar zoom badge: back to 100 %. */
   'tabs:resetZoom': { args: [id: TabId]; result: void }
+  /** Sidebar media controls: what plays in this window, if anything. */
+  'media:getState': { args: []; result: MediaState | null }
+  /** ⏮ ⏯ ⏭, the sound on or off, or « show me the tab ». */
+  'media:action': { args: [action: MediaAction]; result: void }
+  /** The player's volume, 0–1. */
+  'media:setVolume': { args: [volume: number]; result: void }
 }
 
 /** renderer → main, fire-and-forget (ipcRenderer.send / ipcMain.on). */
@@ -163,6 +170,8 @@ export interface EventChannels {
   'find:result': FindResult
   /** Downloads list changed (chrome UIs and overlays). */
   'downloads:state': DownloadInfo[]
+  /** What plays in the window changed (null: nothing any more). */
+  'media:state': MediaState | null
 }
 
 export type InvokeChannel = keyof InvokeChannels
@@ -220,7 +229,10 @@ export const INVOKE_CHANNELS = [
   'downloads:getState',
   'downloads:action',
   'downloads:openPage',
-  'tabs:resetZoom'
+  'tabs:resetZoom',
+  'media:getState',
+  'media:action',
+  'media:setVolume'
 ] as const satisfies readonly InvokeChannel[]
 
 export const SEND_CHANNELS = ['layout:update', 'downloads:drag', 'tools:screenshotDrag'] as const satisfies readonly SendChannel[]
@@ -234,7 +246,8 @@ export const EVENT_CHANNELS = [
   'tabGroups:rename',
   'overlay:show',
   'find:result',
-  'downloads:state'
+  'downloads:state',
+  'media:state'
 ] as const satisfies readonly EventChannel[]
 
 /** Shape of `window.zak` exposed by src/preload/chrome.ts. */
