@@ -80,6 +80,20 @@ export class Overlay {
     return true
   }
 
+  /**
+   * The framed panel's content is `height` px tall: the view follows, moved up if it would go past
+   * the bottom of the window.
+   */
+  resize(height: number): void {
+    const current = this.current
+    if (!current || !('frame' in current) || this.window.isDestroyed()) return
+    const room = this.window.getContentBounds().height - 8
+    const frame = { ...current.frame, height: Math.min(Math.ceil(height), room - 8) }
+    if (frame.y + frame.height > room) frame.y = Math.max(8, room - frame.height)
+    current.frame = frame
+    this.layout()
+  }
+
   /** Main → overlay renderer events (live download progress, find results…). */
   send<C extends EventChannel>(channel: C, payload: EventChannels[C]): void {
     if (this.view && !this.view.webContents.isDestroyed()) this.view.webContents.send(channel, payload)

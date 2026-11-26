@@ -8,6 +8,7 @@ import { resolveLang, setLang, t, type LangSetting } from '@shared/i18n'
 import { chromeUserAgent, identitySettled } from './userAgent'
 import { SessionManager } from './sessions/SessionManager'
 import { WindowManager } from './windows/WindowManager'
+import { TranslateTool } from './tools/TranslateTool'
 import { ExtensionsHost } from './extensions/ExtensionsHost'
 import { PipController } from './pip/PipController'
 import { enableAdBlocker } from './adblock/AdBlocker'
@@ -140,9 +141,10 @@ interface Services {
   permissions: PermissionsHandler
   downloads: DownloadsManager
   passwords: PasswordManager
+  translateTool: TranslateTool
 }
 
-function registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords }: Services): void {
+function registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords, translateTool }: Services): void {
   const windowOf = (event: IpcMainInvokeEvent | Electron.IpcMainEvent) => {
     const handle = windows.fromWebContents(event.sender)
     if (!handle) throw new Error('IPC from unknown window')
@@ -200,6 +202,8 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
     const { overlay } = windowOf(e)
     if (overlay.showing()?.kind === kind) overlay.hide()
   })
+  handle('overlay:resize', (e, height) => windowOf(e).overlay.resize(height))
+  handle('tools:translate', (_e, text, target) => translateTool.translateForReader(text, target))
   handle('omnibox:suggest', (_e, text) => suggest(text, settings.getGeneral().searchEngine, favorites, history))
   handle('find:query', (e, tabId, text, forward, findNext) => find.query(windowOf(e), tabId, text, forward, findNext))
   handle('find:close', (e) => windowOf(e).overlay.close())
@@ -240,6 +244,8 @@ app.whenReady().then(async () => {
   const safeBrowsing = new SafeBrowsing(() => settings.getGeneral().safeBrowsing)
   void safeBrowsing.start()
   const windows = new WindowManager(sessions, new PipController(() => settings.getPip()))
+  const translateTool = new TranslateTool(settings)
+  windows.translateTool = translateTool
   const db = openDatabase(app.getPath('userData'))
   const favorites = new FavoritesStore(db)
   const history = new HistoryStore(db)
@@ -337,7 +343,7 @@ app.whenReady().then(async () => {
   downloads.attach(browsingSession, true)
   const passwordStore = new PasswordStore(db, keychainCipher)
   const passwords = new PasswordManager(passwordStore, windows, () => settings.getGeneral().savePasswords)
-  registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords })
+  registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords, translateTool })
   const menuCommands = {
     find,
     zoom,
@@ -403,6 +409,11 @@ app.whenReady().then(async () => {
     }) satisfies Pick<InternalApiHandlers, 'downloads/list' | 'downloads/action' | 'downloads/clear' | 'downloads/openFolder'>
   const internalApi: InternalApiHandlers = {
     'extensions/list': () => extensions.list(),
+    'extensions/tools': () => settings.getTools(),
+    'extensions/setTranslate': (patch) => {
+      const tools = settings.getTools()
+      return settings.setTools({ ...tools, translate: { ...tools.translate, ...patch } })
+    },
     'extensions/setEnabled': async ({ id, enabled }) => {
       await extensions.setEnabled(id, enabled)
       return null

@@ -2,10 +2,12 @@ import '../lib/lang'
 import { StrictMode, useCallback, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { ExtensionInfo } from '@shared/types'
+import type { InternalApiRoutes } from '@shared/ipc'
+import { languageMenu, languageName, type ToolsSettings } from '@shared/tools'
 import { callInternal } from './api'
 import { SmallButton, Toggle } from './ui'
 import '../styles.css'
-import { t } from '@shared/i18n'
+import { getLang, t } from '@shared/i18n'
 
 /** zak://extensions (CLAUDE.md §6.5): installed extensions, on/off, options, uninstall. */
 function ExtensionsPage(): JSX.Element {
@@ -67,6 +69,10 @@ function ExtensionsPage(): JSX.Element {
           {error}
         </p>
       )}
+
+      <ZakTools />
+
+      <h2 className="m-0 mt-2 text-[17px] font-bold text-title">{t('Extensions Chrome')}</h2>
 
       {extensions?.length === 0 && (
         <div className="glass-card rounded-[18px] px-6 py-10 text-center text-sub">
@@ -150,6 +156,68 @@ function ExtensionCard({ ext, run }: { ext: ExtensionInfo; run: (action: Promise
         onChange={(enabled) => run(callInternal('extensions/setEnabled', { id: ext.id, enabled }))}
       />
     </li>
+  )
+}
+
+/** Zak's own tools (CLAUDE.md §6.8): built in, on or off; off, nothing of them is left. */
+function ZakTools(): JSX.Element | null {
+  const [tools, setTools] = useState<ToolsSettings | null>(null)
+  useEffect(() => {
+    void callInternal('extensions/tools', null).then(setTools)
+  }, [])
+  if (!tools) return null
+  const lang = getLang()
+  const { translate } = tools
+  const set = (patch: InternalApiRoutes['extensions/setTranslate']['body']): void =>
+    void callInternal('extensions/setTranslate', patch).then(setTools)
+
+  return (
+    <section aria-labelledby="zak-tools" className="flex flex-col gap-3">
+      <div>
+        <h2 id="zak-tools" className="m-0 text-[17px] font-bold text-title">
+          {t('Outils Zak')}
+        </h2>
+        <p className="m-0 mt-1 text-[13px] text-sub">{t('Intégrés à Zak : activez seulement ceux qui vous servent.')}</p>
+      </div>
+      <ul className="m-0 flex list-none flex-col gap-3 p-0" aria-label={t('Outils Zak')}>
+        <li data-tool-id="translate" className={`glass-card flex gap-4 rounded-[18px] px-5 py-4 ${translate.enabled ? '' : 'opacity-70'}`}>
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-[12px] bg-white text-[24px]" aria-hidden>
+            🌐
+          </div>
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <h3 className="m-0 text-[15px] font-bold text-title">{t('Traduction')}</h3>
+            <p className="m-0 text-[13px] text-sub">
+              {t('Sélectionnez un texte puis clic droit : « Traduire en… ». Dans un champ où vous écrivez (un e-mail, un message), le texte sélectionné est remplacé par sa traduction (⌘Z pour revenir) ; ailleurs, la traduction s’affiche dans une bulle.')}
+            </p>
+            <p className="m-0 text-[12px] text-sub/80">
+              {t('Le texte n’est envoyé à Google Traduction qu’au moment où vous le demandez.')}
+            </p>
+            {translate.enabled && (
+              <label className="mt-2 flex items-center gap-2 text-[13px] text-ink">
+                {t('Traduire ce que je lis en')}
+                <select
+                  value={translate.target}
+                  onChange={(e) => set({ target: e.target.value })}
+                  className="h-8 rounded-lg border border-track bg-white px-2 text-[13px] font-semibold text-title"
+                >
+                  <option value="">{t('Langue de Zak ({language})', { language: languageName(lang, lang, false) })}</option>
+                  {languageMenu([], lang).others.map((code) => (
+                    <option key={code} value={code}>
+                      {languageName(code, lang)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </div>
+          <Toggle
+            label={translate.enabled ? t('Désactiver {name}', { name: t('Traduction') }) : t('Activer {name}', { name: t('Traduction') })}
+            on={translate.enabled}
+            onChange={(enabled) => set({ enabled })}
+          />
+        </li>
+      </ul>
+    </section>
   )
 }
 

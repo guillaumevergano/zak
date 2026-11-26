@@ -1,4 +1,5 @@
 import type { Appearance, AppearancePatch } from './appearance'
+import type { ToolsSettings, TranslateSettings } from './tools'
 import type {
   PageScroll,
   AgentId,
@@ -97,6 +98,10 @@ export interface InvokeChannels {
   'overlay:close': { args: []; result: void }
   /** Hides the overlay if it shows `kind`, without moving the focus (omnibox suggestions). */
   'overlay:hide': { args: [kind: OverlayRequest['kind']]; result: void }
+  /** A framed panel whose content changed size (the translation bubble): main fits the view to it. */
+  'overlay:resize': { args: [height: number]; result: void }
+  /** Translation bubble (CLAUDE.md §6.8): `text` into `target`; the choice is remembered. */
+  'tools:translate': { args: [text: string, target: string]; result: { text: string; source: string } }
 
   /** Omnibox dropdown for `text`: what Enter does first, then history and favorites. */
   'omnibox:suggest': { args: [text: string]; result: OmniboxSuggestion[] }
@@ -188,6 +193,8 @@ export const INVOKE_CHANNELS = [
   'overlay:open',
   'overlay:close',
   'overlay:hide',
+  'overlay:resize',
+  'tools:translate',
   'omnibox:suggest',
   'find:query',
   'find:close',
@@ -270,6 +277,9 @@ export interface InternalApiRoutes {
   /** « Charger une extension non empaquetée… » (folder picker); null when cancelled. */
   'extensions/loadUnpacked': { body: null; result: string | null }
   'extensions/reload': { body: { id: string }; result: null }
+  /** Zak's own tools (CLAUDE.md §6.8), on zak://extensions. */
+  'extensions/tools': { body: null; result: ToolsSettings }
+  'extensions/setTranslate': { body: Partial<Pick<TranslateSettings, 'enabled' | 'target'>>; result: ToolsSettings }
   'settings/get': { body: null; result: BrowserSettings }
   /** Saves the PiP section; returns it normalized (cleaned-up domains). */
   'settings/setPip': { body: PipSettings; result: PipSettings }
@@ -365,6 +375,8 @@ export const INTERNAL_API_ROUTES = [
   'extensions/openStore',
   'extensions/loadUnpacked',
   'extensions/reload',
+  'extensions/tools',
+  'extensions/setTranslate',
   'settings/get',
   'settings/setPip',
   'settings/setGeneral',

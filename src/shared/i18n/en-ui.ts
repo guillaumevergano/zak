@@ -484,5 +484,21 @@ export const EN_UI: Record<string, string> = {
   'C’est fait. Redémarrez Claude Desktop, puis demandez-lui par exemple : « Range mes onglets Zak par sujet ».':
     'Done. Restart Claude Desktop, then ask it for example: “Sort my Zak tabs by topic”.',
   'C’est fait. Dans {name}, demandez par exemple : « Range mes onglets Zak par sujet ».': 'Done. In {name}, ask for example: “Sort my Zak tabs by topic”.',
-  'Configuration manuelle': 'Manual setup'
+  'Configuration manuelle': 'Manual setup',
+  'Traduire en': 'Translate into',
+  'Traduire en {language}': 'Translate into {language}',
+  'Extensions Chrome': 'Chrome extensions',
+  'Outils Zak': 'Zak tools',
+  'Intégrés à Zak : activez seulement ceux qui vous servent.': 'Built into Zak: turn on only the ones you use.',
+  'Traduction': 'Translation',
+  'Sélectionnez un texte puis clic droit : « Traduire en… ». Dans un champ où vous écrivez (un e-mail, un message), le texte sélectionné est remplacé par sa traduction (⌘Z pour revenir) ; ailleurs, la traduction s’affiche dans une bulle.': 'Select some text, then right-click: “Translate into…”. In a field you’re typing in (an email, a message), the selected text is replaced by its translation (⌘Z to undo); elsewhere, the translation shows in a bubble.',
+  'Le texte n’est envoyé à Google Traduction qu’au moment où vous le demandez.': 'Text is sent to Google Translate only when you ask.',
+  'Traduire ce que je lis en': 'Translate what I read into',
+  'Langue de Zak ({language})': 'Zak’s language ({language})',
+  '{language} →': '{language} →',
+  'Langue de la traduction': 'Translation language',
+  'Fermer': 'Close',
+  'Traduction…': 'Translating…',
+  'La traduction n’a pas abouti. Vérifiez votre connexion.': 'The translation didn’t go through. Check your connection.',
+  'Google Traduction': 'Google Translate',
 }

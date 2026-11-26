@@ -127,6 +127,21 @@
       "items": { "type": "string" },
       "description": "Absolute paths of folders loaded as unpacked Chrome extensions (each with a manifest.json). Zak reloads them when their files change."
     },
+    "tools": {
+      "type": "object",
+      "description": "Zak's own tools, on zak://extensions (Zak tools). A tool switched off leaves no menu item or button.",
+      "properties": {
+        "translate": {
+          "type": "object",
+          "description": "Right-click on a selection: translated in place in a field one types in, in a bubble elsewhere. Text goes to Google Translate only on that click.",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "target": { "type": "string", "default": "", "description": "Language a text one reads is translated into (a Google Translate code such as \"en\" or \"zh-CN\"); empty = Zak's language." },
+            "recent": { "type": "array", "items": { "type": "string" }, "maxItems": 4, "description": "Languages last chosen in « Translate into », most recent first." }
+          }
+        }
+      }
+    },
     "disabledExtensions": { "type": "array", "items": { "type": "string" }, "description": "Ids of extensions switched off." },
     "onboarded": { "type": "boolean", "description": "The welcome page has been shown." }
   },

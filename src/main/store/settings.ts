@@ -4,6 +4,7 @@ import type { ExtensionBarSettings, GeneralSettings, PipSettings, SidebarLayout 
 import { DEFAULT_EXTENSION_BAR, normalizeExtensionBar } from '@shared/extensionBar'
 import { SEARCH_ENGINES } from '@shared/url'
 import { EMPTY_APPEARANCE, normalizeAppearance, patchAppearance, type Appearance, type AppearancePatch } from '@shared/appearance'
+import { DEFAULT_TOOLS, normalizeTools, type ToolsSettings } from '@shared/tools'
 import { DEFAULT_PIP_SETTINGS, normalizePipSettings } from '../pip/domains'
 
 /** Preferences (CLAUDE.md §2: electron-store), edited on zak://settings. */
@@ -25,6 +26,8 @@ interface Settings {
   mcp: { enabled: boolean; port: number; token: string }
   /** Zak's own colors (per theme) and fonts, chosen on zak://appearance; only what differs from the defaults. */
   appearance: Appearance
+  /** Zak's own tools (CLAUDE.md §6.8): on/off and their options. */
+  tools: ToolsSettings
 }
 
 const SCHEMA_URL = 'https://raw.githubusercontent.com/guillaumevergano/zak/main/docs/customize/settings.schema.json'
@@ -50,7 +53,7 @@ export class SettingsStore {
   private store = new Store<Settings>({
     // The file can be edited by hand or by an AI agent (docs/customize/): changes apply at once.
     watch: true,
-    defaults: { sidebar: DEFAULT_SIDEBAR, disabledExtensions: [], unpackedExtensions: [], pip: DEFAULT_PIP_SETTINGS, general: {}, extensionBar: DEFAULT_EXTENSION_BAR, onboarded: false, mods: { theme: null, newtab: null }, mcp: { enabled: false, port: 0, token: '' }, appearance: EMPTY_APPEARANCE }
+    defaults: { sidebar: DEFAULT_SIDEBAR, disabledExtensions: [], unpackedExtensions: [], pip: DEFAULT_PIP_SETTINGS, general: {}, extensionBar: DEFAULT_EXTENSION_BAR, onboarded: false, mods: { theme: null, newtab: null }, mcp: { enabled: false, port: 0, token: '' }, appearance: EMPTY_APPEARANCE, tools: DEFAULT_TOOLS }
   })
 
   /** Where the settings live (config.json in the profile folder), for « Ouvrir le fichier de réglages ». */
@@ -126,6 +129,16 @@ export class SettingsStore {
   setPip(pip: PipSettings): PipSettings {
     const clean = normalizePipSettings(pip)
     this.store.set('pip', clean)
+    return clean
+  }
+
+  getTools(): ToolsSettings {
+    return normalizeTools(this.store.get('tools'))
+  }
+
+  setTools(tools: ToolsSettings): ToolsSettings {
+    const clean = normalizeTools(tools)
+    this.store.set('tools', clean)
     return clean
   }
 
