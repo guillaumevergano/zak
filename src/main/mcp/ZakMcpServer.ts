@@ -4,7 +4,7 @@ import type { AddressInfo } from 'node:net'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { z } from 'zod'
-import type { GeneralSettings, SidebarSide, TabGroupColor, TabsPosition } from '@shared/types'
+import type { GeneralSettings, McpToolInfo, SidebarSide, TabGroupColor, TabsPosition } from '@shared/types'
 import { COLOR_TOKENS, type AppearancePatch } from '@shared/appearance'
 
 /**
@@ -35,7 +35,7 @@ const COLORS = ['grey', 'blue', 'red', 'yellow', 'green', 'pink', 'purple', 'cya
 const MAX_BODY = 1_000_000
 
 /**
- * Zak's MCP server (Settings → Customize → « Laisser Claude Code ou Codex piloter Zak »): lets an
+ * Zak's MCP server (Réglages → MCP → « Laisser Claude Code ou Codex piloter Zak »): lets an
  * AI agent drive the running browser. Off by default. Streamable HTTP on 127.0.0.1 only, behind a
  * bearer token; requests from web pages are refused (Origin / Host checks against DNS rebinding).
  */
@@ -96,9 +96,25 @@ export class ZakMcpServer {
     await transport.handleRequest(req, res, body)
   }
 
-  private build(): McpServer {
+  /** The tools agents get (Réglages → MCP lists them), read from the server itself. */
+  tools(): McpToolInfo[] {
+    const tools: McpToolInfo[] = []
+    void this.build(tools).close()
+    return tools
+  }
+
+  /** A server with every tool; `record` also collects their names and descriptions. */
+  private build(record?: McpToolInfo[]): McpServer {
     const c = this.control
     const mcp = new McpServer({ name: 'zak', version: '1.0.0' })
+    if (record) {
+      const register = mcp.registerTool.bind(mcp) as (...args: unknown[]) => unknown
+      const spy = (name: string, config: { description?: string; annotations?: { readOnlyHint?: boolean } }, ...rest: unknown[]): unknown => {
+        record.push({ name, description: config.description ?? '', readOnly: config.annotations?.readOnlyHint === true })
+        return register(name, config, ...rest)
+      }
+      mcp.registerTool = spy as typeof mcp.registerTool
+    }
     const json = (value: unknown) => ({ content: [{ type: 'text' as const, text: JSON.stringify(value, null, 2) }] })
 
     mcp.registerTool(
