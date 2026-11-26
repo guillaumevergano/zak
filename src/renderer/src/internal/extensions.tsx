@@ -239,7 +239,7 @@ function ToolCard(props: {
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <h3 className="m-0 text-[15px] font-bold text-title">{props.name}</h3>
         <p className="m-0 text-[13px] text-sub">{props.description}</p>
-        <p className="m-0 text-[12px] text-sub/80">{props.note}</p>
+        <p className="m-0 text-[12px] text-sub">{props.note}</p>
         {props.enabled && props.children}
       </div>
       <Toggle
