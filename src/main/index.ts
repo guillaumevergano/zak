@@ -217,7 +217,7 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
     if (overlay.showing()?.kind === kind) overlay.hide()
   })
   handle('overlay:resize', (e, height) => windowOf(e).overlay.resize(height))
-  handle('tools:translate', (_e, text, target) => translateTool.translateForReader(text, target))
+  handle('tools:translate', (_e, text, target, chosen) => translateTool.translateForReader(text, target, chosen))
   handle('tools:screenshot', (e, mode, rect) => screenshotTool.capture(windowOf(e), mode, rect))
   handle('tools:screenshotReveal', () => screenshotTool.reveal())
   handle('tools:run', (e, tool) => (tool === 'screenshot' ? screenshotTool.start(windowOf(e)) : translateTool.translatePage(windowOf(e))))

@@ -33,7 +33,8 @@ async function rightClick(app: ElectronApplication, page: Page, selector: string
 }
 
 test('a selection is translated in place where one writes, in a bubble elsewhere, and the tool can be switched off', async () => {
-  // The page, and a stand-in for Google Translate: each piece comes back in capitals, from French.
+  // The page, and a stand-in for Google Translate: each piece comes back in capitals, from English
+  // when it says « thanks », from French otherwise.
   const requests: string[] = []
   const { server, origin } = await serve((req, res) => {
     if (req.url?.startsWith('/t?')) {
@@ -43,12 +44,12 @@ test('a selection is translated in place where one writes, in a bubble elsewhere
         requests.push(req.url!)
         const pieces = new URLSearchParams(body).getAll('q')
         res.setHeader('content-type', 'application/json')
-        res.end(JSON.stringify(pieces.map((q) => [q.toUpperCase(), 'fr'])))
+        res.end(JSON.stringify(pieces.map((q) => [q.toUpperCase(), /thanks/i.test(q) ? 'en' : 'fr'])))
       })
       return
     }
     res.setHeader('content-type', 'text/html; charset=utf-8')
-    res.end('<title>Mail</title><textarea id="mail" rows="4" cols="40"></textarea><p id="read">Merci pour votre message.</p>')
+    res.end('<title>Mail</title><textarea id="mail" rows="4" cols="40"></textarea><p id="read">Thanks for your message, Pierre.</p><p id="mine">Merci pour votre message.</p><p id="short">Bonjour</p>')
   })
   const { app, chrome } = await launch('translate', undefined, { ZAK_TRANSLATE_URL: `${origin}/t` })
   try {
@@ -77,18 +78,36 @@ test('a selection is translated in place where one writes, in a bubble elsewhere
     expect(submenu[0]).toBe('Anglais')
     expect(submenu[1]).toBe('')
 
-    // Text one reads: a bubble under it, in Zak's language.
-    await page.evaluate(() => {
-      const range = document.createRange()
-      range.selectNodeContents(document.getElementById('read')!)
-      getSelection()!.removeAllRanges()
-      getSelection()!.addRange(range)
-    })
+    const select = (id: string): Promise<void> =>
+      page.evaluate((id) => {
+        const range = document.createRange()
+        range.selectNodeContents(document.getElementById(id)!)
+        getSelection()!.removeAllRanges()
+        getSelection()!.addRange(range)
+      }, id)
+
+    // Text one reads, in another language: a bubble under it, in Zak's language. The name is sent
+    // marked « not to translate », and comes back without the mark.
+    await select('read')
     await rightClick(app, page, '#read')
     await clickMenuItem(app, 'Traduire en français')
     const bubbleHost = app.windows().find((p) => p.url().includes('#overlay'))!
-    await expect(bubbleHost.getByTestId('translation-text')).toHaveText('MERCI POUR VOTRE MESSAGE.')
-    await expect(bubbleHost.getByTestId('translation-bubble')).toContainText('Français →')
+    await expect(bubbleHost.getByTestId('translation-text')).toHaveText('THANKS FOR YOUR MESSAGE, PIERRE.')
+    await expect(bubbleHost.getByTestId('translation-bubble')).toContainText('Anglais →')
+    expect(requests.at(-1)).toContain('tl=fr')
+
+    // Text already in Zak's language: English is offered.
+    await bubbleHost.getByRole('button', { name: 'Fermer' }).click()
+    await select('mine')
+    await rightClick(app, page, '#mine')
+    expect(await menuLabels(app)).toContain('Traduire en anglais')
+    // Too short for Zak to tell: offered in French, Google finds French, so it comes in English.
+    await select('short')
+    await rightClick(app, page, '#short')
+    await clickMenuItem(app, 'Traduire en français')
+    await expect(bubbleHost.getByTestId('translation-text')).toHaveText('BONJOUR')
+    await expect(bubbleHost.getByRole('combobox', { name: 'Langue de la traduction' })).toHaveValue('en')
+    expect(requests.at(-1)).toContain('tl=en')
 
     // Another language from the bubble.
     await bubbleHost.getByRole('combobox', { name: 'Langue de la traduction' }).selectOption('de')
