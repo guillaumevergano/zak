@@ -55,7 +55,8 @@ All three checks must pass before you finish.
 - Zak's own tools (CLAUDE.md §6.8, `src/main/tools/`, `src/shared/tools.ts`) are built in, not
   Chrome extensions: each one has its switch under « Outils Zak » on `zak://extensions` and its
   settings under `tools` in `config.json`. Switched off, a tool leaves nothing behind (no menu item,
-  no button, no page script). Translation (right-click on a selection) sends text only on that click;
+  no button, no page script). Translation (right-click on a selection) sends text only on that click, keeps names as
+  they are (`<span translate="no">`) and offers English for a text already in Zak's language;
   screenshots (⌘⇧2, page right-click) stay local: clipboard + downloads folder. Being on and having
   an icon are separate: any extension or tool that is on can have its icon in the sidebar or not
   (`extensionBar.hidden`, tools as `zak:<tool>`), and works either way.
