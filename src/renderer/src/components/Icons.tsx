@@ -111,3 +111,17 @@ export const PreviousIcon = (): JSX.Element => (
 export const NextIcon = (): JSX.Element => (
   <Icon width={14} height={14} fill="currentColor" stroke="none"><rect x="11.4" y="3.5" width="1.6" height="9" rx=".6" /><path d="M3 4.1v7.8a.5.5 0 0 0 .8.4l5.8-3.9a.5.5 0 0 0 0-.8L3.8 3.7a.5.5 0 0 0-.8.4Z" /></Icon>
 )
+/** Zak's screenshot tool: a camera. */
+export const CameraIcon = (): JSX.Element => (
+  <Icon>
+    <path d="M2.5 5.5A1.5 1.5 0 0 1 4 4h1.5l1-1.5h3l1 1.5H12a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 12 13H4a1.5 1.5 0 0 1-1.5-1.5z" />
+    <circle cx="8" cy="8.3" r="2.3" />
+  </Icon>
+)
+/** Zak's translation tool: « A » and « 文 ». */
+export const TranslateIcon = (): JSX.Element => (
+  <Icon>
+    <path d="M2 3.5h6M5 2v1.5M3.5 3.5c.4 2.2 1.8 3.8 3.8 4.6M6.5 3.5C6 5.7 4.6 7.5 2.5 8.6" />
+    <path d="m8.5 14 2.5-6 2.5 6M9.3 12.2h3.4" />
+  </Icon>
+)

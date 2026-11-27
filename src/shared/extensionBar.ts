@@ -1,4 +1,14 @@
 import type { ExtensionBarSettings } from './types'
+import type { ZakToolId } from './tools'
+
+/**
+ * Zak's tools share the bar with Chrome extensions (CLAUDE.md §6.8): same order, same « hidden »
+ * list, under an id no Chrome extension can have (theirs are 32 letters a–p).
+ */
+export const TOOL_BAR_PREFIX = 'zak:'
+export const toolBarId = (tool: ZakToolId): string => `${TOOL_BAR_PREFIX}${tool}`
+export const barToolOf = (id: string): ZakToolId | null =>
+  id === 'zak:screenshot' ? 'screenshot' : id === 'zak:translate' ? 'translate' : null
 
 export const DEFAULT_EXTENSION_BAR: ExtensionBarSettings = { order: [], hidden: [] }
 

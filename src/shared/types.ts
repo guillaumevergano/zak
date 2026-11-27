@@ -1,5 +1,6 @@
 import type { Appearance } from './appearance'
 import type { LangSetting } from './languages'
+import type { ZakToolId } from './tools'
 import type { SearchEngine } from './url'
 
 export type TabId = number
@@ -126,13 +127,15 @@ export interface SidebarState {
   favorites: FavoriteInfo[]
   layout: SidebarLayout
   extensionBar: ExtensionBarSettings
+  /** Zak tools switched on: their icons can sit with the extensions'. */
+  tools: ZakToolId[]
 }
 
 /** Extension icons at the top of the sidebar, picked and ordered on zak://settings. */
 export interface ExtensionBarSettings {
   /** Extension ids in display order; extensions not listed come after, in install order. */
   order: string[]
-  /** Extensions kept out of the sidebar. */
+  /** Extensions (and Zak tools, `zak:<tool>`) whose icon stays out of the sidebar; they keep working. */
   hidden: string[]
 }
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeExtensionBar, orderExtensions, shownExtensions } from '../../src/shared/extensionBar'
+import { barToolOf, normalizeExtensionBar, orderExtensions, shownExtensions, toolBarId } from '../../src/shared/extensionBar'
+import { DEFAULT_TOOLS, enabledTools } from '../../src/shared/tools'
 
 const items = [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }]
 const ids = (list: { id: string }[]): string[] => list.map((i) => i.id)
@@ -23,5 +24,13 @@ describe('extension bar', () => {
       order: ['a'],
       hidden: []
     })
+  })
+
+  it("gives Zak's tools an id of their own, among the extensions", () => {
+    expect(toolBarId('screenshot')).toBe('zak:screenshot')
+    expect(barToolOf('zak:translate')).toBe('translate')
+    expect(barToolOf('cjpalhdlnbpafiamejdnhcphjbkeiagm')).toBeNull()
+    expect(enabledTools(DEFAULT_TOOLS)).toEqual(['screenshot', 'translate'])
+    expect(enabledTools({ ...DEFAULT_TOOLS, screenshot: { enabled: false } })).toEqual(['translate'])
   })
 })

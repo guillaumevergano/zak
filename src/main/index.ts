@@ -1,3 +1,4 @@
+import { enabledTools } from '@shared/tools'
 import { appearanceCss } from '@shared/appearance'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
@@ -219,6 +220,7 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
   handle('tools:translate', (_e, text, target) => translateTool.translateForReader(text, target))
   handle('tools:screenshot', (e, mode, rect) => screenshotTool.capture(windowOf(e), mode, rect))
   handle('tools:screenshotReveal', () => screenshotTool.reveal())
+  handle('tools:run', (e, tool) => (tool === 'screenshot' ? screenshotTool.start(windowOf(e)) : translateTool.translatePage(windowOf(e))))
   handle('omnibox:suggest', (_e, text) => suggest(text, settings.getGeneral().searchEngine, favorites, history))
   handle('find:query', (e, tabId, text, forward, findNext) => find.query(windowOf(e), tabId, text, forward, findNext))
   handle('find:close', (e) => windowOf(e).overlay.close())
@@ -464,6 +466,8 @@ app.whenReady().then(async () => {
       const tools = settings.getTools()
       return settings.setTools({ ...tools, screenshot: { ...tools.screenshot, ...patch } })
     },
+    'extensions/bar': () => settings.getExtensionBar(),
+    'extensions/setBar': (bar) => sidebar.change(() => settings.setExtensionBar(bar)),
     'extensions/setEnabled': async ({ id, enabled }) => {
       await extensions.setEnabled(id, enabled)
       return null
@@ -495,7 +499,7 @@ app.whenReady().then(async () => {
       sidebar: settings.getSidebar(),
       extensionBar: settings.getExtensionBar()
     }),
-    'settings/listExtensions': () => extensions.list(),
+    'settings/listExtensions': async () => ({ tools: enabledTools(settings.getTools()), extensions: await extensions.list() }),
     'settings/setExtensionBar': (bar) => sidebar.change(() => settings.setExtensionBar(bar)),
     'settings/importBookmarks': async () => {
       const result = await dialog.showOpenDialog({

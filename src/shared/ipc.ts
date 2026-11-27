@@ -1,6 +1,6 @@
 import type { Appearance, AppearancePatch } from './appearance'
 import type { Lang } from './languages'
-import type { ScreenshotMode, ScreenshotSettings, ToolsSettings, TranslateSettings } from './tools'
+import type { ScreenshotMode, ScreenshotSettings, ToolsSettings, TranslateSettings, ZakToolId } from './tools'
 import type { MediaAction, MediaState } from './media'
 import type {
   MiniPlayerAction,
@@ -115,6 +115,8 @@ export interface InvokeChannels {
   'tools:translate': { args: [text: string, target: string]; result: { text: string; source: string } }
   /** From the capture mode: takes the screenshot (`rect`, in the page's coordinates, for a region). */
   'tools:screenshot': { args: [mode: ScreenshotMode, rect?: Rect]; result: void }
+  /** A Zak tool's icon in the sidebar: the screenshot picker, or the page translated. */
+  'tools:run': { args: [tool: ZakToolId]; result: void }
   /** « Afficher dans le Finder » on the last screenshot. */
   'tools:screenshotReveal': { args: []; result: void }
 
@@ -229,6 +231,7 @@ export const INVOKE_CHANNELS = [
   'overlay:resize',
   'tools:translate',
   'tools:screenshot',
+  'tools:run',
   'tools:screenshotReveal',
   'omnibox:suggest',
   'find:query',
@@ -323,6 +326,9 @@ export interface InternalApiRoutes {
   'extensions/tools': { body: null; result: ToolsSettings }
   'extensions/setTranslate': { body: Partial<Pick<TranslateSettings, 'enabled' | 'target'>>; result: ToolsSettings }
   'extensions/setScreenshot': { body: Partial<ScreenshotSettings>; result: ToolsSettings }
+  /** The sidebar's icons (shared with zak://settings): an extension or tool on can go without one. */
+  'extensions/bar': { body: null; result: ExtensionBarSettings }
+  'extensions/setBar': { body: ExtensionBarSettings; result: ExtensionBarSettings }
   'settings/get': { body: null; result: BrowserSettings }
   /** Saves the PiP section; returns it normalized (cleaned-up domains). */
   'settings/setPip': { body: PipSettings; result: PipSettings }
@@ -335,7 +341,8 @@ export interface InternalApiRoutes {
   /** Folded or not, left or right, tabs at the top or in the sidebar. */
   'settings/setSidebar': { body: Partial<Pick<SidebarLayout, 'collapsed' | 'side' | 'tabs'>>; result: SidebarLayout }
   /** Installed extensions (a page only reaches its own routes, so not extensions/list). */
-  'settings/listExtensions': { body: null; result: ExtensionInfo[] }
+  /** What can have an icon in the sidebar: the Zak tools on, then the installed extensions. */
+  'settings/listExtensions': { body: null; result: { tools: ZakToolId[]; extensions: ExtensionInfo[] } }
   /** Which extension icons the sidebar shows, and in what order. */
   'settings/setExtensionBar': { body: ExtensionBarSettings; result: ExtensionBarSettings }
   /** Picks a bookmarks HTML file and imports it; null when cancelled. */
@@ -424,6 +431,8 @@ export const INTERNAL_API_ROUTES = [
   'extensions/tools',
   'extensions/setTranslate',
   'extensions/setScreenshot',
+  'extensions/bar',
+  'extensions/setBar',
   'settings/get',
   'settings/setPip',
   'settings/setGeneral',

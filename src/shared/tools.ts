@@ -5,6 +5,8 @@
 
 export type ZakToolId = 'translate' | 'screenshot'
 
+export const ZAK_TOOL_IDS: readonly ZakToolId[] = ['screenshot', 'translate']
+
 /** Translation of a selection (right-click), on demand only. */
 export interface TranslateSettings {
   enabled: boolean
@@ -50,6 +52,11 @@ export function normalizeTools(raw: unknown): ToolsSettings {
     },
     screenshot: { enabled: screenshot?.enabled !== false }
   }
+}
+
+/** The tools switched on, in ZAK_TOOL_IDS order. */
+export function enabledTools(tools: ToolsSettings): ZakToolId[] {
+  return ZAK_TOOL_IDS.filter((id) => tools[id].enabled)
 }
 
 /** `language` moved to the front of the recent ones. */
