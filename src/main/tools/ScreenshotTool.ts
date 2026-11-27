@@ -66,21 +66,30 @@ export class ScreenshotTool {
     const png = image.toPNG()
     await writeFile(path, png)
     await clipboard.write([new ClipboardItem({ 'image/png': new Blob([new Uint8Array(png)], { type: 'image/png' }) })])
-    const size = image.getSize()
-    const thumbnail = size.width / size.height > 2 ? image.resize({ width: 600 }) : image.resize({ height: 300 })
-    this.last = { path, icon: image.resize({ width: 96 }) }
+    // Another capture started meanwhile: its picker stays.
+    if (handle.overlay.showing()?.kind !== 'screenshot') this.showFile(handle, path, image, false)
+  }
 
-    const page = handle.tabs.pageBounds(request.tabId) ?? request.frame
+  /**
+   * The thumbnail of a file just made (a screenshot, or a screen recording: `video`) in the bottom
+   * corner of the window's page, a few seconds: drag it out, or show it in the Finder.
+   */
+  showFile(handle: BrowserWindowHandle, path: string, image: NativeImage, video: boolean): void {
+    // Dragging needs an icon: a blank one when there is no picture.
+    const icon = image.isEmpty() ? nativeImage.createFromBitmap(Buffer.alloc(16 * 16 * 4), { width: 16, height: 16 }) : image.resize({ width: 96 })
+    this.last = { path, icon }
+    const active = handle.tabs.getActive()
+    const page = active ? handle.tabs.pageBounds(active.id) : null
+    if (!page || handle.window.isDestroyed()) return
+    const size = image.getSize()
+    const thumbnail = image.isEmpty() ? image : size.width / size.height > 2 ? image.resize({ width: 600 }) : image.resize({ height: 300 })
     const frame = {
       x: page.x + page.width - TOAST_WIDTH - 12,
       y: page.y + page.height - TOAST_HEIGHT - 12,
       width: TOAST_WIDTH,
       height: TOAST_HEIGHT
     }
-    // Another capture started meanwhile: its picker stays.
-    if (!handle.window.isDestroyed() && handle.overlay.showing()?.kind !== 'screenshot') {
-      void handle.overlay.open({ kind: 'screenshot-done', frame, preview: thumbnail.toDataURL(), name: path.split(/[/\\]/).pop()! })
-    }
+    void handle.overlay.open({ kind: 'screenshot-done', frame, preview: thumbnail.toDataURL(), name: path.split(/[/\\]/).pop()!, video })
   }
 
   reveal(): void {
