@@ -1,3 +1,4 @@
+import { enabledTools } from '@shared/tools'
 import { t } from '@shared/i18n'
 import { readFile } from 'node:fs/promises'
 import { clipboard, Menu } from 'electron'
@@ -62,7 +63,8 @@ export class SidebarController {
       folders: this.favorites.folders(),
       favorites: this.favorites.favorites(),
       layout: this.settings.getSidebar(),
-      extensionBar: this.settings.getExtensionBar()
+      extensionBar: this.settings.getExtensionBar(),
+      tools: enabledTools(this.settings.getTools())
     }
   }
 

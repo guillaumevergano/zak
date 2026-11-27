@@ -56,5 +56,7 @@ All three checks must pass before you finish.
   Chrome extensions: each one has its switch under « Outils Zak » on `zak://extensions` and its
   settings under `tools` in `config.json`. Switched off, a tool leaves nothing behind (no menu item,
   no button, no page script). Translation (right-click on a selection) sends text only on that click;
-  screenshots (⌘⇧2, page right-click) stay local: clipboard + downloads folder.
+  screenshots (⌘⇧2, page right-click) stay local: clipboard + downloads folder. Being on and having
+  an icon are separate: any extension or tool that is on can have its icon in the sidebar or not
+  (`extensionBar.hidden`, tools as `zak:<tool>`), and works either way.
 - DRM streaming can't be tested in development or in your own builds (it needs the signed release).

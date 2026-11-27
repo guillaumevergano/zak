@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ExtensionBarSettings } from '@shared/types'
-import { shownExtensions } from '@shared/extensionBar'
+import type { ZakToolId } from '@shared/tools'
+import { barToolOf, shownExtensions, toolBarId } from '@shared/extensionBar'
+import { t } from '@shared/i18n'
+import { CameraIcon, TranslateIcon } from './Icons'
 
 const PARTITION = 'persist:main'
 
@@ -14,9 +17,10 @@ interface BrowserActionButton extends HTMLButtonElement {
 /**
  * Extension icons at the top of the sidebar, as picked and ordered on zak://settings. Each one
  * is the library's `<button is="browser-action">` (icon, badge, popup, context menu), laid out here
- * instead of in `<browser-action-list>`, which can neither filter nor reorder.
+ * instead of in `<browser-action-list>`, which can neither filter nor reorder. Zak's own tools
+ * (CLAUDE.md §6.8) take their place among them, in the same order.
  */
-export function ExtensionActions({ bar }: { bar: ExtensionBarSettings }): JSX.Element | null {
+export function ExtensionActions({ bar, tools }: { bar: ExtensionBarSettings; tools: ZakToolId[] }): JSX.Element | null {
   const [state, setState] = useState<ActionState | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -42,22 +46,41 @@ export function ExtensionActions({ bar }: { bar: ExtensionBarSettings }): JSX.El
     listRef.current?.querySelectorAll<BrowserActionButton>('button[is="browser-action"]').forEach((b) => b.update?.())
   }, [state])
 
-  if (!state) return null
-  const actions = shownExtensions(state.actions, bar)
-  if (actions.length === 0) return null
-  const tab = String(state.activeTabId ?? -1)
+  const items = shownExtensions([...tools.map((tool) => ({ id: toolBarId(tool) })), ...(state?.actions ?? [])], bar)
+  if (items.length === 0) return null
+  const tab = String(state?.activeTabId ?? -1)
 
   return (
     <div ref={listRef} data-testid="extension-actions" className="flex min-w-0 flex-wrap items-center gap-2">
-      {actions.map((action) => (
-        <button
-          key={action.id}
-          is="browser-action"
-          id={action.id}
-          // With `is`, React 18 treats it as a custom element and sets attributes as written.
-          {...({ class: 'ext-action', partition: PARTITION, alignment: 'bottom left', tab } as Record<string, string>)}
-        />
-      ))}
+      {items.map(({ id }) => {
+        const tool = barToolOf(id)
+        if (tool) return <ToolAction key={id} tool={tool} />
+        return (
+          <button
+            key={id}
+            is="browser-action"
+            id={id}
+            // With `is`, React 18 treats it as a custom element and sets attributes as written.
+            {...({ class: 'ext-action', partition: PARTITION, alignment: 'bottom left', tab } as Record<string, string>)}
+          />
+        )
+      })}
     </div>
+  )
+}
+
+function ToolAction({ tool }: { tool: ZakToolId }): JSX.Element {
+  const label = tool === 'screenshot' ? t('Capture d’écran…') : t('Traduire cette page')
+  return (
+    <button
+      type="button"
+      data-testid={`tool-action-${tool}`}
+      title={label}
+      aria-label={label}
+      onClick={() => void window.zak.invoke('tools:run', tool)}
+      className="ext-action grid place-items-center text-cream-ink"
+    >
+      {tool === 'screenshot' ? <CameraIcon /> : <TranslateIcon />}
+    </button>
   )
 }

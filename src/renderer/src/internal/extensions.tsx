@@ -1,7 +1,8 @@
 import '../lib/lang'
 import { StrictMode, useCallback, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import type { ExtensionInfo } from '@shared/types'
+import type { ExtensionBarSettings, ExtensionInfo } from '@shared/types'
+import { toolBarId } from '@shared/extensionBar'
 import type { InternalApiRoutes } from '@shared/ipc'
 import { languageMenu, languageName, type ToolsSettings } from '@shared/tools'
 import { callInternal } from './api'
@@ -13,8 +14,25 @@ import { getLang, t } from '@shared/i18n'
 function ExtensionsPage(): JSX.Element {
   const [extensions, setExtensions] = useState<ExtensionInfo[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [bar, setBar] = useState<ExtensionBarSettings | null>(null)
+
+  /** The icon in the sidebar, apart from being on: an extension can work without one. */
+  const icon = (id: string): IconChoice | null =>
+    bar && {
+      shown: !bar.hidden.includes(id),
+      onChange: (shown) => {
+        const hidden = bar.hidden.filter((h) => h !== id)
+        const next = { ...bar, hidden: shown ? hidden : [...hidden, id] }
+        setBar(next)
+        callInternal('extensions/setBar', next)
+          .then(setBar)
+          .catch((err: unknown) => setError(String(err)))
+      }
+    }
 
   const refresh = useCallback(() => {
+    // The icons can also be picked on zak://settings meanwhile.
+    void callInternal('extensions/bar', null).then(setBar)
     callInternal('extensions/list', null)
       .then((list) => {
         setExtensions(list)
@@ -70,7 +88,7 @@ function ExtensionsPage(): JSX.Element {
         </p>
       )}
 
-      <ZakTools />
+      <ZakTools icon={icon} />
 
       <h2 className="m-0 mt-2 text-[17px] font-bold text-title">{t('Extensions Chrome')}</h2>
 
@@ -82,14 +100,38 @@ function ExtensionsPage(): JSX.Element {
 
       <ul className="m-0 flex list-none flex-col gap-3 p-0" aria-label={t('Extensions installées')}>
         {extensions?.map((ext) => (
-          <ExtensionCard key={ext.id} ext={ext} run={run} />
+          <ExtensionCard key={ext.id} ext={ext} run={run} icon={icon(ext.id)} />
         ))}
       </ul>
     </main>
   )
 }
 
-function ExtensionCard({ ext, run }: { ext: ExtensionInfo; run: (action: Promise<unknown>) => void }): JSX.Element {
+interface IconChoice {
+  shown: boolean
+  onChange: (shown: boolean) => void
+}
+
+/** « Icône dans la barre latérale », under an extension that is on. */
+function IconCheckbox({ choice, name }: { choice: IconChoice | null; name: string }): JSX.Element | null {
+  if (!choice) return null
+  return (
+    <label className="mt-1 flex w-fit cursor-pointer items-center gap-2 text-[13px] text-ink">
+      <input
+        type="checkbox"
+        data-testid="extension-icon-shown"
+        aria-label={t('Icône de {name} dans la barre latérale', { name })}
+        checked={choice.shown}
+        onChange={(e) => choice.onChange(e.target.checked)}
+        className="size-4 cursor-pointer accent-violet"
+      />
+      {t('Icône dans la barre latérale')}
+    </label>
+  )
+}
+
+function ExtensionCard(props: { ext: ExtensionInfo; run: (action: Promise<unknown>) => void; icon: IconChoice | null }): JSX.Element {
+  const { ext, run } = props
   const [confirming, setConfirming] = useState(false)
 
   return (
@@ -120,6 +162,7 @@ function ExtensionCard({ ext, run }: { ext: ExtensionInfo; run: (action: Promise
             {t('Dossier : {path} — rechargée à chaque modification', { path: ext.unpackedPath })}
           </p>
         )}
+        {ext.enabled && <IconCheckbox choice={props.icon} name={ext.name} />}
 
         <div className="mt-2 flex items-center gap-2">
           {confirming ? (
@@ -160,7 +203,7 @@ function ExtensionCard({ ext, run }: { ext: ExtensionInfo; run: (action: Promise
 }
 
 /** Zak's own tools (CLAUDE.md §6.8): built in, on or off; off, nothing of them is left. */
-function ZakTools(): JSX.Element | null {
+function ZakTools({ icon }: { icon: (id: string) => IconChoice | null }): JSX.Element | null {
   const [tools, setTools] = useState<ToolsSettings | null>(null)
   useEffect(() => {
     void callInternal('extensions/tools', null).then(setTools)
@@ -186,6 +229,7 @@ function ZakTools(): JSX.Element | null {
           icon="🌐"
           name={t('Traduction')}
           enabled={translate.enabled}
+          sidebarIcon={icon(toolBarId('translate'))}
           onToggle={(enabled) => setTranslate({ enabled })}
           description={t('Sélectionnez un texte puis clic droit : « Traduire en… ». Dans un champ où vous écrivez (un e-mail, un message), le texte sélectionné est remplacé par sa traduction (⌘Z pour revenir) ; ailleurs, la traduction s’affiche dans une bulle.')}
           note={t('Le texte n’est envoyé à Google Traduction qu’au moment où vous le demandez.')}
@@ -211,6 +255,7 @@ function ZakTools(): JSX.Element | null {
           icon="📸"
           name={t('Capture d’écran')}
           enabled={screenshot.enabled}
+          sidebarIcon={icon(toolBarId('screenshot'))}
           onToggle={(enabled) => void callInternal('extensions/setScreenshot', { enabled }).then(setTools)}
           description={t('Une zone tracée, la page visible ou la page entière : menu Fichier ({shortcut}) ou clic droit sur la page. L’image est copiée dans le presse-papiers et enregistrée dans le dossier des téléchargements.', { shortcut: isMac ? '⌘⇧2' : t('Ctrl+Maj+2') })}
           note={t('Tout reste sur votre ordinateur.')}
@@ -226,6 +271,8 @@ function ToolCard(props: {
   name: string
   enabled: boolean
   onToggle: (enabled: boolean) => void
+  /** Its icon in the sidebar (shown or not). */
+  sidebarIcon: IconChoice | null
   description: string
   note: string
   /** Its options, shown while it is on. */
@@ -240,6 +287,7 @@ function ToolCard(props: {
         <h3 className="m-0 text-[15px] font-bold text-title">{props.name}</h3>
         <p className="m-0 text-[13px] text-sub">{props.description}</p>
         <p className="m-0 text-[12px] text-sub">{props.note}</p>
+        {props.enabled && <IconCheckbox choice={props.sidebarIcon} name={props.name} />}
         {props.enabled && props.children}
       </div>
       <Toggle

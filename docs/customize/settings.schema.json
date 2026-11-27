@@ -122,10 +122,10 @@
     },
     "extensionBar": {
       "type": "object",
-      "description": "Extension icons shown at the top of the sidebar.",
+      "description": "Extension icons shown at the top of the sidebar, Zak tools included (ids zak:screenshot, zak:translate). An extension or tool without an icon keeps working.",
       "properties": {
-        "order": { "type": "array", "items": { "type": "string" }, "description": "Extension ids, left to right." },
-        "hidden": { "type": "array", "items": { "type": "string" }, "description": "Extension ids kept out of the sidebar." }
+        "order": { "type": "array", "items": { "type": "string" }, "description": "Extension or tool ids, left to right." },
+        "hidden": { "type": "array", "items": { "type": "string" }, "description": "Extension or tool ids whose icon stays out of the sidebar." }
       }
     },
     "unpackedExtensions": {

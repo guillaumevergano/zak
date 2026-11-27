@@ -574,5 +574,7 @@ export const EN_UI: Record<string, string> = {
   'Revenir à l’onglet': 'Back to the tab',
   'Fermer le lecteur': 'Close the player',
   'Celui de Zak : coins arrondis, ses boutons (lecture, revenir à l’onglet, fermer), et on le déplace à la souris. Celui du système : le lecteur Picture-in-Picture de Chromium.': 'Zak’s: rounded corners, its own buttons (play, back to the tab, close), and you move it with the mouse. The system’s: Chromium’s Picture-in-Picture player.',
-  'Celui du système': 'The system’s'
+  'Celui du système': 'The system’s',
+  'Icône dans la barre latérale': 'Icon in the sidebar',
+  'Icône de {name} dans la barre latérale': '{name} icon in the sidebar',
 }

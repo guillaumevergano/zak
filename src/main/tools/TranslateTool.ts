@@ -1,4 +1,5 @@
 import { getLang, t } from '@shared/i18n'
+import { translateUrl } from '@shared/url'
 import { session, type MenuItemConstructorOptions, type Session, type WebContents } from 'electron'
 import type { OverlayRequest } from '@shared/types'
 import { languageMenu, languageName, readingTarget, withRecent } from '@shared/tools'
@@ -23,6 +24,14 @@ export class TranslateTool {
   private bubbles = new Map<BrowserWindowHandle, { request: TranslationRequest; dispose: () => void }>()
 
   constructor(private readonly settings: SettingsStore) {}
+
+  /** Its sidebar icon: the active page through Google Traduction, in a new tab beside it (like the page menu). */
+  translatePage(handle: BrowserWindowHandle): void {
+    const wc = handle.tabs.getActive()
+    const url = wc?.getURL() ?? ''
+    if (!this.enabled() || !wc || !/^https?:/.test(url)) return
+    handle.tabs.create(translateUrl(url, getLang()), { index: handle.tabs.indexOf(wc.id) + 1 })
+  }
 
   enabled(): boolean {
     return this.settings.getTools().translate.enabled

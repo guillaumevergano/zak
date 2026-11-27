@@ -657,4 +657,6 @@ export const DE: Record<string, string> = {
   'Fermer le lecteur': 'Player schließen',
   'Celui de Zak : coins arrondis, ses boutons (lecture, revenir à l’onglet, fermer), et on le déplace à la souris. Celui du système : le lecteur Picture-in-Picture de Chromium.': 'Der von Zak: abgerundete Ecken, eigene Tasten (Wiedergabe, zurück zum Tab, schließen), mit der Maus verschiebbar. Der des Systems: der Bild-im-Bild-Player von Chromium.',
   'Celui du système': 'Der des Systems',
+  'Icône dans la barre latérale': 'Symbol in der Seitenleiste',
+  'Icône de {name} dans la barre latérale': 'Symbol von {name} in der Seitenleiste',
 }

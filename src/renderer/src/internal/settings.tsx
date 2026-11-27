@@ -8,7 +8,6 @@ import type {
   ClearPeriod,
   DefaultBrowserStatus,
   ExtensionBarSettings,
-  ExtensionInfo,
   GeneralSettings,
   ImportSource,
   McpState,
@@ -19,7 +18,8 @@ import type {
   ProfileInfo,
   SidebarLayout
 } from '@shared/types'
-import { orderExtensions } from '@shared/extensionBar'
+import { orderExtensions, toolBarId } from '@shared/extensionBar'
+import type { ZakToolId } from '@shared/tools'
 import { APPEARANCE_PAGE_URL, EXTENSIONS_PAGE_URL, PASSWORDS_PAGE_URL } from '@shared/ipc'
 import { permissionLabel } from '../lib/permissions'
 import { SEARCH_ENGINES, type SearchEngine } from '@shared/url'
@@ -523,18 +523,36 @@ function Section(props: { id: string; title: string; nav?: string; intro?: strin
   )
 }
 
+/** A line of the list: a Chrome extension, or one of Zak's tools (`zak:<tool>`). */
+interface BarItem {
+  id: string
+  name: string
+  icon: string | null
+  emoji: string | null
+}
+
+const toolItem = (tool: ZakToolId): BarItem =>
+  tool === 'screenshot'
+    ? { id: toolBarId(tool), name: t('Capture d’écran'), icon: null, emoji: '📸' }
+    : { id: toolBarId(tool), name: t('Traduction'), icon: null, emoji: '🌐' }
+
 /** Which extension icons the sidebar shows, and in what order (top of the sidebar, left to right). */
 function ExtensionBar(props: {
   bar: ExtensionBarSettings
   onChange: (bar: ExtensionBarSettings) => void
   onError: (err: unknown) => void
 }): JSX.Element {
-  const [extensions, setExtensions] = useState<ExtensionInfo[] | null>(null)
+  const [extensions, setExtensions] = useState<BarItem[] | null>(null)
   const { onError } = props
 
   useEffect(() => {
     callInternal('settings/listExtensions', null)
-      .then((list) => setExtensions(list.filter((e) => e.enabled)))
+      .then(({ tools, extensions: list }) =>
+        setExtensions([
+          ...tools.map((tool) => toolItem(tool)),
+          ...list.filter((e) => e.enabled).map((e) => ({ id: e.id, name: e.name, icon: e.icon, emoji: null }))
+        ])
+      )
       .catch(onError)
     // Once, when the page opens.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -579,7 +597,11 @@ function ExtensionBar(props: {
               data-extension-id={ext.id}
               className="flex items-center gap-3 border-t border-violet/10 py-2.5"
             >
-              {ext.icon ? (
+              {ext.emoji ? (
+                <span aria-hidden className={`grid size-6 shrink-0 place-items-center text-[17px] ${shown ? '' : 'opacity-40'}`}>
+                  {ext.emoji}
+                </span>
+              ) : ext.icon ? (
                 <img src={ext.icon} alt="" className={`size-6 shrink-0 rounded ${shown ? '' : 'opacity-40'}`} />
               ) : (
                 <span className="size-6 shrink-0 rounded bg-cream-edge" />

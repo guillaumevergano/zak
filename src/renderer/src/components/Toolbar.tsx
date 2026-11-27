@@ -59,7 +59,7 @@ export function Toolbar({ widevine }: { widevine: WidevineStatus | null }): JSX.
         )}
       </div>
       <div data-testid="toolbar-actions" className="flex shrink-0 items-center gap-1.5 pr-2.5">
-        {sidebar && !isPrivateWindow && !collapsed && <ExtensionActions bar={sidebar.extensionBar} />}
+        {sidebar && !isPrivateWindow && !collapsed && <ExtensionActions bar={sidebar.extensionBar} tools={sidebar.tools ?? []} />}
         <DownloadsButton />
       </div>
       {tab?.loading && (
