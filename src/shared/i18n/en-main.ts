@@ -181,5 +181,10 @@ export const EN_MAIN: Record<string, string> = {
   'Ce jour dans l’histoire · {date}': 'On this day · {date}',
   'Le saviez-vous ? · {topic}': 'Did you know? · {topic}',
   'Capture d’écran…': 'Take a screenshot…',
-  'Capture': 'Screenshot'
+  'Capture': 'Screenshot',
+  'Arrêter l’enregistrement': 'Stop recording',
+  'Écran': 'Screen',
+  'Écran {n}': 'Screen {n}',
+  'Écran entier': 'Entire screen',
+  'Enregistrement': 'Recording',
 }

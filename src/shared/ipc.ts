@@ -1,6 +1,18 @@
 import type { Appearance, AppearancePatch } from './appearance'
 import type { Lang } from './languages'
-import type { ScreenshotMode, ScreenshotSettings, ToolsSettings, TranslateSettings, ZakToolId } from './tools'
+import type {
+  RecordAccess,
+  RecorderCommand,
+  RecorderSetup,
+  RecordRequest,
+  RecordSettings,
+  RecordSource,
+  ScreenshotMode,
+  ScreenshotSettings,
+  ToolsSettings,
+  TranslateSettings,
+  ZakToolId
+} from './tools'
 import type { MediaAction, MediaState } from './media'
 import type {
   MiniPlayerAction,
@@ -147,6 +159,24 @@ export interface InvokeChannels {
   /** The player's volume, 0–1. */
   'media:setVolume': { args: [volume: number]; result: void }
   /** Zak's floating player (its controls view only): what its buttons show. */
+  /** Screen recording (CLAUDE.md §6.8), from its setup panel: screens and windows one can record. */
+  'record:sources': { args: []; result: RecordSource[] }
+  /** Zak's access to the screen, camera and microphone; `ask`: macOS asks for what is missing. */
+  'record:access': { args: [ask: boolean]; result: RecordAccess }
+  /** Opens the system's privacy settings at the screen recording, camera or microphone list. */
+  'record:openPrivacy': { args: [kind: 'screen' | 'camera' | 'mic']; result: void }
+  /** The camera and microphone chosen last (setup panel). */
+  'record:settings': { args: []; result: RecordSettings }
+  /** « Enregistrer »: the setup panel closes, the bubble and the controls open, the countdown starts. */
+  'record:start': { args: [request: RecordRequest]; result: void }
+  /** Recorder controls only: what to record. */
+  'record:setup': { args: []; result: RecorderSetup | null }
+  /** Recorder controls only: recording started, in this container (« mp4 » or « webm »). */
+  'record:begin': { args: [extension: 'mp4' | 'webm']; result: void }
+  /** Recorder controls only: the file is complete (after the last chunk); its first picture. */
+  'record:finish': { args: [thumbnail: string | null]; result: void }
+  /** Recorder controls only: the recording is thrown away (the file goes). */
+  'record:discard': { args: []; result: void }
   'miniplayer:state': { args: []; result: MiniPlayerState | null }
   'miniplayer:action': { args: [action: MiniPlayerAction]; result: void }
   /** Its window's position, as a drag starts. */
@@ -162,6 +192,8 @@ export interface SendChannels {
   'tools:screenshotDrag': null
   /** Zak's floating player dragged by its controls: its window's new position. */
   'miniplayer:move': { x: number; y: number }
+  /** Recorder controls: a piece of the video, written to the file in order. */
+  'record:chunk': ArrayBuffer
 }
 
 /** main → renderer events (webContents.send / ipcRenderer.on). */
@@ -187,6 +219,8 @@ export interface EventChannels {
   'downloads:state': DownloadInfo[]
   /** What plays in the window changed (null: nothing any more). */
   'media:state': MediaState | null
+  /** Recorder controls only: stop, pause, resume or throw away (the menu, the sidebar icon). */
+  'record:command': RecorderCommand
 }
 
 export type InvokeChannel = keyof InvokeChannels
@@ -249,12 +283,21 @@ export const INVOKE_CHANNELS = [
   'media:getState',
   'media:action',
   'media:setVolume',
+  'record:sources',
+  'record:access',
+  'record:openPrivacy',
+  'record:settings',
+  'record:start',
+  'record:setup',
+  'record:begin',
+  'record:finish',
+  'record:discard',
   'miniplayer:state',
   'miniplayer:action',
   'miniplayer:position'
 ] as const satisfies readonly InvokeChannel[]
 
-export const SEND_CHANNELS = ['layout:update', 'downloads:drag', 'tools:screenshotDrag', 'miniplayer:move'] as const satisfies readonly SendChannel[]
+export const SEND_CHANNELS = ['layout:update', 'downloads:drag', 'tools:screenshotDrag', 'miniplayer:move', 'record:chunk'] as const satisfies readonly SendChannel[]
 export const EVENT_CHANNELS = [
   'tabs:state',
   'tabs:scroll',
@@ -266,7 +309,8 @@ export const EVENT_CHANNELS = [
   'overlay:show',
   'find:result',
   'downloads:state',
-  'media:state'
+  'media:state',
+  'record:command'
 ] as const satisfies readonly EventChannel[]
 
 /** Shape of `window.zak` exposed by src/preload/chrome.ts. */
@@ -330,6 +374,7 @@ export interface InternalApiRoutes {
   'extensions/tools': { body: null; result: ToolsSettings }
   'extensions/setTranslate': { body: Partial<Pick<TranslateSettings, 'enabled' | 'target'>>; result: ToolsSettings }
   'extensions/setScreenshot': { body: Partial<ScreenshotSettings>; result: ToolsSettings }
+  'extensions/setRecord': { body: Partial<Pick<RecordSettings, 'enabled'>>; result: ToolsSettings }
   /** The sidebar's icons (shared with zak://settings): an extension or tool on can go without one. */
   'extensions/bar': { body: null; result: ExtensionBarSettings }
   'extensions/setBar': { body: ExtensionBarSettings; result: ExtensionBarSettings }
@@ -435,6 +480,7 @@ export const INTERNAL_API_ROUTES = [
   'extensions/tools',
   'extensions/setTranslate',
   'extensions/setScreenshot',
+  'extensions/setRecord',
   'extensions/bar',
   'extensions/setBar',
   'settings/get',

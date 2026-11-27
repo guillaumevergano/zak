@@ -3,9 +3,9 @@
  * A tool switched off leaves no trace: no menu entry, no button, nothing in the pages.
  */
 
-export type ZakToolId = 'translate' | 'screenshot'
+export type ZakToolId = 'translate' | 'screenshot' | 'record'
 
-export const ZAK_TOOL_IDS: readonly ZakToolId[] = ['screenshot', 'translate']
+export const ZAK_TOOL_IDS: readonly ZakToolId[] = ['screenshot', 'record', 'translate']
 
 /** Translation of a selection (right-click), on demand only. */
 export interface TranslateSettings {
@@ -21,15 +21,69 @@ export interface ScreenshotSettings {
   enabled: boolean
 }
 
+/**
+ * Screen recording, à la Loom: a screen or a window, the camera in a round bubble, the microphone.
+ * A video file in the downloads folder; nothing leaves the computer.
+ */
+export interface RecordSettings {
+  enabled: boolean
+  /**
+   * The camera bubble, and the camera chosen by its name ('' = the system's): device ids differ
+   * from one session to the other, names don't.
+   */
+  camera: boolean
+  cameraLabel: string
+  /** The microphone, and the one chosen by its name ('' = the system's). */
+  mic: boolean
+  micLabel: string
+}
+
 export interface ToolsSettings {
   translate: TranslateSettings
   screenshot: ScreenshotSettings
+  record: RecordSettings
 }
 
 export const DEFAULT_TOOLS: ToolsSettings = {
   translate: { enabled: true, target: '', recent: [] },
-  screenshot: { enabled: true }
+  screenshot: { enabled: true },
+  record: { enabled: true, camera: true, cameraLabel: '', mic: true, micLabel: '' }
 }
+
+/** Where a recording comes from: a screen or a window (desktopCapturer), with its thumbnail. */
+export interface RecordSource {
+  id: string
+  name: string
+  kind: 'screen' | 'window'
+  /** data: URL. */
+  thumbnail: string
+  appIcon: string | null
+}
+
+/** What the recorder needs to start: the source and the devices by name ('' = the system's, null = none). */
+export interface RecordRequest {
+  sourceId: string
+  camera: string | null
+  mic: string | null
+}
+
+/** Zak's access to the screen, camera and microphone (macOS asks the user; elsewhere 'granted'). */
+export interface RecordAccess {
+  screen: 'granted' | 'denied' | 'not-determined' | 'restricted' | 'unknown'
+  camera: boolean
+  mic: boolean
+}
+
+/** What the recorder's controls show and do. */
+export interface RecorderSetup {
+  sourceId: string
+  /** The microphone's name ('' = the system's, null = none). */
+  mic: string | null
+  /** E2E tests: a drawn picture in place of the screen. */
+  fake: boolean
+}
+
+export type RecorderCommand = 'stop' | 'pause' | 'resume' | 'cancel'
 
 /** Languages offered (Google Translate codes); names come from Intl.DisplayNames, in Zak's language. */
 export const TRANSLATE_LANGUAGES = [
@@ -43,14 +97,26 @@ const isLanguage = (value: unknown): value is string => typeof value === 'string
 
 /** The file can be edited by hand: anything unknown falls back to the default. */
 export function normalizeTools(raw: unknown): ToolsSettings {
-  const { translate, screenshot } = (raw ?? {}) as { translate?: Partial<TranslateSettings>; screenshot?: Partial<ScreenshotSettings> }
+  const { translate, screenshot, record } = (raw ?? {}) as {
+    translate?: Partial<TranslateSettings>
+    screenshot?: Partial<ScreenshotSettings>
+    record?: Partial<RecordSettings>
+  }
+  const id = (value: unknown): string => (typeof value === 'string' ? value.slice(0, 200) : '')
   return {
     translate: {
       enabled: translate?.enabled !== false,
       target: isLanguage(translate?.target) ? translate.target : '',
       recent: Array.isArray(translate?.recent) ? [...new Set(translate.recent.filter(isLanguage))].slice(0, RECENT_MAX) : []
     },
-    screenshot: { enabled: screenshot?.enabled !== false }
+    screenshot: { enabled: screenshot?.enabled !== false },
+    record: {
+      enabled: record?.enabled !== false,
+      camera: record?.camera !== false,
+      cameraLabel: id(record?.cameraLabel),
+      mic: record?.mic !== false,
+      micLabel: id(record?.micLabel)
+    }
   }
 }
 

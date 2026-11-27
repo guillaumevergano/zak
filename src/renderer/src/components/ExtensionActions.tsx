@@ -3,7 +3,7 @@ import type { ExtensionBarSettings } from '@shared/types'
 import type { ZakToolId } from '@shared/tools'
 import { barToolOf, shownExtensions, toolBarId } from '@shared/extensionBar'
 import { t } from '@shared/i18n'
-import { CameraIcon, TranslateIcon } from './Icons'
+import { CameraIcon, RecordIcon, TranslateIcon } from './Icons'
 
 const PARTITION = 'persist:main'
 
@@ -70,7 +70,7 @@ export function ExtensionActions({ bar, tools }: { bar: ExtensionBarSettings; to
 }
 
 function ToolAction({ tool }: { tool: ZakToolId }): JSX.Element {
-  const label = tool === 'screenshot' ? t('Capture d’écran…') : t('Traduire cette page')
+  const label = tool === 'screenshot' ? t('Capture d’écran…') : tool === 'record' ? t('Enregistrer l’écran…') : t('Traduire cette page')
   return (
     <button
       type="button"
@@ -80,7 +80,7 @@ function ToolAction({ tool }: { tool: ZakToolId }): JSX.Element {
       onClick={() => void window.zak.invoke('tools:run', tool)}
       className="ext-action grid place-items-center text-cream-ink"
     >
-      {tool === 'screenshot' ? <CameraIcon /> : <TranslateIcon />}
+      {tool === 'screenshot' ? <CameraIcon /> : tool === 'record' ? <RecordIcon /> : <TranslateIcon />}
     </button>
   )
 }

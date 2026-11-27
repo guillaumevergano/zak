@@ -14,6 +14,7 @@ import { present, quiet } from './quietMode'
 import { Overlay } from './Overlay'
 import type { TranslateTool } from '../tools/TranslateTool'
 import type { ScreenshotTool } from '../tools/ScreenshotTool'
+import type { RecordTool } from '../tools/RecordTool'
 
 export interface BrowserWindowHandle {
   window: BrowserWindow
@@ -60,6 +61,7 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
   /** Zak's own tools in the page menu (CLAUDE.md §6.8), set at startup. */
   translateTool: TranslateTool | null = null
   screenshotTool: ScreenshotTool | null = null
+  recordTool: RecordTool | null = null
 
   constructor(
     private readonly sessions: SessionManager,
@@ -147,7 +149,7 @@ export class WindowManager extends EventEmitter<WindowManagerEvents> {
         openInPrivateWindow: isPrivate ? null : (url) => this.create([url], { private: true }),
         toolItems: this.translateTool?.menuItems(handle, wc, params) ?? [],
         translatePage: this.translateTool?.enabled() ?? false,
-        pageItems: this.screenshotTool?.menuItems(handle, wc) ?? []
+        pageItems: [...(this.screenshotTool?.menuItems(handle, wc) ?? []), ...(this.recordTool?.menuItems(handle) ?? [])]
       }).popup({ window })
     })
 

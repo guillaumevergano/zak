@@ -48,10 +48,18 @@ describe('translator', () => {
 
 describe('tools settings', () => {
   it('falls back to the defaults for anything unknown', () => {
-    expect(normalizeTools(undefined)).toEqual({ translate: { enabled: true, target: '', recent: [] }, screenshot: { enabled: true } })
-    expect(normalizeTools({ translate: { enabled: false, target: 'xx', recent: ['en', 'en', 'zz', 'de'] }, screenshot: { enabled: false } })).toEqual({
+    const record = { enabled: true, camera: true, cameraLabel: '', mic: true, micLabel: '' }
+    expect(normalizeTools(undefined)).toEqual({ translate: { enabled: true, target: '', recent: [] }, screenshot: { enabled: true }, record })
+    expect(
+      normalizeTools({
+        translate: { enabled: false, target: 'xx', recent: ['en', 'en', 'zz', 'de'] },
+        screenshot: { enabled: false },
+        record: { enabled: false, camera: false, cameraLabel: 'FaceTime HD', micLabel: 3 }
+      })
+    ).toEqual({
       translate: { enabled: false, target: '', recent: ['en', 'de'] },
-      screenshot: { enabled: false }
+      screenshot: { enabled: false },
+      record: { enabled: false, camera: false, cameraLabel: 'FaceTime HD', mic: true, micLabel: '' }
     })
   })
 

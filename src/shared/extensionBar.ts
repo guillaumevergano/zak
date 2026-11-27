@@ -8,7 +8,7 @@ import type { ZakToolId } from './tools'
 export const TOOL_BAR_PREFIX = 'zak:'
 export const toolBarId = (tool: ZakToolId): string => `${TOOL_BAR_PREFIX}${tool}`
 export const barToolOf = (id: string): ZakToolId | null =>
-  id === 'zak:screenshot' ? 'screenshot' : id === 'zak:translate' ? 'translate' : null
+  id === 'zak:screenshot' ? 'screenshot' : id === 'zak:translate' ? 'translate' : id === 'zak:record' ? 'record' : null
 
 export const DEFAULT_EXTENSION_BAR: ExtensionBarSettings = { order: [], hidden: [] }
 

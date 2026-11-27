@@ -191,8 +191,13 @@ export type FramedOverlayRequest =
   | { kind: 'translation'; frame: Rect; tabId: TabId; text: string; target: string; error?: boolean }
   /** Screenshot (§6.8): drawing a region over the page, which the view covers exactly. */
   | { kind: 'screenshot'; frame: Rect; tabId: TabId }
-  /** The screenshot just taken: its thumbnail (a data: URL), copied and saved. Doesn't take the focus. */
-  | { kind: 'screenshot-done'; frame: Rect; preview: string; name: string }
+  /**
+   * The screenshot just taken (or the recording just made, `video`): its thumbnail (a data: URL),
+   * copied (a screenshot) and saved. Doesn't take the focus.
+   */
+  | { kind: 'screenshot-done'; frame: Rect; preview: string; name: string; video?: boolean }
+  /** Screen recording (§6.8): what to record, camera and microphone, over the page. */
+  | { kind: 'record-setup'; frame: Rect }
 
 /** A row of the omnibox dropdown (CLAUDE.md §6.7). */
 export interface OmniboxSuggestion {
