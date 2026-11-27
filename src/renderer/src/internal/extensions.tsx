@@ -210,7 +210,7 @@ function ZakTools({ icon }: { icon: (id: string) => IconChoice | null }): JSX.El
   }, [])
   if (!tools) return null
   const lang = getLang()
-  const { translate, screenshot } = tools
+  const { translate, screenshot, record } = tools
   const setTranslate = (patch: InternalApiRoutes['extensions/setTranslate']['body']): void =>
     void callInternal('extensions/setTranslate', patch).then(setTools)
   const isMac = navigator.platform.startsWith('Mac')
@@ -258,6 +258,16 @@ function ZakTools({ icon }: { icon: (id: string) => IconChoice | null }): JSX.El
           sidebarIcon={icon(toolBarId('screenshot'))}
           onToggle={(enabled) => void callInternal('extensions/setScreenshot', { enabled }).then(setTools)}
           description={t('Une zone tracée, la page visible ou la page entière : menu Fichier ({shortcut}) ou clic droit sur la page. L’image est copiée dans le presse-papiers et enregistrée dans le dossier des téléchargements.', { shortcut: isMac ? '⌘⇧2' : t('Ctrl+Maj+2') })}
+          note={t('Tout reste sur votre ordinateur.')}
+        />
+        <ToolCard
+          id="record"
+          icon="🎥"
+          name={t('Enregistrement de l’écran')}
+          enabled={record.enabled}
+          sidebarIcon={icon(toolBarId('record'))}
+          onToggle={(enabled) => void callInternal('extensions/setRecord', { enabled }).then(setTools)}
+          description={t('Un écran ou une fenêtre, avec votre caméra dans une bulle et votre micro, comme Loom : menu Fichier ({shortcut}), clic droit sur la page ou son icône. La vidéo est enregistrée dans le dossier des téléchargements.', { shortcut: isMac ? '⌘⇧E' : t('Ctrl+Maj+E') })}
           note={t('Tout reste sur votre ordinateur.')}
         />
       </ul>

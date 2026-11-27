@@ -4,11 +4,11 @@
 export const MAX_DEVICE_PIXELS = 16384
 
 /** `Capture 2026-11-26 14.32.05.png`: sorted by date in a folder, no `:` (forbidden in Finder names). */
-export function screenshotName(prefix: string, date: Date): string {
+export function screenshotName(prefix: string, date: Date, extension = 'png'): string {
   const two = (n: number): string => String(n).padStart(2, '0')
   const day = `${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}`
   const time = `${two(date.getHours())}.${two(date.getMinutes())}.${two(date.getSeconds())}`
-  return `${prefix} ${day} ${time}.png`
+  return `${prefix} ${day} ${time}.${extension}`
 }
 
 /** What CDP's Page.getLayoutMetrics answers (the parts used here). */

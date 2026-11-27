@@ -152,6 +152,17 @@
           "properties": {
             "enabled": { "type": "boolean", "default": true }
           }
+        },
+        "record": {
+          "type": "object",
+          "description": "Screen recording, like Loom (File menu, Cmd/Ctrl+Shift+E, the page's right-click menu or its sidebar icon): a screen or a window, the camera in a round bubble, the microphone; a video saved in the downloads folder.",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "camera": { "type": "boolean", "default": true, "description": "Camera bubble on." },
+            "cameraLabel": { "type": "string", "default": "", "description": "Camera chosen, by its name; empty = the system's." },
+            "mic": { "type": "boolean", "default": true, "description": "Microphone on." },
+            "micLabel": { "type": "string", "default": "", "description": "Microphone chosen, by its name; empty = the system's." }
+          }
         }
       }
     },

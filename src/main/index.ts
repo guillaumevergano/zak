@@ -11,6 +11,7 @@ import { SessionManager } from './sessions/SessionManager'
 import { WindowManager } from './windows/WindowManager'
 import { TranslateTool } from './tools/TranslateTool'
 import { ScreenshotTool } from './tools/ScreenshotTool'
+import { RecordTool } from './tools/RecordTool'
 import { ExtensionsHost } from './extensions/ExtensionsHost'
 import { PipController } from './pip/PipController'
 import { MiniPlayer } from './pip/MiniPlayer'
@@ -153,11 +154,12 @@ interface Services {
   passwords: PasswordManager
   translateTool: TranslateTool
   screenshotTool: ScreenshotTool
+  recordTool: RecordTool
   media: MediaController
   miniPlayer: MiniPlayer
 }
 
-function registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords, translateTool, screenshotTool, media, miniPlayer }: Services): void {
+function registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords, translateTool, screenshotTool, recordTool, media, miniPlayer }: Services): void {
   const windowOf = (event: IpcMainInvokeEvent | Electron.IpcMainEvent) => {
     const handle = windows.fromWebContents(event.sender)
     if (!handle) throw new Error('IPC from unknown window')
@@ -220,7 +222,19 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
   handle('tools:translate', (_e, text, target, chosen) => translateTool.translateForReader(text, target, chosen))
   handle('tools:screenshot', (e, mode, rect) => screenshotTool.capture(windowOf(e), mode, rect))
   handle('tools:screenshotReveal', () => screenshotTool.reveal())
-  handle('tools:run', (e, tool) => (tool === 'screenshot' ? screenshotTool.start(windowOf(e)) : translateTool.translatePage(windowOf(e))))
+  handle('tools:run', (e, tool) =>
+    tool === 'screenshot' ? screenshotTool.start(windowOf(e)) : tool === 'record' ? recordTool.start(windowOf(e)) : translateTool.translatePage(windowOf(e))
+  )
+  handle('record:sources', () => recordTool.sources())
+  handle('record:access', (_e, ask) => recordTool.access(ask))
+  handle('record:openPrivacy', (_e, kind) => recordTool.openPrivacy(kind))
+  handle('record:settings', () => recordTool.settingsNow())
+  handle('record:start', (e, request) => recordTool.begin(windowOf(e), request))
+  // The recorder's own windows (not browser windows): each call checks its sender.
+  handle('record:setup', (e) => recordTool.setup(e.sender))
+  handle('record:begin', (e, extension) => recordTool.open(e.sender, extension))
+  handle('record:finish', (e, thumbnail) => recordTool.finish(e.sender, thumbnail))
+  handle('record:discard', (e) => recordTool.discard(e.sender))
   handle('omnibox:suggest', (_e, text) => suggest(text, settings.getGeneral().searchEngine, favorites, history))
   handle('find:query', (e, tabId, text, forward, findNext) => find.query(windowOf(e), tabId, text, forward, findNext))
   handle('find:close', (e) => windowOf(e).overlay.close())
@@ -244,10 +258,17 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
   on('layout:update', (e, insets) => tabsOf(e).setInsets(insets))
   on('downloads:drag', (e, id) => downloads.drag(e.sender, id))
   on('tools:screenshotDrag', (e) => screenshotTool.drag(e.sender))
+  on('record:chunk', (e, chunk) => recordTool.write(e.sender, chunk))
   on('miniplayer:move', (e, { x, y }) => miniPlayer.moveTo(e.sender, x, y))
   handle('miniplayer:state', (e) => miniPlayer.state(e.sender))
   handle('miniplayer:action', (e, action) => miniPlayer.act(e.sender, action))
   handle('miniplayer:position', (e) => miniPlayer.position(e.sender))
+}
+
+// E2E tests of the screen recorder: a made-up camera and microphone, no system prompt.
+if (process.env['ZAK_E2E'] === '1' && process.env['ZAK_RECORD_FAKE'] === '1') {
+  app.commandLine.appendSwitch('use-fake-device-for-media-stream')
+  app.commandLine.appendSwitch('use-fake-ui-for-media-stream')
 }
 
 app.whenReady().then(async () => {
@@ -276,6 +297,8 @@ app.whenReady().then(async () => {
   windows.translateTool = translateTool
   const screenshotTool = new ScreenshotTool(settings, () => settings.getGeneral().downloadDir)
   windows.screenshotTool = screenshotTool
+  const recordTool = new RecordTool(settings, windows, screenshotTool, () => settings.getGeneral().downloadDir)
+  windows.recordTool = recordTool
   const db = openDatabase(app.getPath('userData'))
   const favorites = new FavoritesStore(db)
   const history = new HistoryStore(db)
@@ -358,13 +381,14 @@ app.whenReady().then(async () => {
   settings.markSchema()
   const headlines = new Headlines(() => settings.getGeneral())
   headlines.warmUp()
-  let screenshotInMenu = settings.getTools().screenshot.enabled
+  const toolsInMenu = (): string => `${settings.getTools().screenshot.enabled}/${settings.getTools().record.enabled}`
+  let shownInMenu = toolsInMenu()
   settings.onChange(() => {
     headlines.warmUp()
     applyTheme(settings.getGeneral())
-    // The screenshot tool switched on or off: its menu entry (and ⌘⇧2) comes or goes.
-    if (settings.getTools().screenshot.enabled !== screenshotInMenu) {
-      screenshotInMenu = !screenshotInMenu
+    // The screenshot or recording tool switched on or off: its menu entry (and shortcut) comes or goes.
+    if (toolsInMenu() !== shownInMenu) {
+      shownInMenu = toolsInMenu()
       refreshMenu()
     }
     sidebar.broadcast()
@@ -390,7 +414,7 @@ app.whenReady().then(async () => {
   downloads.attach(browsingSession, true)
   const passwordStore = new PasswordStore(db, keychainCipher)
   const passwords = new PasswordManager(passwordStore, windows, () => settings.getGeneral().savePasswords && keychainIsSafe())
-  registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords, translateTool, screenshotTool, media: new MediaController(windows), miniPlayer })
+  registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords, translateTool, screenshotTool, recordTool, media: new MediaController(windows), miniPlayer })
   const menuCommands = {
     find,
     zoom,
@@ -402,10 +426,12 @@ app.whenReady().then(async () => {
       open: (id: string) => openProfile(id),
       manage: () => void windows.focusedNormal().tabs.create(`${SETTINGS_PAGE_URL}#profiles`)
     },
-    screenshot: { enabled: () => screenshotTool.enabled(), start: (handle: Parameters<ScreenshotTool['start']>[0]) => screenshotTool.start(handle) }
+    screenshot: { enabled: () => screenshotTool.enabled(), start: (handle: Parameters<ScreenshotTool['start']>[0]) => screenshotTool.start(handle) },
+    record: { enabled: () => recordTool.enabled(), recording: () => recordTool.recording(), start: (handle: Parameters<RecordTool['start']>[0]) => recordTool.start(handle) }
   }
   const refreshMenu = (): void => installAppMenu(windows, menuCommands)
   refreshMenu()
+  recordTool.onChange = refreshMenu
   const profileState = () => ({ current: currentProfile, list: profiles.list() })
   /** The menu lists the profiles; window titles show this one's name once there are several. */
   const profilesChanged = (): void => {
@@ -465,6 +491,10 @@ app.whenReady().then(async () => {
     'extensions/setScreenshot': (patch) => {
       const tools = settings.getTools()
       return settings.setTools({ ...tools, screenshot: { ...tools.screenshot, ...patch } })
+    },
+    'extensions/setRecord': (patch) => {
+      const tools = settings.getTools()
+      return settings.setTools({ ...tools, record: { ...tools.record, enabled: patch.enabled !== false } })
     },
     'extensions/bar': () => settings.getExtensionBar(),
     'extensions/setBar': (bar) => sidebar.change(() => settings.setExtensionBar(bar)),

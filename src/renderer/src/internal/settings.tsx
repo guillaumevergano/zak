@@ -534,7 +534,9 @@ interface BarItem {
 const toolItem = (tool: ZakToolId): BarItem =>
   tool === 'screenshot'
     ? { id: toolBarId(tool), name: t('Capture d’écran'), icon: null, emoji: '📸' }
-    : { id: toolBarId(tool), name: t('Traduction'), icon: null, emoji: '🌐' }
+    : tool === 'record'
+      ? { id: toolBarId(tool), name: t('Enregistrement de l’écran'), icon: null, emoji: '🎥' }
+      : { id: toolBarId(tool), name: t('Traduction'), icon: null, emoji: '🌐' }
 
 /** Which extension icons the sidebar shows, and in what order (top of the sidebar, left to right). */
 function ExtensionBar(props: {

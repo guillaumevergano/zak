@@ -125,3 +125,11 @@ export const TranslateIcon = (): JSX.Element => (
     <path d="m8.5 14 2.5-6 2.5 6M9.3 12.2h3.4" />
   </Icon>
 )
+/** Zak's screen recorder: a screen with the recording dot. */
+export const RecordIcon = (): JSX.Element => (
+  <Icon>
+    <rect x="1.8" y="3" width="12.4" height="8.6" rx="1.6" />
+    <path d="M5.5 14h5" />
+    <circle cx="8" cy="7.3" r="1.7" fill="currentColor" stroke="none" />
+  </Icon>
+)

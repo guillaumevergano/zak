@@ -41,8 +41,8 @@ mac:
   # Notarization reads APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID from env.
   notarize: true
   extendInfo:
-    NSCameraUsageDescription: Un site web demande l'accès à la caméra.
-    NSMicrophoneUsageDescription: Un site web demande l'accès au micro.
+    NSCameraUsageDescription: Zak (pour la bulle de l'enregistrement de l'écran) ou un site web demande l'accès à la caméra.
+    NSMicrophoneUsageDescription: Zak (pour l'enregistrement de l'écran) ou un site web demande l'accès au micro.
     # Default browser (Réglages → Navigateur par défaut, System Settings → Desktop & Dock):
     # macOS only offers apps that declare http/https links and HTML documents.
     CFBundleURLTypes:

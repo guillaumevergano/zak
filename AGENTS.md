@@ -57,7 +57,8 @@ All three checks must pass before you finish.
   settings under `tools` in `config.json`. Switched off, a tool leaves nothing behind (no menu item,
   no button, no page script). Translation (right-click on a selection) sends text only on that click, keeps names as
   they are (`<span translate="no">`) and offers English for a text already in Zak's language;
-  screenshots (⌘⇧2, page right-click) stay local: clipboard + downloads folder. Being on and having
+  screenshots (⌘⇧2, page right-click) and screen recordings (⌘⇧E, Loom-like: camera bubble,
+  mic, `src/main/tools/RecordTool.ts`) stay local: clipboard / downloads folder. Being on and having
   an icon are separate: any extension or tool that is on can have its icon in the sidebar or not
   (`extensionBar.hidden`, tools as `zak:<tool>`), and works either way.
 - DRM streaming can't be tested in development or in your own builds (it needs the signed release).
