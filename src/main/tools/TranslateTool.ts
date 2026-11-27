@@ -1,5 +1,6 @@
 import { getLang, t } from '@shared/i18n'
 import { translateUrl } from '@shared/url'
+import { baseLanguage, guessLanguage, readerTarget } from '@shared/textLanguage'
 import { session, type MenuItemConstructorOptions, type Session, type WebContents } from 'electron'
 import type { OverlayRequest } from '@shared/types'
 import { languageMenu, languageName, readingTarget, withRecent } from '@shared/tools'
@@ -44,11 +45,20 @@ export class TranslateTool {
     return translateText(text, target, (url, init) => ses.fetch(url, { ...init, headers: { ...init.headers, 'User-Agent': chromeUserAgent() } }), endpoint)
   }
 
-  /** From the bubble: the language picked there becomes the one texts are read in. */
-  translateForReader(text: string, target: string): Promise<Translation> {
-    const tools = this.settings.getTools()
-    this.settings.setTools({ ...tools, translate: { ...tools.translate, target: target === getLang() ? '' : target } })
-    return this.translate(text, target)
+  /**
+   * The bubble's translation. A language picked there (`chosen`) becomes the one texts are read in.
+   * Otherwise a text Google finds already in `target` (Zak's own guess missed it) is translated into
+   * the next language instead: English for a text in Zak's language.
+   */
+  async translateForReader(text: string, target: string, chosen: boolean): Promise<Translation & { target: string }> {
+    if (chosen) {
+      const tools = this.settings.getTools()
+      this.settings.setTools({ ...tools, translate: { ...tools.translate, target: target === getLang() ? '' : target } })
+      return { ...(await this.translate(text, target)), target }
+    }
+    const result = await this.translate(text, target)
+    const other = readerTarget(target, baseLanguage(result.source), getLang())
+    return other === target ? { ...result, target } : { ...(await this.translate(text, other)), target: other }
   }
 
   /** The page menu's entries for this selection (none when the tool is off or nothing is selected). */
@@ -70,7 +80,8 @@ export class TranslateTool {
         }
       ]
     }
-    const target = readingTarget(translate, lang)
+    // Foreign text: into the language it is read in (Zak's); text already in it: into English.
+    const target = readerTarget(readingTarget(translate, lang), guessLanguage(text), lang)
     return [
       {
         label: t('Traduire en {language}', { language: languageName(target, lang, false) }),

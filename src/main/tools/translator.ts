@@ -2,7 +2,12 @@
  * Google Translate, as Google's own Chrome extension calls it (clients5 « dict-chrome-ex »): no key,
  * line breaks kept, several pieces per request. Only ever called on a click (CLAUDE.md §6.8).
  * No electron import here: `fetcher` is given (unit tests, a cookie-less session in Zak).
+ *
+ * The service reads its input as HTML: the text is escaped, and names are sent inside
+ * `<span translate="no">`, which it leaves as they are (« Merci Pierre » no longer gives « Thank you
+ * Peter »). It sends plain text back, the spans still around the names.
  */
+import { guessLanguage, nameRanges } from '../../shared/textLanguage'
 
 export const TRANSLATE_ENDPOINT = 'https://clients5.google.com/translate_a/t'
 
@@ -48,6 +53,22 @@ function around(piece: string): { before: string; core: string; after: string } 
   return { before, core: piece.slice(before.length, piece.length - after.length), after }
 }
 
+const escapeHtml = (text: string): string => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+/** `text` as the service reads it: escaped, the names marked « not to translate ». */
+export function protectNames(text: string, language?: string): string {
+  let out = ''
+  let at = 0
+  for (const { start, end } of nameRanges(text, language)) {
+    out += escapeHtml(text.slice(at, start)) + `<span translate="no">${escapeHtml(text.slice(start, end))}</span>`
+    at = end
+  }
+  return out + escapeHtml(text.slice(at))
+}
+
+/** The translation without the marks around the names (the service may change their case). */
+export const unprotectNames = (text: string): string => text.replace(/<span\s+translate\s*=\s*["']no["']\s*>([\s\S]*?)<\/span>/gi, '$1')
+
 /** [[translation, source], …] for several pieces; [translation, source] or "translation" for one. */
 export function parseResponse(data: unknown, count: number): Translation[] {
   if (!Array.isArray(data)) throw new Error('Unexpected response')
@@ -60,11 +81,13 @@ export function parseResponse(data: unknown, count: number): Translation[] {
 }
 
 export async function translateText(text: string, target: string, fetcher: Fetcher, endpoint = TRANSLATE_ENDPOINT): Promise<Translation> {
-  const pieces = splitText(text.slice(0, TRANSLATE_MAX)).map(around)
+  const kept = text.slice(0, TRANSLATE_MAX)
+  const language = guessLanguage(kept)
+  const pieces = splitText(kept).map(around)
   const sent = pieces.filter((p) => p.core !== '')
   if (sent.length === 0) return { text, source: '' }
   const url = `${endpoint}?${new URLSearchParams({ client: 'dict-chrome-ex', sl: 'auto', tl: target })}`
-  const body = sent.map((p) => `q=${encodeURIComponent(p.core)}`).join('&')
+  const body = sent.map((p) => `q=${encodeURIComponent(protectNames(p.core, language))}`).join('&')
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 15_000)
   try {
@@ -78,7 +101,7 @@ export async function translateText(text: string, target: string, fetcher: Fetch
     const translated = parseResponse(await res.json(), sent.length)
     if (translated.length !== sent.length) throw new Error('Unexpected response')
     let i = 0
-    const out = pieces.map((p) => (p.core === '' ? p.before + p.after : p.before + translated[i++]!.text + p.after)).join('')
+    const out = pieces.map((p) => (p.core === '' ? p.before + p.after : p.before + unprotectNames(translated[i++]!.text) + p.after)).join('')
     return { text: out, source: translated.find((t) => t.source)?.source ?? '' }
   } finally {
     clearTimeout(timer)

@@ -112,7 +112,11 @@ export interface InvokeChannels {
   /** A framed panel whose content changed size (the translation bubble): main fits the view to it. */
   'overlay:resize': { args: [height: number]; result: void }
   /** Translation bubble (CLAUDE.md §6.8): `text` into `target`; the choice is remembered. */
-  'tools:translate': { args: [text: string, target: string]; result: { text: string; source: string } }
+  /**
+   * The bubble's translation. `chosen`: the language was picked in the bubble (remembered, kept
+   * as is); otherwise a text already in `target` comes back in the next language, given in `target`.
+   */
+  'tools:translate': { args: [text: string, target: string, chosen: boolean]; result: { text: string; source: string; target: string } }
   /** From the capture mode: takes the screenshot (`rect`, in the page's coordinates, for a region). */
   'tools:screenshot': { args: [mode: ScreenshotMode, rect?: Rect]; result: void }
   /** A Zak tool's icon in the sidebar: the screenshot picker, or the page translated. */

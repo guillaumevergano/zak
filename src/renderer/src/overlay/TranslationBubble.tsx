@@ -5,12 +5,14 @@ import { languageMenu, languageName } from '@shared/tools'
 
 const api = window.zak
 
-type State = { status: 'loading' } | { status: 'done'; text: string; source: string } | { status: 'error' }
+type State = { status: 'loading' } | { status: 'done'; text: string; source: string; target: string } | { status: 'error' }
 
 /** A selection's translation, under it (CLAUDE.md §6.8). The language can be changed here. */
 export function TranslationBubble({ request }: { request: Extract<OverlayRequest, { kind: 'translation' }> }): JSX.Element {
   const lang = getLang()
   const [target, setTarget] = useState(request.target)
+  /** Picked in the bubble: kept as is (and remembered); else Zak may switch to English. */
+  const [chosen, setChosen] = useState(false)
   const [state, setState] = useState<State>(request.error ? { status: 'error' } : { status: 'loading' })
   const [copied, setCopied] = useState(false)
   const [attempt, setAttempt] = useState(request.error ? -1 : 0)
@@ -21,13 +23,13 @@ export function TranslationBubble({ request }: { request: Extract<OverlayRequest
     let live = true
     setState({ status: 'loading' })
     api
-      .invoke('tools:translate', request.text, target)
+      .invoke('tools:translate', request.text, target, chosen)
       .then((result) => live && setState({ status: 'done', ...result }))
       .catch(() => live && setState({ status: 'error' }))
     return () => {
       live = false
     }
-  }, [request.text, target, attempt])
+  }, [request.text, target, chosen, attempt])
 
   // The view is exactly the bubble's size: it follows the text's height.
   useLayoutEffect(() => {
@@ -61,9 +63,10 @@ export function TranslationBubble({ request }: { request: Extract<OverlayRequest
         <span className="truncate">{source ? t('{language} →', { language: source }) : t('Traduire en')}</span>
         <select
           aria-label={t('Langue de la traduction')}
-          value={target}
+          value={state.status === 'done' ? state.target : target}
           onChange={(e) => {
             setCopied(false)
+            setChosen(true)
             setTarget(e.target.value)
           }}
           className="h-7 min-w-0 rounded-lg border border-track bg-white px-1.5 text-[12px] font-semibold text-title"
