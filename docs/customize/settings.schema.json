@@ -161,7 +161,12 @@
             "camera": { "type": "boolean", "default": true, "description": "Camera bubble on." },
             "cameraLabel": { "type": "string", "default": "", "description": "Camera chosen, by its name; empty = the system's." },
             "mic": { "type": "boolean", "default": true, "description": "Microphone on." },
-            "micLabel": { "type": "string", "default": "", "description": "Microphone chosen, by its name; empty = the system's." }
+            "micLabel": { "type": "string", "default": "", "description": "Microphone chosen, by its name; empty = the system's." },
+            "systemAudio": { "type": "boolean", "default": false, "description": "The computer's sound (Windows; macOS 13+), mixed with the microphone." },
+            "autoShare": { "type": "boolean", "default": false, "description": "Upload each recording to Google Drive as soon as it is made (once Drive is connected), the link copied." },
+            "publicLink": { "type": "boolean", "default": true, "description": "Shared recordings can be watched by anyone with the link." },
+            "driveClientId": { "type": "string", "default": "", "description": "A Google OAuth client (Desktop app) of your own, when the build has none (docs/DRIVE.md)." },
+            "driveClientSecret": { "type": "string", "default": "", "description": "Its client secret (not confidential for an installed app)." }
           }
         },
         "colors": {

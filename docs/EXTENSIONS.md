@@ -9,7 +9,7 @@
 |---|---|---|---|
 | uBlock Origin Lite | ✅ | ❌ blocage | Service worker OK depuis le stub `chrome.commands` (raccourcis inactifs). **Mais aucune pub bloquée** : uBO Lite filtre via `chrome.declarativeNetRequest`, qu'Electron expose (règles chargées) **sans l'appliquer** — API absente de la liste supportée par Electron, y compris sur `main`. Vaut pour tout bloqueur MV3. Voir « Bloqueur de pubs » ci-dessous. |
 | Dashlane | ✅ | ✅ connexion, ✅ autoremplissage (confirmé le 18/11) | Nouvel appareil → code reçu **par e-mail** (`RequestTokenVerification`), pas celui de l'appli d'authentification. Autoremplissage : nécessite le shim ci-dessous. Passkeys : voir limites. |
-| Loom | à tester | | `chrome.desktopCapture` / `tabCapture` absents de la lib → échec attendu. |
+| Loom | ⏭️ abandonné | | `chrome.desktopCapture` / `tabCapture` absents de la lib. Remplacé par l’enregistreur d’écran intégré (CLAUDE.md §6.8, `zak://recordings`, partage par Google Drive). |
 
 ## Page `zak://extensions`
 

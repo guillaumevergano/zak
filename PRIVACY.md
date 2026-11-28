@@ -46,6 +46,14 @@ turn this protection off in Settings → Security.
   the Extensions page.
 - **Screenshots** (File → Take a screenshot…) never leave your computer: the image is copied to
   the clipboard and saved in your downloads folder.
+- **Screen recordings** stay in your downloads folder until you share one. *Share a link* (or the
+  automatic sharing you can turn on) uploads that video to **your own Google Drive**, in a « Zak »
+  folder, after you connect your Google account on the Recordings page. Zak asks Google for the
+  `drive.file` permission only: it can see and change the files it created, nothing else of your
+  Drive. The sign-in token is kept encrypted by your system's keychain; *Disconnect* deletes it and
+  tells Google. The link is readable by anyone who has it unless you turn that off.
+- **Colors** (eyedropper, brand kits) never leave your computer; a brand kit keeps the logo and
+  icon fetched from the site itself.
 
 ## AI agents (MCP)
 
