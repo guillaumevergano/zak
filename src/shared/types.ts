@@ -1,6 +1,8 @@
 import type { Appearance } from './appearance'
 import type { LangSetting } from './languages'
 import type { ZakToolId } from './tools'
+import type { SavedColor } from './colors'
+import type { RecordingShare } from './recordings'
 import type { SearchEngine } from './url'
 
 export type TabId = number
@@ -195,9 +197,11 @@ export type FramedOverlayRequest =
    * The screenshot just taken (or the recording just made, `video`): its thumbnail (a data: URL),
    * copied (a screenshot) and saved. Doesn't take the focus.
    */
-  | { kind: 'screenshot-done'; frame: Rect; preview: string; name: string; video?: boolean }
+  | { kind: 'screenshot-done'; frame: Rect; preview: string; name: string; video?: boolean; recording?: { id: string; share: RecordingShare } }
   /** Screen recording (§6.8): what to record, camera and microphone, over the page. */
   | { kind: 'record-setup'; frame: Rect }
+  /** « Couleurs » (§6.8): the color just picked, a brand kit being read, or why it can't be done. Doesn't take the focus. */
+  | { kind: 'colors-toast'; frame: Rect; toast: ColorsToast }
 
 /** A row of the omnibox dropdown (CLAUDE.md §6.7). */
 export interface OmniboxSuggestion {
@@ -457,3 +461,11 @@ export interface AppearanceState {
   /** Name of the mod theme in use (Réglages → Personnaliser), under these colors; null: none. */
   modTheme: string | null
 }
+
+/** What the « Couleurs » thumbnail shows (CLAUDE.md §6.8). */
+export type ColorsToast =
+  /** `copied`: the text put in the clipboard; `canScan`: the active tab is a site (its brand kit can be read). */
+  | { mode: 'picked'; color: SavedColor; copied: string; canScan: boolean }
+  | { mode: 'scanning'; host: string }
+  /** `privacy`: macOS doesn't let Zak see the screen (a button opens the settings). */
+  | { mode: 'error'; message: string; privacy?: boolean }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { OverlayRequest } from '@shared/types'
+import type { RecordingShare } from '@shared/recordings'
 import { t } from '@shared/i18n'
 
 const api = window.zak
@@ -13,16 +14,27 @@ const SHOWN_MS = 6000
  */
 export function ScreenshotToast({ request }: { request: Extract<OverlayRequest, { kind: 'screenshot-done' }> }): JSX.Element {
   const [hovered, setHovered] = useState(false)
+  const recording = request.recording
+  const [share, setShare] = useState<RecordingShare | null>(recording?.share ?? null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hide = (): void => void api.invoke('overlay:hide', 'screenshot-done')
 
+  // The recording's upload to Drive, as it goes.
   useEffect(() => {
-    if (hovered) return
-    timer.current = setTimeout(hide, SHOWN_MS)
+    if (!recording) return
+    return api.on('recordings:upload', (upload) => {
+      if (upload.id === recording.id) setShare(upload.share)
+    })
+  }, [recording?.id])
+
+  useEffect(() => {
+    // Stays while it uploads (and a little longer once the link is copied).
+    if (hovered || share?.state === 'uploading') return
+    timer.current = setTimeout(hide, share?.state === 'done' || share?.state === 'error' ? SHOWN_MS * 2 : SHOWN_MS)
     return () => {
       if (timer.current) clearTimeout(timer.current)
     }
-  }, [hovered])
+  }, [hovered, share?.state])
 
   const isMac = navigator.platform.startsWith('Mac')
   return (
@@ -61,12 +73,69 @@ export function ScreenshotToast({ request }: { request: Extract<OverlayRequest, 
           ✕
         </button>
       </div>
+      {recording && share && <ShareRow id={recording.id} share={share} />}
+      <div className="flex gap-1.5">
+        <button
+          type="button"
+          onClick={() => void api.invoke('tools:screenshotReveal').then(hide)}
+          className="h-8 flex-1 whitespace-nowrap rounded-xl border border-track px-3 text-[12.5px] font-semibold text-sub hover:bg-violet/8"
+        >
+          {isMac ? t('Afficher dans le Finder') : t('Afficher dans le dossier')}
+        </button>
+        {recording && (
+          <button
+            type="button"
+            onClick={() => void api.invoke('recordings:open').then(hide)}
+            className="h-8 flex-1 whitespace-nowrap rounded-xl border border-track px-3 text-[12.5px] font-semibold text-sub hover:bg-violet/8"
+          >
+            {t('Mes enregistrements')}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** A recording's Drive row: « Partager » (the link copied), its progress, the link once there. */
+function ShareRow({ id, share }: { id: string; share: RecordingShare }): JSX.Element {
+  if (share.state === 'uploading') {
+    return (
+      <div className="flex h-8 items-center gap-2" role="status" data-testid="recording-share" data-state="uploading">
+        <span className="text-[12px] font-semibold text-sub">{t('Envoi sur Google Drive…')}</span>
+        <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-track">
+          <span className="block h-full rounded-full bg-pink transition-[width]" style={{ width: `${Math.round(share.progress * 100)}%` }} />
+        </span>
+        <span className="w-9 text-right font-mono text-[11px] text-sub">{Math.round(share.progress * 100)} %</span>
+      </div>
+    )
+  }
+  if (share.state === 'done') {
+    return (
+      <div className="flex h-8 items-center gap-2" data-testid="recording-share" data-state="done">
+        <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-title">✓ {t('Lien copié')}</span>
+        <button
+          type="button"
+          onClick={() => void api.invoke('recordings:copyLink', id)}
+          className="h-8 rounded-xl border border-track px-3 text-[12px] font-semibold text-sub hover:bg-violet/8"
+        >
+          {t('Copier le lien')}
+        </button>
+      </div>
+    )
+  }
+  return (
+    <div className="flex flex-col gap-1" data-testid="recording-share" data-state={share.state}>
+      {share.state === 'error' && (
+        <p className="m-0 line-clamp-2 text-[11.5px] text-pink-button" role="alert">
+          {share.error}
+        </p>
+      )}
       <button
         type="button"
-        onClick={() => void api.invoke('tools:screenshotReveal').then(hide)}
-        className="h-8 rounded-xl border border-track px-3 text-[12.5px] font-semibold text-sub hover:bg-violet/8"
+        onClick={() => void api.invoke('recordings:share', id)}
+        className="flex h-8 items-center justify-center gap-2 rounded-xl border-0 bg-violet px-3 text-[12.5px] font-semibold text-white hover:bg-title"
       >
-        {isMac ? t('Afficher dans le Finder') : t('Afficher dans le dossier')}
+        {share.state === 'error' ? t('Réessayer') : t('Partager un lien (Google Drive)')}
       </button>
     </div>
   )

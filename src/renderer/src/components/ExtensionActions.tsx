@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ExtensionBarSettings } from '@shared/types'
-import type { ZakToolId } from '@shared/tools'
+import { toolActions, type ToolAction, type ZakToolId } from '@shared/tools'
 import { barToolOf, shownExtensions, toolBarId } from '@shared/extensionBar'
 import { t } from '@shared/i18n'
-import { CameraIcon, RecordIcon, TranslateIcon } from './Icons'
+import { CameraIcon, PaletteIcon, PipetteIcon, RecordIcon, TranslateIcon } from './Icons'
 
 const PARTITION = 'persist:main'
 
@@ -46,7 +46,7 @@ export function ExtensionActions({ bar, tools }: { bar: ExtensionBarSettings; to
     listRef.current?.querySelectorAll<BrowserActionButton>('button[is="browser-action"]').forEach((b) => b.update?.())
   }, [state])
 
-  const items = shownExtensions([...tools.map((tool) => ({ id: toolBarId(tool) })), ...(state?.actions ?? [])], bar)
+  const items = shownExtensions([...toolActions(tools).map((action) => ({ id: toolBarId(action) })), ...(state?.actions ?? [])], bar)
   if (items.length === 0) return null
   const tab = String(state?.activeTabId ?? -1)
 
@@ -54,7 +54,7 @@ export function ExtensionActions({ bar, tools }: { bar: ExtensionBarSettings; to
     <div ref={listRef} data-testid="extension-actions" className="flex min-w-0 flex-wrap items-center gap-2">
       {items.map(({ id }) => {
         const tool = barToolOf(id)
-        if (tool) return <ToolAction key={id} tool={tool} />
+        if (tool) return <ToolButton key={id} tool={tool} />
         return (
           <button
             key={id}
@@ -69,8 +69,25 @@ export function ExtensionActions({ bar, tools }: { bar: ExtensionBarSettings; to
   )
 }
 
-function ToolAction({ tool }: { tool: ZakToolId }): JSX.Element {
-  const label = tool === 'screenshot' ? t('Capture d’écran…') : tool === 'record' ? t('Enregistrer l’écran…') : t('Traduire cette page')
+const ACTION_LABELS: Record<ToolAction, () => string> = {
+  screenshot: () => t('Capture d’écran…'),
+  record: () => t('Enregistrer l’écran…'),
+  translate: () => t('Traduire cette page'),
+  colors: () => t('Prendre une couleur ({shortcut})', { shortcut: navigator.platform.startsWith('Mac') ? '⌘⇧K' : t('Ctrl+Maj+K') }),
+  brand: () => t('Analyser la charte graphique du site')
+}
+
+const ACTION_ICONS: Record<ToolAction, () => JSX.Element> = {
+  screenshot: CameraIcon,
+  record: RecordIcon,
+  translate: TranslateIcon,
+  colors: PipetteIcon,
+  brand: PaletteIcon
+}
+
+function ToolButton({ tool }: { tool: ToolAction }): JSX.Element {
+  const label = ACTION_LABELS[tool]()
+  const ActionIcon = ACTION_ICONS[tool]
   return (
     <button
       type="button"
@@ -80,7 +97,7 @@ function ToolAction({ tool }: { tool: ZakToolId }): JSX.Element {
       onClick={() => void window.zak.invoke('tools:run', tool)}
       className="ext-action grid place-items-center text-cream-ink"
     >
-      {tool === 'screenshot' ? <CameraIcon /> : tool === 'record' ? <RecordIcon /> : <TranslateIcon />}
+      <ActionIcon />
     </button>
   )
 }

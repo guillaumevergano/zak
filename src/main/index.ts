@@ -12,6 +12,13 @@ import { WindowManager } from './windows/WindowManager'
 import { TranslateTool } from './tools/TranslateTool'
 import { ScreenshotTool } from './tools/ScreenshotTool'
 import { RecordTool } from './tools/RecordTool'
+import { ColorTool } from './tools/ColorTool'
+import { ColorsStore } from './store/colors'
+import { colorRoutes } from './tools/colorRoutes'
+import { Recordings } from './tools/Recordings'
+import { recordingRoutes } from './tools/recordingRoutes'
+import { RecordingsStore } from './store/recordings'
+import { GoogleDrive } from './drive/GoogleDrive'
 import { ExtensionsHost } from './extensions/ExtensionsHost'
 import { PipController } from './pip/PipController'
 import { MiniPlayer } from './pip/MiniPlayer'
@@ -155,11 +162,13 @@ interface Services {
   translateTool: TranslateTool
   screenshotTool: ScreenshotTool
   recordTool: RecordTool
+  colorTool: ColorTool
+  recordings: Recordings
   media: MediaController
   miniPlayer: MiniPlayer
 }
 
-function registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords, translateTool, screenshotTool, recordTool, media, miniPlayer }: Services): void {
+function registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords, translateTool, screenshotTool, recordTool, colorTool, recordings, media, miniPlayer }: Services): void {
   const windowOf = (event: IpcMainInvokeEvent | Electron.IpcMainEvent) => {
     const handle = windows.fromWebContents(event.sender)
     if (!handle) throw new Error('IPC from unknown window')
@@ -222,9 +231,21 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
   handle('tools:translate', (_e, text, target, chosen) => translateTool.translateForReader(text, target, chosen))
   handle('tools:screenshot', (e, mode, rect) => screenshotTool.capture(windowOf(e), mode, rect))
   handle('tools:screenshotReveal', () => screenshotTool.reveal())
-  handle('tools:run', (e, tool) =>
-    tool === 'screenshot' ? screenshotTool.start(windowOf(e)) : tool === 'record' ? recordTool.start(windowOf(e)) : translateTool.translatePage(windowOf(e))
-  )
+  handle('tools:run', (e, tool) => {
+    const handle = windowOf(e)
+    if (tool === 'screenshot') screenshotTool.start(handle)
+    else if (tool === 'record') recordTool.start(handle)
+    else if (tool === 'colors') void colorTool.pick(handle)
+    else if (tool === 'brand') void colorTool.scan(handle)
+    else translateTool.translatePage(handle)
+  })
+  handle('colors:copy', (_e, hex, format) => colorTool.copy(hex, format))
+  handle('colors:setFavorite', (_e, id, favorite) => colorTool.setFavorite(id, favorite))
+  handle('colors:open', (e) => colorTool.openPage(windowOf(e)))
+  handle('colors:privacy', () => colorTool.openPrivacy())
+  // The eyedropper's own windows (not browser windows): each call checks its sender.
+  handle('colorpicker:setup', (e) => colorTool.setup(e.sender))
+  handle('colorpicker:pick', (e, hex) => colorTool.choose(e.sender, hex))
   handle('record:sources', () => recordTool.sources())
   handle('record:access', (_e, ask) => recordTool.access(ask))
   handle('record:openPrivacy', (_e, kind) => recordTool.openPrivacy(kind))
@@ -233,7 +254,10 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
   // The recorder's own windows (not browser windows): each call checks its sender.
   handle('record:setup', (e) => recordTool.setup(e.sender))
   handle('record:begin', (e, extension) => recordTool.open(e.sender, extension))
-  handle('record:finish', (e, thumbnail) => recordTool.finish(e.sender, thumbnail))
+  handle('record:finish', (e, thumbnail, seconds) => recordTool.finish(e.sender, thumbnail, seconds))
+  handle('recordings:share', (e, id) => void recordings.share(id, windowOf(e)))
+  handle('recordings:copyLink', (_e, id) => recordings.copyLink(id))
+  handle('recordings:open', (e) => recordings.openPage(windowOf(e)))
   handle('record:discard', (e) => recordTool.discard(e.sender))
   handle('omnibox:suggest', (_e, text) => suggest(text, settings.getGeneral().searchEngine, favorites, history))
   handle('find:query', (e, tabId, text, forward, findNext) => find.query(windowOf(e), tabId, text, forward, findNext))
@@ -264,6 +288,9 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
   handle('miniplayer:action', (e, action) => miniPlayer.act(e.sender, action))
   handle('miniplayer:position', (e) => miniPlayer.position(e.sender))
 }
+
+// The screen recorder's « Son de l'ordinateur » on macOS: system audio through ScreenCaptureKit.
+if (process.platform === 'darwin') app.commandLine.appendSwitch('enable-features', 'MacLoopbackAudioForScreenShare,MacSckSystemAudioLoopbackOverride')
 
 // E2E tests of the screen recorder: a made-up camera and microphone, no system prompt.
 if (process.env['ZAK_E2E'] === '1' && process.env['ZAK_RECORD_FAKE'] === '1') {
@@ -300,6 +327,15 @@ app.whenReady().then(async () => {
   const recordTool = new RecordTool(settings, windows, screenshotTool, () => settings.getGeneral().downloadDir)
   windows.recordTool = recordTool
   const db = openDatabase(app.getPath('userData'))
+  const colorsStore = new ColorsStore(db)
+  const colorTool = new ColorTool(settings, windows, colorsStore)
+  windows.colorTool = colorTool
+  const drive = new GoogleDrive(app.getPath('userData'), () => {
+    const { driveClientId, driveClientSecret } = settings.getTools().record
+    return { id: driveClientId, secret: driveClientSecret }
+  })
+  const recordings = new Recordings(new RecordingsStore(db), drive, settings, windows)
+  recordTool.recordings = recordings
   const favorites = new FavoritesStore(db)
   const history = new HistoryStore(db)
   const sites = new SitesStore(db)
@@ -381,7 +417,7 @@ app.whenReady().then(async () => {
   settings.markSchema()
   const headlines = new Headlines(() => settings.getGeneral())
   headlines.warmUp()
-  const toolsInMenu = (): string => `${settings.getTools().screenshot.enabled}/${settings.getTools().record.enabled}`
+  const toolsInMenu = (): string => `${settings.getTools().screenshot.enabled}/${settings.getTools().record.enabled}/${settings.getTools().colors.enabled}`
   let shownInMenu = toolsInMenu()
   settings.onChange(() => {
     headlines.warmUp()
@@ -414,7 +450,7 @@ app.whenReady().then(async () => {
   downloads.attach(browsingSession, true)
   const passwordStore = new PasswordStore(db, keychainCipher)
   const passwords = new PasswordManager(passwordStore, windows, () => settings.getGeneral().savePasswords && keychainIsSafe())
-  registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords, translateTool, screenshotTool, recordTool, media: new MediaController(windows), miniPlayer })
+  registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords, translateTool, screenshotTool, recordTool, colorTool, recordings, media: new MediaController(windows), miniPlayer })
   const menuCommands = {
     find,
     zoom,
@@ -427,7 +463,13 @@ app.whenReady().then(async () => {
       manage: () => void windows.focusedNormal().tabs.create(`${SETTINGS_PAGE_URL}#profiles`)
     },
     screenshot: { enabled: () => screenshotTool.enabled(), start: (handle: Parameters<ScreenshotTool['start']>[0]) => screenshotTool.start(handle) },
-    record: { enabled: () => recordTool.enabled(), recording: () => recordTool.recording(), start: (handle: Parameters<RecordTool['start']>[0]) => recordTool.start(handle) }
+    record: { enabled: () => recordTool.enabled(), recording: () => recordTool.recording(), start: (handle: Parameters<RecordTool['start']>[0]) => recordTool.start(handle), library: (handle: Parameters<RecordTool['start']>[0]) => recordings.openPage(handle) },
+    colors: {
+      enabled: () => colorTool.enabled(),
+      pick: (handle: Parameters<ColorTool['scan']>[0]) => void colorTool.pick(handle),
+      scan: (handle: Parameters<ColorTool['scan']>[0]) => void colorTool.scan(handle),
+      open: (handle: Parameters<ColorTool['openPage']>[0]) => colorTool.openPage(handle)
+    }
   }
   const refreshMenu = (): void => installAppMenu(windows, menuCommands)
   refreshMenu()
@@ -496,6 +538,12 @@ app.whenReady().then(async () => {
       const tools = settings.getTools()
       return settings.setTools({ ...tools, record: { ...tools.record, enabled: patch.enabled !== false } })
     },
+    'extensions/setColors': (patch) => {
+      const tools = settings.getTools()
+      return settings.setTools({ ...tools, colors: { ...tools.colors, ...patch } })
+    },
+    ...colorRoutes(colorsStore, colorTool, settings, windows),
+    ...recordingRoutes(recordings, drive, settings, windows, recordTool),
     'extensions/bar': () => settings.getExtensionBar(),
     'extensions/setBar': (bar) => sidebar.change(() => settings.setExtensionBar(bar)),
     'extensions/setEnabled': async ({ id, enabled }) => {

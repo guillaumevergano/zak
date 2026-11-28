@@ -20,6 +20,7 @@ import type { BrowserWindowHandle, WindowManager } from '../windows/WindowManage
 import { uniquePath } from '../downloads/DownloadsManager'
 import { screenshotName } from './screenshot'
 import type { ScreenshotTool } from './ScreenshotTool'
+import type { Recordings } from './Recordings'
 
 const BUBBLE_SIZE = 200
 const CONTROLS_WIDTH = 236
@@ -52,6 +53,8 @@ export class RecordTool {
   private current: Recording | null = null
   /** The recording started or stopped: the File menu's entry changes. */
   onChange: () => void = () => {}
+  /** The library (zak://recordings), set at startup. */
+  recordings: Recordings | null = null
 
   constructor(
     private readonly settings: SettingsStore,
@@ -137,7 +140,8 @@ export class RecordTool {
         camera: request.camera !== null,
         cameraLabel: request.camera ?? tools.record.cameraLabel,
         mic: request.mic !== null,
-        micLabel: request.mic ?? tools.record.micLabel
+        micLabel: request.mic ?? tools.record.micLabel,
+        systemAudio: request.systemAudio
       }
     })
 
@@ -169,7 +173,7 @@ export class RecordTool {
   setup(sender: WebContents): RecorderSetup | null {
     const rec = this.current
     if (!rec || rec.controls.webContents !== sender) return null
-    return { sourceId: rec.request.sourceId, mic: rec.request.mic, fake: FAKE }
+    return { sourceId: rec.request.sourceId, mic: rec.request.mic, systemAudio: rec.request.systemAudio && !FAKE, fake: FAKE }
   }
 
   /** Controls only: the recorder started; the file opens. */
@@ -192,7 +196,7 @@ export class RecordTool {
   }
 
   /** Controls only: the last piece was sent. The file closes and its thumbnail shows. */
-  async finish(sender: WebContents, thumbnail: string | null): Promise<void> {
+  async finish(sender: WebContents, thumbnail: string | null, seconds = 0): Promise<void> {
     const rec = this.current
     if (!rec || rec.controls.webContents !== sender) return
     this.current = null
@@ -202,7 +206,9 @@ export class RecordTool {
     await new Promise<void>((resolve) => file.stream.end(resolve))
     const image = thumbnail?.startsWith('data:image/') ? nativeImage.createFromDataURL(thumbnail) : nativeImage.createEmpty()
     const handle = rec.handle.window.isDestroyed() ? this.windows.focusedNormal() : rec.handle
-    this.screenshots.showFile(handle, file.path, image, true)
+    const small = image.isEmpty() ? null : image.resize({ width: 480 }).toDataURL()
+    const recording = await this.recordings?.add(file.path, seconds, small)
+    this.screenshots.showFile(handle, file.path, image, true, recording && { id: recording.id, share: recording.share })
   }
 
   /** Controls only: thrown away, the file deleted. */
@@ -295,7 +301,8 @@ export class RecordTool {
         .getSources({ types: ['screen', 'window'], thumbnailSize: { width: 0, height: 0 } })
         .then((all) => {
           const source = all.find((s) => s.id === rec.request.sourceId)
-          callback(source ? { video: source } : {})
+          // The computer's sound: Windows' loopback, ScreenCaptureKit's on macOS (switch in index.ts).
+          callback(source ? { video: source, ...(rec.request.systemAudio && process.platform !== 'linux' ? { audio: 'loopback' as const } : {}) } : {})
         })
         .catch(() => callback({}))
     })

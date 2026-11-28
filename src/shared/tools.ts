@@ -3,9 +3,29 @@
  * A tool switched off leaves no trace: no menu entry, no button, nothing in the pages.
  */
 
-export type ZakToolId = 'translate' | 'screenshot' | 'record'
+import { COLOR_FORMATS, type ColorFormat } from './colors'
 
-export const ZAK_TOOL_IDS: readonly ZakToolId[] = ['screenshot', 'record', 'translate']
+export type ZakToolId = 'translate' | 'screenshot' | 'record' | 'colors'
+
+export const ZAK_TOOL_IDS: readonly ZakToolId[] = ['screenshot', 'record', 'translate', 'colors']
+
+/**
+ * What a sidebar icon of a tool does: most tools have one, « Couleurs » two (the eyedropper, and
+ * reading the site's brand kit).
+ */
+export type ToolAction = ZakToolId | 'brand'
+
+const TOOL_ACTIONS: Record<ZakToolId, ToolAction[]> = {
+  screenshot: ['screenshot'],
+  record: ['record'],
+  translate: ['translate'],
+  colors: ['colors', 'brand']
+}
+
+/** The sidebar icons of the tools switched on, in their order. */
+export function toolActions(tools: readonly ZakToolId[]): ToolAction[] {
+  return tools.flatMap((tool) => TOOL_ACTIONS[tool])
+}
 
 /** Translation of a selection (right-click), on demand only. */
 export interface TranslateSettings {
@@ -36,18 +56,42 @@ export interface RecordSettings {
   /** The microphone, and the one chosen by its name ('' = the system's). */
   mic: boolean
   micLabel: string
+  /** The computer's own sound (a video playing, a call): Windows, and macOS 13+ (ScreenCaptureKit). */
+  systemAudio: boolean
+  /** Each recording goes to Google Drive as soon as it is made (once Drive is connected). */
+  autoShare: boolean
+  /** Shared recordings can be watched by anyone with the link (otherwise: the Drive's owner only). */
+  publicLink: boolean
+  /**
+   * A Google OAuth client (« Desktop app ») of one's own, when the build has none: see
+   * docs/DRIVE.md. Not a secret for an installed app (Google says so), but kept out of the repo.
+   */
+  driveClientId: string
+  driveClientSecret: string
+}
+
+/**
+ * « Couleurs »: an eyedropper anywhere on the screen (history, favorites) and the brand kit of a
+ * site (colors, fonts, styles), kept on zak://colors. Nothing leaves the computer.
+ */
+export interface ColorsSettings {
+  enabled: boolean
+  /** How a picked color is copied. */
+  format: ColorFormat
 }
 
 export interface ToolsSettings {
   translate: TranslateSettings
   screenshot: ScreenshotSettings
   record: RecordSettings
+  colors: ColorsSettings
 }
 
 export const DEFAULT_TOOLS: ToolsSettings = {
   translate: { enabled: true, target: '', recent: [] },
   screenshot: { enabled: true },
-  record: { enabled: true, camera: true, cameraLabel: '', mic: true, micLabel: '' }
+  record: { enabled: true, camera: true, cameraLabel: '', mic: true, micLabel: '', systemAudio: false, autoShare: false, publicLink: true, driveClientId: '', driveClientSecret: '' },
+  colors: { enabled: true, format: 'hex' }
 }
 
 /** Where a recording comes from: a screen or a window (desktopCapturer), with its thumbnail. */
@@ -65,6 +109,7 @@ export interface RecordRequest {
   sourceId: string
   camera: string | null
   mic: string | null
+  systemAudio: boolean
 }
 
 /** Zak's access to the screen, camera and microphone (macOS asks the user; elsewhere 'granted'). */
@@ -79,6 +124,8 @@ export interface RecorderSetup {
   sourceId: string
   /** The microphone's name ('' = the system's, null = none). */
   mic: string | null
+  /** The computer's sound, mixed with the microphone. */
+  systemAudio: boolean
   /** E2E tests: a drawn picture in place of the screen. */
   fake: boolean
 }
@@ -97,10 +144,11 @@ const isLanguage = (value: unknown): value is string => typeof value === 'string
 
 /** The file can be edited by hand: anything unknown falls back to the default. */
 export function normalizeTools(raw: unknown): ToolsSettings {
-  const { translate, screenshot, record } = (raw ?? {}) as {
+  const { translate, screenshot, record, colors } = (raw ?? {}) as {
     translate?: Partial<TranslateSettings>
     screenshot?: Partial<ScreenshotSettings>
     record?: Partial<RecordSettings>
+    colors?: Partial<ColorsSettings>
   }
   const id = (value: unknown): string => (typeof value === 'string' ? value.slice(0, 200) : '')
   return {
@@ -115,7 +163,16 @@ export function normalizeTools(raw: unknown): ToolsSettings {
       camera: record?.camera !== false,
       cameraLabel: id(record?.cameraLabel),
       mic: record?.mic !== false,
-      micLabel: id(record?.micLabel)
+      micLabel: id(record?.micLabel),
+      systemAudio: record?.systemAudio === true,
+      autoShare: record?.autoShare === true,
+      publicLink: record?.publicLink !== false,
+      driveClientId: id(record?.driveClientId).trim(),
+      driveClientSecret: id(record?.driveClientSecret).trim()
+    },
+    colors: {
+      enabled: colors?.enabled !== false,
+      format: COLOR_FORMATS.includes(colors?.format as ColorFormat) ? (colors!.format as ColorFormat) : 'hex'
     }
   }
 }

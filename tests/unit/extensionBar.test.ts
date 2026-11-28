@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { barToolOf, normalizeExtensionBar, orderExtensions, shownExtensions, toolBarId } from '../../src/shared/extensionBar'
-import { DEFAULT_TOOLS, enabledTools } from '../../src/shared/tools'
+import { DEFAULT_TOOLS, enabledTools, toolActions } from '../../src/shared/tools'
 
 const items = [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }]
 const ids = (list: { id: string }[]): string[] => list.map((i) => i.id)
@@ -31,7 +31,11 @@ describe('extension bar', () => {
     expect(barToolOf('zak:translate')).toBe('translate')
     expect(barToolOf('cjpalhdlnbpafiamejdnhcphjbkeiagm')).toBeNull()
     expect(barToolOf('zak:record')).toBe('record')
-    expect(enabledTools(DEFAULT_TOOLS)).toEqual(['screenshot', 'record', 'translate'])
-    expect(enabledTools({ ...DEFAULT_TOOLS, screenshot: { enabled: false } })).toEqual(['record', 'translate'])
+    expect(barToolOf('zak:brand')).toBe('brand')
+    expect(barToolOf('zak:other')).toBeNull()
+    expect(enabledTools(DEFAULT_TOOLS)).toEqual(['screenshot', 'record', 'translate', 'colors'])
+    expect(enabledTools({ ...DEFAULT_TOOLS, screenshot: { enabled: false } })).toEqual(['record', 'translate', 'colors'])
+    // « Couleurs » has two icons: the eyedropper and the brand kit.
+    expect(toolActions(enabledTools(DEFAULT_TOOLS))).toEqual(['screenshot', 'record', 'translate', 'colors', 'brand'])
   })
 })

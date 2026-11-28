@@ -24,11 +24,18 @@ export interface MenuCommands {
   /** Zak's screenshot tool (§6.8): its entry is only there when the tool is on. */
   screenshot: { enabled: () => boolean; start: (handle: BrowserWindowHandle) => void }
   /** Screen recording (§6.8): « Enregistrer l'écran… », « Arrêter l'enregistrement » while it records. */
-  record: { enabled: () => boolean; recording: () => boolean; start: (handle: BrowserWindowHandle) => void }
+  record: { enabled: () => boolean; recording: () => boolean; start: (handle: BrowserWindowHandle) => void; library: (handle: BrowserWindowHandle) => void }
+  /** « Couleurs » (§6.8): the eyedropper (⌘⇧K), the site's brand kit, zak://colors. */
+  colors: {
+    enabled: () => boolean
+    pick: (handle: BrowserWindowHandle) => void
+    scan: (handle: BrowserWindowHandle) => void
+    open: (handle: BrowserWindowHandle) => void
+  }
 }
 
 /** Builds the application menu; called again when the list of profiles changes. */
-export function installAppMenu(windows: WindowManager, { find, zoom, session, updater, profiles, screenshot, record }: MenuCommands): void {
+export function installAppMenu(windows: WindowManager, { find, zoom, session, updater, profiles, screenshot, record, colors }: MenuCommands): void {
   const isMac = process.platform === 'darwin'
 
   /** Runs on the focused browser window; ignored when none (e.g. a DevTools window is focused). */
@@ -147,7 +154,16 @@ export function installAppMenu(windows: WindowManager, { find, zoom, session, up
                 label: record.recording() ? t('Arrêter l’enregistrement') : t('Enregistrer l’écran…'),
                 accelerator: 'CmdOrCtrl+Shift+E',
                 click: onWindow(record.start)
-              }
+              },
+              { id: 'recordings', label: t('Mes enregistrements'), click: onWindow(record.library) }
+            ] as MenuItemConstructorOptions[])
+          : []),
+        ...(colors.enabled()
+          ? ([
+              { type: 'separator' },
+              { id: 'color-pick', label: t('Prendre une couleur…'), accelerator: 'CmdOrCtrl+Shift+K', click: onWindow(colors.pick) },
+              { id: 'color-brand', label: t('Analyser la charte graphique'), click: onWindow(colors.scan) },
+              { id: 'colors-page', label: t('Couleurs et chartes graphiques'), click: onWindow(colors.open) }
             ] as MenuItemConstructorOptions[])
           : [])
       ]

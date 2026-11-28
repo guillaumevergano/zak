@@ -3,6 +3,7 @@ import { writeFile } from 'node:fs/promises'
 import { clipboard, ClipboardItem, nativeImage, shell, type MenuItemConstructorOptions, type NativeImage, type WebContents } from 'electron'
 import type { Rect } from '@shared/types'
 import type { ScreenshotMode } from '@shared/tools'
+import type { RecordingShare } from '@shared/recordings'
 import type { SettingsStore } from '../store/settings'
 import type { BrowserWindowHandle } from '../windows/WindowManager'
 import { uniquePath } from '../downloads/DownloadsManager'
@@ -10,6 +11,9 @@ import { clampRegion, fullPageClip, screenshotName, type LayoutMetrics } from '.
 
 const TOAST_WIDTH = 300
 const TOAST_HEIGHT = 250
+/** A recording's thumbnail has the Drive share row too. */
+const RECORDING_TOAST_HEIGHT = 300
+const RECORDING_TOAST_WIDTH = 360
 
 /**
  * « Capture d'écran » (CLAUDE.md §6.8): File menu (⌘⇧2) or the page's right-click menu. The page
@@ -74,7 +78,7 @@ export class ScreenshotTool {
    * The thumbnail of a file just made (a screenshot, or a screen recording: `video`) in the bottom
    * corner of the window's page, a few seconds: drag it out, or show it in the Finder.
    */
-  showFile(handle: BrowserWindowHandle, path: string, image: NativeImage, video: boolean): void {
+  showFile(handle: BrowserWindowHandle, path: string, image: NativeImage, video: boolean, recording?: { id: string; share: RecordingShare }): void {
     // Dragging needs an icon: a blank one when there is no picture.
     const icon = image.isEmpty() ? nativeImage.createFromBitmap(Buffer.alloc(16 * 16 * 4), { width: 16, height: 16 }) : image.resize({ width: 96 })
     this.last = { path, icon }
@@ -83,13 +87,14 @@ export class ScreenshotTool {
     if (!page || handle.window.isDestroyed()) return
     const size = image.getSize()
     const thumbnail = image.isEmpty() ? image : size.width / size.height > 2 ? image.resize({ width: 600 }) : image.resize({ height: 300 })
+    const width = recording ? RECORDING_TOAST_WIDTH : TOAST_WIDTH
     const frame = {
-      x: page.x + page.width - TOAST_WIDTH - 12,
-      y: page.y + page.height - TOAST_HEIGHT - 12,
-      width: TOAST_WIDTH,
-      height: TOAST_HEIGHT
+      x: page.x + page.width - width - 12,
+      y: page.y + page.height - (recording ? RECORDING_TOAST_HEIGHT : TOAST_HEIGHT) - 12,
+      width,
+      height: recording ? RECORDING_TOAST_HEIGHT : TOAST_HEIGHT
     }
-    void handle.overlay.open({ kind: 'screenshot-done', frame, preview: thumbnail.toDataURL(), name: path.split(/[/\\]/).pop()!, video })
+    void handle.overlay.open({ kind: 'screenshot-done', frame, preview: thumbnail.toDataURL(), name: path.split(/[/\\]/).pop()!, video, ...(recording ? { recording } : {}) })
   }
 
   reveal(): void {

@@ -63,8 +63,11 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # Google Drive sharing of screen recordings (docs/DRIVE.md): built into the app.
+          MAIN_VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          MAIN_VITE_GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         run: |
-          for name in EVS_ACCOUNT EVS_PASSWD CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
+          for name in EVS_ACCOUNT EVS_PASSWD CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID MAIN_VITE_GOOGLE_CLIENT_ID MAIN_VITE_GOOGLE_CLIENT_SECRET; do
             if [ -n "${!name}" ]; then echo "$name=${!name}" >> "$GITHUB_ENV"; fi
           done
           extra=''
