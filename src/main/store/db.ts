@@ -60,7 +60,23 @@ const MIGRATIONS: string[] = [
   // 7 — the root favorites in rows (the mosaic goes to the next line where you want).
   `ALTER TABLE favorites ADD COLUMN row INTEGER NOT NULL DEFAULT 0;`,
   // 8 — a favorite's own image (data: URL), shown instead of its emoji or the site's icon.
-  `ALTER TABLE favorites ADD COLUMN image TEXT;`
+  `ALTER TABLE favorites ADD COLUMN image TEXT;`,
+  // 9 — « Couleurs » (§6.8): the eyedropper's colors (one row per color: picking it again brings it
+  // back to the top), and the brand kits read from sites, in folders, with a comment.
+  `CREATE TABLE colors (
+     id TEXT PRIMARY KEY, hex TEXT NOT NULL, favorite INTEGER NOT NULL DEFAULT 0, name TEXT NOT NULL DEFAULT '',
+     source_url TEXT, source_title TEXT, picked_at INTEGER NOT NULL
+   );
+   CREATE UNIQUE INDEX colors_hex ON colors(hex);
+   CREATE TABLE brand_folders (
+     id TEXT PRIMARY KEY, name TEXT NOT NULL, emoji TEXT, position INTEGER NOT NULL, created_at INTEGER
+   );
+   CREATE TABLE brand_kits (
+     id TEXT PRIMARY KEY, url TEXT NOT NULL, title TEXT NOT NULL, host TEXT NOT NULL,
+     folder_id TEXT REFERENCES brand_folders(id) ON DELETE SET NULL,
+     comment TEXT NOT NULL DEFAULT '', data TEXT NOT NULL, preview TEXT,
+     created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL
+   );`
 ]
 
 export function openDatabase(dir: string): Db {

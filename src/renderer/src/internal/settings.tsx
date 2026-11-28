@@ -19,7 +19,7 @@ import type {
   SidebarLayout
 } from '@shared/types'
 import { orderExtensions, toolBarId } from '@shared/extensionBar'
-import type { ZakToolId } from '@shared/tools'
+import { toolActions, type ToolAction } from '@shared/tools'
 import { APPEARANCE_PAGE_URL, EXTENSIONS_PAGE_URL, PASSWORDS_PAGE_URL } from '@shared/ipc'
 import { permissionLabel } from '../lib/permissions'
 import { SEARCH_ENGINES, type SearchEngine } from '@shared/url'
@@ -531,12 +531,15 @@ interface BarItem {
   emoji: string | null
 }
 
-const toolItem = (tool: ZakToolId): BarItem =>
-  tool === 'screenshot'
-    ? { id: toolBarId(tool), name: t('Capture d’écran'), icon: null, emoji: '📸' }
-    : tool === 'record'
-      ? { id: toolBarId(tool), name: t('Enregistrement de l’écran'), icon: null, emoji: '🎥' }
-      : { id: toolBarId(tool), name: t('Traduction'), icon: null, emoji: '🌐' }
+const TOOL_ITEMS: Record<ToolAction, { name: () => string; emoji: string }> = {
+  screenshot: { name: () => t('Capture d’écran'), emoji: '📸' },
+  record: { name: () => t('Enregistrement de l’écran'), emoji: '🎥' },
+  translate: { name: () => t('Traduction'), emoji: '🌐' },
+  colors: { name: () => t('Pipette'), emoji: '💧' },
+  brand: { name: () => t('Charte graphique'), emoji: '🎨' }
+}
+
+const toolItem = (action: ToolAction): BarItem => ({ id: toolBarId(action), name: TOOL_ITEMS[action].name(), icon: null, emoji: TOOL_ITEMS[action].emoji })
 
 /** Which extension icons the sidebar shows, and in what order (top of the sidebar, left to right). */
 function ExtensionBar(props: {
@@ -551,7 +554,7 @@ function ExtensionBar(props: {
     callInternal('settings/listExtensions', null)
       .then(({ tools, extensions: list }) =>
         setExtensions([
-          ...tools.map((tool) => toolItem(tool)),
+          ...toolActions(tools).map((action) => toolItem(action)),
           ...list.filter((e) => e.enabled).map((e) => ({ id: e.id, name: e.name, icon: e.icon, emoji: null }))
         ])
       )

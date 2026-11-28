@@ -42,6 +42,7 @@ export default defineConfig({
           downloads: resolve(__dirname, 'src/renderer/downloads.html'),
           appearance: resolve(__dirname, 'src/renderer/appearance.html'),
           passwords: resolve(__dirname, 'src/renderer/passwords.html'),
+          colors: resolve(__dirname, 'src/renderer/colors.html'),
           welcome: resolve(__dirname, 'src/renderer/welcome.html'),
           error: resolve(__dirname, 'src/renderer/error.html')
         }

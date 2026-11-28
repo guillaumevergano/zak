@@ -12,6 +12,9 @@ import { WindowManager } from './windows/WindowManager'
 import { TranslateTool } from './tools/TranslateTool'
 import { ScreenshotTool } from './tools/ScreenshotTool'
 import { RecordTool } from './tools/RecordTool'
+import { ColorTool } from './tools/ColorTool'
+import { ColorsStore } from './store/colors'
+import { colorRoutes } from './tools/colorRoutes'
 import { ExtensionsHost } from './extensions/ExtensionsHost'
 import { PipController } from './pip/PipController'
 import { MiniPlayer } from './pip/MiniPlayer'
@@ -155,11 +158,12 @@ interface Services {
   translateTool: TranslateTool
   screenshotTool: ScreenshotTool
   recordTool: RecordTool
+  colorTool: ColorTool
   media: MediaController
   miniPlayer: MiniPlayer
 }
 
-function registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords, translateTool, screenshotTool, recordTool, media, miniPlayer }: Services): void {
+function registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords, translateTool, screenshotTool, recordTool, colorTool, media, miniPlayer }: Services): void {
   const windowOf = (event: IpcMainInvokeEvent | Electron.IpcMainEvent) => {
     const handle = windows.fromWebContents(event.sender)
     if (!handle) throw new Error('IPC from unknown window')
@@ -222,9 +226,21 @@ function registerIpc({ windows, sidebar, favorites, history, settings, find, zoo
   handle('tools:translate', (_e, text, target, chosen) => translateTool.translateForReader(text, target, chosen))
   handle('tools:screenshot', (e, mode, rect) => screenshotTool.capture(windowOf(e), mode, rect))
   handle('tools:screenshotReveal', () => screenshotTool.reveal())
-  handle('tools:run', (e, tool) =>
-    tool === 'screenshot' ? screenshotTool.start(windowOf(e)) : tool === 'record' ? recordTool.start(windowOf(e)) : translateTool.translatePage(windowOf(e))
-  )
+  handle('tools:run', (e, tool) => {
+    const handle = windowOf(e)
+    if (tool === 'screenshot') screenshotTool.start(handle)
+    else if (tool === 'record') recordTool.start(handle)
+    else if (tool === 'colors') void colorTool.pick(handle)
+    else if (tool === 'brand') void colorTool.scan(handle)
+    else translateTool.translatePage(handle)
+  })
+  handle('colors:copy', (_e, hex, format) => colorTool.copy(hex, format))
+  handle('colors:setFavorite', (_e, id, favorite) => colorTool.setFavorite(id, favorite))
+  handle('colors:open', (e) => colorTool.openPage(windowOf(e)))
+  handle('colors:privacy', () => colorTool.openPrivacy())
+  // The eyedropper's own windows (not browser windows): each call checks its sender.
+  handle('colorpicker:setup', (e) => colorTool.setup(e.sender))
+  handle('colorpicker:pick', (e, hex) => colorTool.choose(e.sender, hex))
   handle('record:sources', () => recordTool.sources())
   handle('record:access', (_e, ask) => recordTool.access(ask))
   handle('record:openPrivacy', (_e, kind) => recordTool.openPrivacy(kind))
@@ -300,6 +316,9 @@ app.whenReady().then(async () => {
   const recordTool = new RecordTool(settings, windows, screenshotTool, () => settings.getGeneral().downloadDir)
   windows.recordTool = recordTool
   const db = openDatabase(app.getPath('userData'))
+  const colorsStore = new ColorsStore(db)
+  const colorTool = new ColorTool(settings, windows, colorsStore)
+  windows.colorTool = colorTool
   const favorites = new FavoritesStore(db)
   const history = new HistoryStore(db)
   const sites = new SitesStore(db)
@@ -381,7 +400,7 @@ app.whenReady().then(async () => {
   settings.markSchema()
   const headlines = new Headlines(() => settings.getGeneral())
   headlines.warmUp()
-  const toolsInMenu = (): string => `${settings.getTools().screenshot.enabled}/${settings.getTools().record.enabled}`
+  const toolsInMenu = (): string => `${settings.getTools().screenshot.enabled}/${settings.getTools().record.enabled}/${settings.getTools().colors.enabled}`
   let shownInMenu = toolsInMenu()
   settings.onChange(() => {
     headlines.warmUp()
@@ -414,7 +433,7 @@ app.whenReady().then(async () => {
   downloads.attach(browsingSession, true)
   const passwordStore = new PasswordStore(db, keychainCipher)
   const passwords = new PasswordManager(passwordStore, windows, () => settings.getGeneral().savePasswords && keychainIsSafe())
-  registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords, translateTool, screenshotTool, recordTool, media: new MediaController(windows), miniPlayer })
+  registerIpc({ windows, sidebar, favorites, history, settings, find, zoom, permissions, downloads, passwords, translateTool, screenshotTool, recordTool, colorTool, media: new MediaController(windows), miniPlayer })
   const menuCommands = {
     find,
     zoom,
@@ -427,7 +446,13 @@ app.whenReady().then(async () => {
       manage: () => void windows.focusedNormal().tabs.create(`${SETTINGS_PAGE_URL}#profiles`)
     },
     screenshot: { enabled: () => screenshotTool.enabled(), start: (handle: Parameters<ScreenshotTool['start']>[0]) => screenshotTool.start(handle) },
-    record: { enabled: () => recordTool.enabled(), recording: () => recordTool.recording(), start: (handle: Parameters<RecordTool['start']>[0]) => recordTool.start(handle) }
+    record: { enabled: () => recordTool.enabled(), recording: () => recordTool.recording(), start: (handle: Parameters<RecordTool['start']>[0]) => recordTool.start(handle) },
+    colors: {
+      enabled: () => colorTool.enabled(),
+      pick: (handle: Parameters<ColorTool['scan']>[0]) => void colorTool.pick(handle),
+      scan: (handle: Parameters<ColorTool['scan']>[0]) => void colorTool.scan(handle),
+      open: (handle: Parameters<ColorTool['openPage']>[0]) => colorTool.openPage(handle)
+    }
   }
   const refreshMenu = (): void => installAppMenu(windows, menuCommands)
   refreshMenu()
@@ -496,6 +521,11 @@ app.whenReady().then(async () => {
       const tools = settings.getTools()
       return settings.setTools({ ...tools, record: { ...tools.record, enabled: patch.enabled !== false } })
     },
+    'extensions/setColors': (patch) => {
+      const tools = settings.getTools()
+      return settings.setTools({ ...tools, colors: { ...tools.colors, ...patch } })
+    },
+    ...colorRoutes(colorsStore, colorTool, settings, windows),
     'extensions/bar': () => settings.getExtensionBar(),
     'extensions/setBar': (bar) => sidebar.change(() => settings.setExtensionBar(bar)),
     'extensions/setEnabled': async ({ id, enabled }) => {

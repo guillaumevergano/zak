@@ -187,4 +187,11 @@ export const EN_MAIN: Record<string, string> = {
   'Écran {n}': 'Screen {n}',
   'Écran entier': 'Entire screen',
   'Enregistrement': 'Recording',
+  // « Couleurs »: eyedropper and brand kits (§6.8)
+  'Prendre une couleur…': 'Pick a color…',
+  'Analyser la charte graphique': 'Analyze the brand identity',
+  'Couleurs et chartes graphiques': 'Colors and brand kits',
+  'Impossible de voir l’écran.': 'Can’t see the screen.',
+  'Ouvrez un site pour analyser sa charte graphique.': 'Open a website to analyze its brand identity.',
+  'Impossible d’analyser cette page.': 'Can’t analyze this page.',
 }

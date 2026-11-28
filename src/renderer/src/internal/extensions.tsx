@@ -3,7 +3,8 @@ import { StrictMode, useCallback, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { ExtensionBarSettings, ExtensionInfo } from '@shared/types'
 import { toolBarId } from '@shared/extensionBar'
-import type { InternalApiRoutes } from '@shared/ipc'
+import { COLORS_PAGE_URL, type InternalApiRoutes } from '@shared/ipc'
+import { COLOR_FORMATS, type ColorFormat } from '@shared/colors'
 import { languageMenu, languageName, type ToolsSettings } from '@shared/tools'
 import { callInternal } from './api'
 import { SmallButton, Toggle } from './ui'
@@ -113,7 +114,7 @@ interface IconChoice {
 }
 
 /** « Icône dans la barre latérale », under an extension that is on. */
-function IconCheckbox({ choice, name }: { choice: IconChoice | null; name: string }): JSX.Element | null {
+function IconCheckbox({ choice, name, label }: { choice: IconChoice | null; name: string; label?: string }): JSX.Element | null {
   if (!choice) return null
   return (
     <label className="mt-1 flex w-fit cursor-pointer items-center gap-2 text-[13px] text-ink">
@@ -125,7 +126,7 @@ function IconCheckbox({ choice, name }: { choice: IconChoice | null; name: strin
         onChange={(e) => choice.onChange(e.target.checked)}
         className="size-4 cursor-pointer accent-violet"
       />
-      {t('Icône dans la barre latérale')}
+      {label ?? t('Icône dans la barre latérale')}
     </label>
   )
 }
@@ -210,7 +211,7 @@ function ZakTools({ icon }: { icon: (id: string) => IconChoice | null }): JSX.El
   }, [])
   if (!tools) return null
   const lang = getLang()
-  const { translate, screenshot, record } = tools
+  const { translate, screenshot, record, colors } = tools
   const setTranslate = (patch: InternalApiRoutes['extensions/setTranslate']['body']): void =>
     void callInternal('extensions/setTranslate', patch).then(setTools)
   const isMac = navigator.platform.startsWith('Mac')
@@ -270,6 +271,38 @@ function ZakTools({ icon }: { icon: (id: string) => IconChoice | null }): JSX.El
           description={t('Un écran ou une fenêtre, avec votre caméra dans une bulle et votre micro, comme Loom : menu Fichier ({shortcut}), clic droit sur la page ou son icône. La vidéo est enregistrée dans le dossier des téléchargements.', { shortcut: isMac ? '⌘⇧E' : t('Ctrl+Maj+E') })}
           note={t('Tout reste sur votre ordinateur.')}
         />
+        <ToolCard
+          id="colors"
+          icon="🎨"
+          name={t('Couleurs')}
+          enabled={colors.enabled}
+          sidebarIcon={icon(toolBarId('colors'))}
+          sidebarIconLabel={t('Icône de la pipette dans la barre latérale')}
+          onToggle={(enabled) => void callInternal('extensions/setColors', { enabled }).then(setTools)}
+          description={t('La pipette prend une couleur n’importe où sur l’écran ({shortcut}) ; l’icône palette lit la charte graphique du site ouvert : couleurs, polices, styles de texte, boutons. Historique, favoris, chartes classées en dossiers et commentées : zak://colors.', { shortcut: isMac ? '⌘⇧K' : t('Ctrl+Maj+K') })}
+          note={t('Tout reste sur votre ordinateur.')}
+        >
+          <div className="flex flex-col gap-1">
+            <IconCheckbox choice={icon(toolBarId('brand'))} name={t('Charte graphique')} label={t('Icône de la charte graphique dans la barre latérale')} />
+            <label className="mt-2 flex items-center gap-2 text-[13px] text-ink">
+              {t('Copier les couleurs en')}
+              <select
+                value={colors.format}
+                onChange={(e) => void callInternal('extensions/setColors', { format: e.target.value as ColorFormat }).then(setTools)}
+                className="h-8 rounded-lg border border-track bg-white px-2 text-[13px] font-semibold text-title"
+              >
+                {COLOR_FORMATS.map((format) => (
+                  <option key={format} value={format}>
+                    {format.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <a href={COLORS_PAGE_URL} className="mt-1 w-fit text-[13px] font-semibold text-violet">
+              {t('Mes couleurs et chartes graphiques')}
+            </a>
+          </div>
+        </ToolCard>
       </ul>
     </section>
   )
@@ -283,6 +316,8 @@ function ToolCard(props: {
   onToggle: (enabled: boolean) => void
   /** Its icon in the sidebar (shown or not). */
   sidebarIcon: IconChoice | null
+  /** When the tool has more than one icon: what this checkbox is about. */
+  sidebarIconLabel?: string
   description: string
   note: string
   /** Its options, shown while it is on. */
@@ -297,7 +332,7 @@ function ToolCard(props: {
         <h3 className="m-0 text-[15px] font-bold text-title">{props.name}</h3>
         <p className="m-0 text-[13px] text-sub">{props.description}</p>
         <p className="m-0 text-[12px] text-sub">{props.note}</p>
-        {props.enabled && <IconCheckbox choice={props.sidebarIcon} name={props.name} />}
+        {props.enabled && <IconCheckbox choice={props.sidebarIcon} name={props.name} label={props.sidebarIconLabel} />}
         {props.enabled && props.children}
       </div>
       <Toggle

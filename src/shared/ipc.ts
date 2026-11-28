@@ -10,9 +10,12 @@ import type {
   ScreenshotMode,
   ScreenshotSettings,
   ToolsSettings,
+  ColorsSettings,
+  ToolAction,
   TranslateSettings,
   ZakToolId
 } from './tools'
+import type { BrandFolder, BrandKit, BrandKitSummary, ColorFormat, SavedColor } from './colors'
 import type { MediaAction, MediaState } from './media'
 import type {
   MiniPlayerAction,
@@ -131,8 +134,19 @@ export interface InvokeChannels {
   'tools:translate': { args: [text: string, target: string, chosen: boolean]; result: { text: string; source: string; target: string } }
   /** From the capture mode: takes the screenshot (`rect`, in the page's coordinates, for a region). */
   'tools:screenshot': { args: [mode: ScreenshotMode, rect?: Rect]; result: void }
-  /** A Zak tool's icon in the sidebar: the screenshot picker, or the page translated. */
-  'tools:run': { args: [tool: ZakToolId]; result: void }
+  /** A Zak tool's icon in the sidebar: the screenshot picker, the page translated, the eyedropper… */
+  'tools:run': { args: [tool: ToolAction]; result: void }
+  /** « Couleurs » (CLAUDE.md §6.8), its thumbnail: copies a color in `format`. */
+  'colors:copy': { args: [hex: string, format: ColorFormat]; result: void }
+  'colors:setFavorite': { args: [id: string, favorite: boolean]; result: void }
+  /** Opens zak://colors in the window. */
+  'colors:open': { args: []; result: void }
+  /** The thumbnail's « Ouvrir les Réglages »: macOS's screen recording list. */
+  'colors:privacy': { args: []; result: void }
+  /** The eyedropper's own windows (one per screen): the screen's picture (PNG) and where the pointer is. */
+  'colorpicker:setup': { args: []; result: ColorPickerSetup | null }
+  /** The eyedropper's windows: the color clicked (`#RRGGBB`), or null when cancelled (Esc). */
+  'colorpicker:pick': { args: [hex: string | null]; result: void }
   /** « Afficher dans le Finder » on the last screenshot. */
   'tools:screenshotReveal': { args: []; result: void }
 
@@ -271,6 +285,12 @@ export const INVOKE_CHANNELS = [
   'tools:screenshot',
   'tools:run',
   'tools:screenshotReveal',
+  'colors:copy',
+  'colors:setFavorite',
+  'colors:open',
+  'colors:privacy',
+  'colorpicker:setup',
+  'colorpicker:pick',
   'omnibox:suggest',
   'find:query',
   'find:close',
@@ -312,6 +332,21 @@ export const EVENT_CHANNELS = [
   'media:state',
   'record:command'
 ] as const satisfies readonly EventChannel[]
+
+/** What an eyedropper window shows: its screen's picture, and the pointer (window coordinates). */
+export interface ColorPickerSetup {
+  /** PNG of the screen, in device pixels. */
+  image: Uint8Array
+  cursor: { x: number; y: number } | null
+}
+
+/** zak://colors. */
+export interface ColorsPageState {
+  colors: SavedColor[]
+  kits: BrandKitSummary[]
+  folders: BrandFolder[]
+  format: ColorFormat
+}
 
 /** Shape of `window.zak` exposed by src/preload/chrome.ts. */
 export interface ZakApi {
@@ -444,6 +479,26 @@ export interface InternalApiRoutes {
   /** The page's « Où voulez-vous aller ? » field: same suggestions as the omnibox. */
   'newtab/suggest': { body: { text: string }; result: OmniboxSuggestion[] }
   /** zak://passwords. `reveal` asks the system (Touch ID…) first, null when refused. */
+  'extensions/setColors': { body: Partial<ColorsSettings>; result: ToolsSettings }
+  /** zak://colors (CLAUDE.md §6.8): the eyedropper's colors, the brand kits and their folders. */
+  'colors/state': { body: null; result: ColorsPageState }
+  /** « Prendre une couleur » on the page: the eyedropper over every screen. */
+  'colors/pick': { body: null; result: null }
+  'colors/setFormat': { body: { format: ColorFormat }; result: null }
+  'colors/setFavorite': { body: { id: string; favorite: boolean }; result: SavedColor[] }
+  /** A color of a brand kit kept as a favorite. */
+  'colors/addFavorite': { body: { hex: string; sourceUrl: string | null; sourceTitle: string | null }; result: SavedColor[] }
+  'colors/rename': { body: { id: string; name: string }; result: SavedColor[] }
+  'colors/remove': { body: { id: string }; result: SavedColor[] }
+  /** The history goes, the favorites stay. */
+  'colors/clearHistory': { body: null; result: SavedColor[] }
+  'colors/kit': { body: { id: string }; result: BrandKit | null }
+  'colors/updateKit': { body: { id: string; title?: string; comment?: string; folderId?: string | null }; result: BrandKit | null }
+  'colors/removeKit': { body: { id: string }; result: null }
+  'colors/createFolder': { body: { name: string; emoji: string | null }; result: BrandFolder[] }
+  'colors/updateFolder': { body: { id: string; name: string; emoji: string | null }; result: BrandFolder[] }
+  /** The folder goes, its kits stay (out of any folder). */
+  'colors/removeFolder': { body: { id: string }; result: BrandFolder[] }
   'passwords/list': { body: null; result: SavedLogin[] }
   'passwords/reveal': { body: { id: string }; result: string | null }
   'passwords/add': { body: { url: string; username: string; password: string }; result: SavedLogin[] }
@@ -524,6 +579,21 @@ export const INTERNAL_API_ROUTES = [
   'newtab/reopenSession',
   'newtab/headline',
   'newtab/suggest',
+  'extensions/setColors',
+  'colors/state',
+  'colors/pick',
+  'colors/setFormat',
+  'colors/setFavorite',
+  'colors/addFavorite',
+  'colors/rename',
+  'colors/remove',
+  'colors/clearHistory',
+  'colors/kit',
+  'colors/updateKit',
+  'colors/removeKit',
+  'colors/createFolder',
+  'colors/updateFolder',
+  'colors/removeFolder',
   'passwords/list',
   'passwords/reveal',
   'passwords/add',
@@ -552,6 +622,7 @@ export const INTERNAL_PAGES = {
   history: 'history.html',
   downloads: 'downloads.html',
   passwords: 'passwords.html',
+  colors: 'colors.html',
   welcome: 'welcome.html',
   appearance: 'appearance.html',
   error: 'error.html'
@@ -563,6 +634,7 @@ export const SETTINGS_PAGE_URL = `${INTERNAL_SCHEME}://settings/`
 export const HISTORY_PAGE_URL = `${INTERNAL_SCHEME}://history/`
 export const DOWNLOADS_PAGE_URL = `${INTERNAL_SCHEME}://downloads/`
 export const PASSWORDS_PAGE_URL = `${INTERNAL_SCHEME}://passwords/`
+export const COLORS_PAGE_URL = `${INTERNAL_SCHEME}://colors/`
 export const WELCOME_PAGE_URL = `${INTERNAL_SCHEME}://welcome/`
 export const ERROR_PAGE_URL = `${INTERNAL_SCHEME}://error/`
 export const APPEARANCE_PAGE_URL = `${INTERNAL_SCHEME}://appearance/`

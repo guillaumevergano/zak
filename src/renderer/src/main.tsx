@@ -6,6 +6,7 @@ import { OverlayApp } from './overlay/OverlayApp'
 import { MiniPlayerControls } from './miniplayer/MiniPlayerControls'
 import { RecorderControls } from './recorder/RecorderControls'
 import { CameraBubble } from './recorder/CameraBubble'
+import { ColorPicker } from './colorpicker/ColorPicker'
 import { isPrivateWindow } from './lib/env'
 import './styles.css'
 
@@ -15,13 +16,17 @@ const isOverlay = location.hash === '#overlay'
 const isMiniPlayer = location.hash === '#miniplayer'
 // The screen recorder's windows (CLAUDE.md §6.8): its controls, and the camera bubble.
 const isRecorder = location.hash === '#recorder-controls'
+// The eyedropper's windows, one per screen (CLAUDE.md §6.8).
+const isColorPicker = location.hash === '#colorpicker'
 const cameraLabel = location.hash.startsWith('#recorder-camera=') ? decodeURIComponent(location.hash.slice('#recorder-camera='.length)) : null
 
-if (isOverlay || isMiniPlayer || isRecorder || cameraLabel !== null) document.body.classList.add('overlay')
+if (isOverlay || isMiniPlayer || isRecorder || isColorPicker || cameraLabel !== null) document.body.classList.add('overlay')
 // Private window: forced dark theme.
 else if (isPrivateWindow) document.body.classList.add('private')
 
-const root = isRecorder ? (
+const root = isColorPicker ? (
+  <ColorPicker />
+) : isRecorder ? (
   <RecorderControls />
 ) : cameraLabel !== null ? (
   <CameraBubble label={cameraLabel} />

@@ -133,3 +133,18 @@ export const RecordIcon = (): JSX.Element => (
     <circle cx="8" cy="7.3" r="1.7" fill="currentColor" stroke="none" />
   </Icon>
 )
+/** Zak's eyedropper: a pipette taking a drop. */
+export const PipetteIcon = (): JSX.Element => (
+  <Icon>
+    <path d="m9.6 3.4 3 3M11 2.6l2.4 2.4-1.6 1.6-2.4-2.4zM10.2 5.8 4.4 11.6 3 13l-.4-.4L4 11.2l5.8-5.8" />
+  </Icon>
+)
+/** The site's brand kit: a palette. */
+export const PaletteIcon = (): JSX.Element => (
+  <Icon>
+    <path d="M8 2.2a5.8 5.8 0 1 0 0 11.6c1 0 1.4-.6 1.4-1.3 0-.9-.8-1.2-.8-2 0-.7.6-1.2 1.3-1.2h1.6a2.8 2.8 0 0 0 2.8-2.8c0-2.4-2.7-4.3-6.3-4.3z" />
+    <circle cx="5.2" cy="7.4" r=".9" fill="currentColor" stroke="none" />
+    <circle cx="7.4" cy="5" r=".9" fill="currentColor" stroke="none" />
+    <circle cx="10.4" cy="5.4" r=".9" fill="currentColor" stroke="none" />
+  </Icon>
+)
