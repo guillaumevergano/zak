@@ -16,6 +16,7 @@ import type {
   ZakToolId
 } from './tools'
 import type { BrandFolder, BrandKit, BrandKitSummary, ColorFormat, SavedColor } from './colors'
+import type { DriveStatus, RecordingsPageState, RecordingUpload } from './recordings'
 import type { MediaAction, MediaState } from './media'
 import type {
   MiniPlayerAction,
@@ -187,8 +188,13 @@ export interface InvokeChannels {
   'record:setup': { args: []; result: RecorderSetup | null }
   /** Recorder controls only: recording started, in this container (« mp4 » or « webm »). */
   'record:begin': { args: [extension: 'mp4' | 'webm']; result: void }
-  /** Recorder controls only: the file is complete (after the last chunk); its first picture. */
-  'record:finish': { args: [thumbnail: string | null]; result: void }
+  /** Recorder controls only: the file is complete (after the last chunk); its first picture and length (s). */
+  'record:finish': { args: [thumbnail: string | null, seconds: number]; result: void }
+  /** A recording's thumbnail: share it through Google Drive (signing in first if needed), the link copied. */
+  'recordings:share': { args: [id: string]; result: void }
+  'recordings:copyLink': { args: [id: string]; result: void }
+  /** zak://recordings in the window. */
+  'recordings:open': { args: []; result: void }
   /** Recorder controls only: the recording is thrown away (the file goes). */
   'record:discard': { args: []; result: void }
   'miniplayer:state': { args: []; result: MiniPlayerState | null }
@@ -235,6 +241,8 @@ export interface EventChannels {
   'media:state': MediaState | null
   /** Recorder controls only: stop, pause, resume or throw away (the menu, the sidebar icon). */
   'record:command': RecorderCommand
+  /** Overlay: a recording's upload to Drive moved on. */
+  'recordings:upload': RecordingUpload
 }
 
 export type InvokeChannel = keyof InvokeChannels
@@ -312,6 +320,9 @@ export const INVOKE_CHANNELS = [
   'record:begin',
   'record:finish',
   'record:discard',
+  'recordings:share',
+  'recordings:copyLink',
+  'recordings:open',
   'miniplayer:state',
   'miniplayer:action',
   'miniplayer:position'
@@ -330,7 +341,8 @@ export const EVENT_CHANNELS = [
   'find:result',
   'downloads:state',
   'media:state',
-  'record:command'
+  'record:command',
+  'recordings:upload'
 ] as const satisfies readonly EventChannel[]
 
 /** What an eyedropper window shows: its screen's picture, and the pointer (window coordinates). */
@@ -499,6 +511,26 @@ export interface InternalApiRoutes {
   'colors/updateFolder': { body: { id: string; name: string; emoji: string | null }; result: BrandFolder[] }
   /** The folder goes, its kits stay (out of any folder). */
   'colors/removeFolder': { body: { id: string }; result: BrandFolder[] }
+  /** zak://recordings (CLAUDE.md §6.8): the screen recordings, and sharing them through Google Drive. */
+  'recordings/state': { body: null; result: RecordingsPageState }
+  /** Starts sharing (or copies the link of one already shared); the page follows the upload in `state`. */
+  'recordings/share': { body: { id: string }; result: null }
+  'recordings/copyLink': { body: { id: string }; result: null }
+  'recordings/reveal': { body: { id: string }; result: null }
+  'recordings/play': { body: { id: string }; result: null }
+  /** Off the list (the file stays); `fromDrive`: its shared copy goes too. */
+  'recordings/remove': { body: { id: string; fromDrive: boolean }; result: null }
+  /** The Drive copy goes (the link stops working). */
+  'recordings/unshare': { body: { id: string }; result: null }
+  /** Signs in to Google Drive (the Google page opens in a tab); resolves once done. */
+  'recordings/connect': { body: null; result: DriveStatus }
+  'recordings/disconnect': { body: null; result: DriveStatus }
+  'recordings/setOptions': {
+    body: { autoShare?: boolean; publicLink?: boolean; driveClientId?: string; driveClientSecret?: string }
+    result: RecordingsPageState
+  }
+  /** « Nouvel enregistrement »: the setup panel in the front window. */
+  'recordings/record': { body: null; result: null }
   'passwords/list': { body: null; result: SavedLogin[] }
   'passwords/reveal': { body: { id: string }; result: string | null }
   'passwords/add': { body: { url: string; username: string; password: string }; result: SavedLogin[] }
@@ -594,6 +626,17 @@ export const INTERNAL_API_ROUTES = [
   'colors/createFolder',
   'colors/updateFolder',
   'colors/removeFolder',
+  'recordings/state',
+  'recordings/share',
+  'recordings/copyLink',
+  'recordings/reveal',
+  'recordings/play',
+  'recordings/remove',
+  'recordings/unshare',
+  'recordings/connect',
+  'recordings/disconnect',
+  'recordings/setOptions',
+  'recordings/record',
   'passwords/list',
   'passwords/reveal',
   'passwords/add',
@@ -623,6 +666,7 @@ export const INTERNAL_PAGES = {
   downloads: 'downloads.html',
   passwords: 'passwords.html',
   colors: 'colors.html',
+  recordings: 'recordings.html',
   welcome: 'welcome.html',
   appearance: 'appearance.html',
   error: 'error.html'
@@ -635,6 +679,7 @@ export const HISTORY_PAGE_URL = `${INTERNAL_SCHEME}://history/`
 export const DOWNLOADS_PAGE_URL = `${INTERNAL_SCHEME}://downloads/`
 export const PASSWORDS_PAGE_URL = `${INTERNAL_SCHEME}://passwords/`
 export const COLORS_PAGE_URL = `${INTERNAL_SCHEME}://colors/`
+export const RECORDINGS_PAGE_URL = `${INTERNAL_SCHEME}://recordings/`
 export const WELCOME_PAGE_URL = `${INTERNAL_SCHEME}://welcome/`
 export const ERROR_PAGE_URL = `${INTERNAL_SCHEME}://error/`
 export const APPEARANCE_PAGE_URL = `${INTERNAL_SCHEME}://appearance/`

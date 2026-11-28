@@ -4,6 +4,8 @@ import { t } from '@shared/i18n'
 
 const api = window.zak
 
+const isLinux = navigator.platform.startsWith('Linux')
+
 /** Devices by name: their ids change from one session to the other (CLAUDE.md §6.8). */
 type Devices = { cameras: string[]; mics: string[] }
 
@@ -35,6 +37,7 @@ export function RecordSetup(): JSX.Element {
   const [cameraLabel, setCameraLabel] = useState('')
   const [mic, setMic] = useState(true)
   const [micLabel, setMicLabel] = useState('')
+  const [systemAudio, setSystemAudio] = useState(false)
 
   useEffect(() => {
     void api.invoke('record:settings').then((s) => {
@@ -42,6 +45,7 @@ export function RecordSetup(): JSX.Element {
       setCameraLabel(s.cameraLabel)
       setMic(s.mic)
       setMicLabel(s.micLabel)
+      setSystemAudio(s.systemAudio)
     })
     void api.invoke('record:access', true).then(async (granted) => {
       setAccess(granted)
@@ -63,7 +67,8 @@ export function RecordSetup(): JSX.Element {
     void api.invoke('record:start', {
       sourceId: sourceId!,
       camera: useCamera ? pick(cameraLabel, devices!.cameras) : null,
-      mic: useMic ? pick(micLabel, devices!.mics) : null
+      mic: useMic ? pick(micLabel, devices!.mics) : null,
+      systemAudio: systemAudio && !isLinux
     })
   }
 
@@ -160,6 +165,13 @@ export function RecordSetup(): JSX.Element {
             denied={access !== null && !access.mic}
             onOpenPrivacy={() => void api.invoke('record:openPrivacy', 'mic')}
           />
+          {!isLinux && (
+            <label className="flex min-h-9 cursor-pointer items-center gap-2 rounded-[12px] bg-white/70 px-3 py-1.5 text-[13px] font-semibold text-title">
+              <input type="checkbox" checked={systemAudio} onChange={(e) => setSystemAudio(e.target.checked)} className="size-4 cursor-pointer accent-violet" />
+              {t('Son de l’ordinateur')}
+              <span className="font-normal text-sub">{t('(vidéos, appels…)')}</span>
+            </label>
+          )}
         </div>
 
         <div className="flex justify-end gap-2">

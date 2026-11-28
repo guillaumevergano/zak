@@ -143,3 +143,21 @@ describe('colors store', () => {
     expect(store.kits()).toEqual([])
   })
 })
+
+describe('recordings store', () => {
+  it('lists recordings, newest first, and keeps their Drive link', async () => {
+    const { RecordingsStore } = await import('../../src/main/store/recordings')
+    const { formatDuration } = await import('../../src/shared/recordings')
+    const store = new RecordingsStore(openMemoryDatabase())
+    const first = store.add('/tmp/a.mp4', 'a.mp4', 65.4, null)
+    await new Promise((resolve) => setTimeout(resolve, 2))
+    const second = store.add('/tmp/b.mp4', 'b.mp4', 3725, 'data:image/jpeg;base64,x')
+    expect(store.list().map((r) => r.id)).toEqual([second.id, first.id])
+    store.setShared(first.id, 'file1', 'https://drive.google.com/file/d/file1/view')
+    expect(store.get(first.id)).toMatchObject({ duration: 65, driveId: 'file1', link: 'https://drive.google.com/file/d/file1/view' })
+    store.remove(second.id)
+    expect(store.list()).toHaveLength(1)
+    expect(formatDuration(65)).toBe('1:05')
+    expect(formatDuration(3725)).toBe('1:02:05')
+  })
+})

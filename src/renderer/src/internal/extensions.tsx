@@ -3,7 +3,7 @@ import { StrictMode, useCallback, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { ExtensionBarSettings, ExtensionInfo } from '@shared/types'
 import { toolBarId } from '@shared/extensionBar'
-import { COLORS_PAGE_URL, type InternalApiRoutes } from '@shared/ipc'
+import { COLORS_PAGE_URL, RECORDINGS_PAGE_URL, type InternalApiRoutes } from '@shared/ipc'
 import { COLOR_FORMATS, type ColorFormat } from '@shared/colors'
 import { languageMenu, languageName, type ToolsSettings } from '@shared/tools'
 import { callInternal } from './api'
@@ -268,9 +268,13 @@ function ZakTools({ icon }: { icon: (id: string) => IconChoice | null }): JSX.El
           enabled={record.enabled}
           sidebarIcon={icon(toolBarId('record'))}
           onToggle={(enabled) => void callInternal('extensions/setRecord', { enabled }).then(setTools)}
-          description={t('Un écran ou une fenêtre, avec votre caméra dans une bulle et votre micro, comme Loom : menu Fichier ({shortcut}), clic droit sur la page ou son icône. La vidéo est enregistrée dans le dossier des téléchargements.', { shortcut: isMac ? '⌘⇧E' : t('Ctrl+Maj+E') })}
-          note={t('Tout reste sur votre ordinateur.')}
-        />
+          description={t('Un écran ou une fenêtre, avec votre caméra dans une bulle, votre micro et le son de l’ordinateur, comme Loom : menu Fichier ({shortcut}), clic droit sur la page ou son icône. La vidéo est enregistrée dans le dossier des téléchargements et se partage par un lien (votre Google Drive).', { shortcut: isMac ? '⌘⇧E' : t('Ctrl+Maj+E') })}
+          note={t('Rien ne quitte votre ordinateur tant que vous ne partagez pas une vidéo.')}
+        >
+          <a href={RECORDINGS_PAGE_URL} className="mt-1 w-fit text-[13px] font-semibold text-violet">
+            {t('Mes enregistrements et le partage Google Drive')}
+          </a>
+        </ToolCard>
         <ToolCard
           id="colors"
           icon="🎨"

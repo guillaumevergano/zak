@@ -2,6 +2,7 @@ import type { Appearance } from './appearance'
 import type { LangSetting } from './languages'
 import type { ZakToolId } from './tools'
 import type { SavedColor } from './colors'
+import type { RecordingShare } from './recordings'
 import type { SearchEngine } from './url'
 
 export type TabId = number
@@ -196,7 +197,7 @@ export type FramedOverlayRequest =
    * The screenshot just taken (or the recording just made, `video`): its thumbnail (a data: URL),
    * copied (a screenshot) and saved. Doesn't take the focus.
    */
-  | { kind: 'screenshot-done'; frame: Rect; preview: string; name: string; video?: boolean }
+  | { kind: 'screenshot-done'; frame: Rect; preview: string; name: string; video?: boolean; recording?: { id: string; share: RecordingShare } }
   /** Screen recording (§6.8): what to record, camera and microphone, over the page. */
   | { kind: 'record-setup'; frame: Rect }
   /** « Couleurs » (§6.8): the color just picked, a brand kit being read, or why it can't be done. Doesn't take the focus. */

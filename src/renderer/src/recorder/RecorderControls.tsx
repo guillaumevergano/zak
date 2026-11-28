@@ -49,6 +49,21 @@ async function microphone(label: string | null): Promise<MediaStreamTrack | null
   }
 }
 
+/**
+ * One sound track from the microphone and the computer's sound (MediaRecorder records one): mixed
+ * by Web Audio when there are two.
+ */
+function mixAudio(sources: MediaStreamTrack[]): { track: MediaStreamTrack; sources: MediaStreamTrack[] } | null {
+  if (sources.length === 0) return null
+  if (sources.length === 1) return { track: sources[0]!, sources: [] }
+  const context = new AudioContext()
+  const destination = context.createMediaStreamDestination()
+  for (const track of sources) context.createMediaStreamSource(new MediaStream([track])).connect(destination)
+  const track = destination.stream.getAudioTracks()[0]!
+  track.addEventListener('ended', () => void context.close())
+  return { track, sources }
+}
+
 /** The video's first picture, for the thumbnail shown at the end. */
 function snapshot(track: MediaStreamTrack): Promise<string | null> {
   return new Promise((resolve) => {
@@ -89,6 +104,7 @@ export function RecorderControls(): JSX.Element {
   /** The pieces go out one after the other, in order. */
   const sending = useRef<Promise<void>>(Promise.resolve())
   const discarding = useRef(false)
+  const elapsed = useRef(0)
   const stopped = useRef(false)
 
   const release = (): void => tracks.current.forEach((track) => track.stop())
@@ -129,9 +145,12 @@ export function RecorderControls(): JSX.Element {
       const setup: RecorderSetup | null = await api.invoke('record:setup')
       if (!setup) return
       let screenTrack: MediaStreamTrack | undefined
+      let systemTrack: MediaStreamTrack | null = null
       try {
-        const screen = setup.fake ? fakeScreen() : await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: false })
+        const screen = setup.fake ? fakeScreen() : await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: setup.systemAudio })
         screenTrack = screen.getVideoTracks()[0]
+        // Not given (an old macOS) or ended at once (no permission): recorded without it.
+        systemTrack = screen.getAudioTracks().find((track) => track.readyState === 'live') ?? null
       } catch {
         /* refused, or the source is gone */
       }
@@ -140,7 +159,10 @@ export function RecorderControls(): JSX.Element {
         return
       }
       const mic = await microphone(setup.mic)
-      tracks.current = [screenTrack, ...(mic ? [mic] : [])]
+      const sound = mixAudio([mic, systemTrack].filter((track): track is MediaStreamTrack => track !== null))
+      tracks.current = [screenTrack, ...(sound ? [sound.track] : [])]
+      // The sources (and the mixer) stop with the recording too.
+      if (sound) for (const source of sound.sources) tracks.current.push(source)
       // The system's « stop sharing », or the window recorded closed: the video ends there.
       screenTrack.onended = () => stop(false)
       if (cancelled || stopped.current) {
@@ -156,7 +178,7 @@ export function RecorderControls(): JSX.Element {
       }
 
       const format = FORMATS.find((f) => MediaRecorder.isTypeSupported(f.mime)) ?? FORMATS.at(-1)!
-      const rec = new MediaRecorder(new MediaStream(tracks.current), { mimeType: format.mime, videoBitsPerSecond: 6_000_000 })
+      const rec = new MediaRecorder(new MediaStream([screenTrack, ...(sound ? [sound.track] : [])]), { mimeType: format.mime, videoBitsPerSecond: 6_000_000 })
       recorder.current = rec
       await api.invoke('record:begin', format.extension)
       rec.ondataavailable = (e) => {
@@ -169,7 +191,7 @@ export function RecorderControls(): JSX.Element {
           const picture = await thumbnail.current
           release()
           if (discarding.current) await api.invoke('record:discard')
-          else await api.invoke('record:finish', picture)
+          else await api.invoke('record:finish', picture, elapsed.current)
         })()
       }
       rec.start(1000)
@@ -184,7 +206,14 @@ export function RecorderControls(): JSX.Element {
   // The time recorded, paused while paused.
   useEffect(() => {
     if (phase !== 'recording') return
-    const timer = setInterval(() => setSeconds((s) => s + 1), 1000)
+    const timer = setInterval(
+      () =>
+        setSeconds((s) => {
+          elapsed.current = s + 1
+          return s + 1
+        }),
+      1000
+    )
     return () => clearInterval(timer)
   }, [phase])
 

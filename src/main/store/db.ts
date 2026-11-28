@@ -76,6 +76,11 @@ const MIGRATIONS: string[] = [
      folder_id TEXT REFERENCES brand_folders(id) ON DELETE SET NULL,
      comment TEXT NOT NULL DEFAULT '', data TEXT NOT NULL, preview TEXT,
      created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL
+   );`,
+  // 10 — screen recordings (zak://recordings) and their Google Drive copy, once shared.
+  `CREATE TABLE recordings (
+     id TEXT PRIMARY KEY, path TEXT NOT NULL, name TEXT NOT NULL, created_at INTEGER NOT NULL,
+     duration INTEGER NOT NULL DEFAULT 0, thumbnail TEXT, drive_id TEXT, link TEXT
    );`
 ]
 

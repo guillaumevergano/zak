@@ -24,7 +24,7 @@ export interface MenuCommands {
   /** Zak's screenshot tool (§6.8): its entry is only there when the tool is on. */
   screenshot: { enabled: () => boolean; start: (handle: BrowserWindowHandle) => void }
   /** Screen recording (§6.8): « Enregistrer l'écran… », « Arrêter l'enregistrement » while it records. */
-  record: { enabled: () => boolean; recording: () => boolean; start: (handle: BrowserWindowHandle) => void }
+  record: { enabled: () => boolean; recording: () => boolean; start: (handle: BrowserWindowHandle) => void; library: (handle: BrowserWindowHandle) => void }
   /** « Couleurs » (§6.8): the eyedropper (⌘⇧K), the site's brand kit, zak://colors. */
   colors: {
     enabled: () => boolean
@@ -154,7 +154,8 @@ export function installAppMenu(windows: WindowManager, { find, zoom, session, up
                 label: record.recording() ? t('Arrêter l’enregistrement') : t('Enregistrer l’écran…'),
                 accelerator: 'CmdOrCtrl+Shift+E',
                 click: onWindow(record.start)
-              }
+              },
+              { id: 'recordings', label: t('Mes enregistrements'), click: onWindow(record.library) }
             ] as MenuItemConstructorOptions[])
           : []),
         ...(colors.enabled()

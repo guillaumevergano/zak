@@ -56,6 +56,18 @@ export interface RecordSettings {
   /** The microphone, and the one chosen by its name ('' = the system's). */
   mic: boolean
   micLabel: string
+  /** The computer's own sound (a video playing, a call): Windows, and macOS 13+ (ScreenCaptureKit). */
+  systemAudio: boolean
+  /** Each recording goes to Google Drive as soon as it is made (once Drive is connected). */
+  autoShare: boolean
+  /** Shared recordings can be watched by anyone with the link (otherwise: the Drive's owner only). */
+  publicLink: boolean
+  /**
+   * A Google OAuth client (« Desktop app ») of one's own, when the build has none: see
+   * docs/DRIVE.md. Not a secret for an installed app (Google says so), but kept out of the repo.
+   */
+  driveClientId: string
+  driveClientSecret: string
 }
 
 /**
@@ -78,7 +90,7 @@ export interface ToolsSettings {
 export const DEFAULT_TOOLS: ToolsSettings = {
   translate: { enabled: true, target: '', recent: [] },
   screenshot: { enabled: true },
-  record: { enabled: true, camera: true, cameraLabel: '', mic: true, micLabel: '' },
+  record: { enabled: true, camera: true, cameraLabel: '', mic: true, micLabel: '', systemAudio: false, autoShare: false, publicLink: true, driveClientId: '', driveClientSecret: '' },
   colors: { enabled: true, format: 'hex' }
 }
 
@@ -97,6 +109,7 @@ export interface RecordRequest {
   sourceId: string
   camera: string | null
   mic: string | null
+  systemAudio: boolean
 }
 
 /** Zak's access to the screen, camera and microphone (macOS asks the user; elsewhere 'granted'). */
@@ -111,6 +124,8 @@ export interface RecorderSetup {
   sourceId: string
   /** The microphone's name ('' = the system's, null = none). */
   mic: string | null
+  /** The computer's sound, mixed with the microphone. */
+  systemAudio: boolean
   /** E2E tests: a drawn picture in place of the screen. */
   fake: boolean
 }
@@ -148,7 +163,12 @@ export function normalizeTools(raw: unknown): ToolsSettings {
       camera: record?.camera !== false,
       cameraLabel: id(record?.cameraLabel),
       mic: record?.mic !== false,
-      micLabel: id(record?.micLabel)
+      micLabel: id(record?.micLabel),
+      systemAudio: record?.systemAudio === true,
+      autoShare: record?.autoShare === true,
+      publicLink: record?.publicLink !== false,
+      driveClientId: id(record?.driveClientId).trim(),
+      driveClientSecret: id(record?.driveClientSecret).trim()
     },
     colors: {
       enabled: colors?.enabled !== false,

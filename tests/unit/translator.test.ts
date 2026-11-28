@@ -48,19 +48,30 @@ describe('translator', () => {
 
 describe('tools settings', () => {
   it('falls back to the defaults for anything unknown', () => {
-    const record = { enabled: true, camera: true, cameraLabel: '', mic: true, micLabel: '' }
+    const record = { enabled: true, camera: true, cameraLabel: '', mic: true, micLabel: '', systemAudio: false, autoShare: false, publicLink: true, driveClientId: '', driveClientSecret: '' }
     expect(normalizeTools(undefined)).toEqual({ translate: { enabled: true, target: '', recent: [] }, screenshot: { enabled: true }, record, colors: { enabled: true, format: 'hex' } })
     expect(
       normalizeTools({
         translate: { enabled: false, target: 'xx', recent: ['en', 'en', 'zz', 'de'] },
         screenshot: { enabled: false },
-        record: { enabled: false, camera: false, cameraLabel: 'FaceTime HD', micLabel: 3 },
+        record: { enabled: false, camera: false, cameraLabel: 'FaceTime HD', micLabel: 3, systemAudio: true, publicLink: false, driveClientId: ' id.apps.googleusercontent.com ' },
         colors: { enabled: false, format: 'cmyk' }
       })
     ).toEqual({
       translate: { enabled: false, target: '', recent: ['en', 'de'] },
       screenshot: { enabled: false },
-      record: { enabled: false, camera: false, cameraLabel: 'FaceTime HD', mic: true, micLabel: '' },
+      record: {
+        enabled: false,
+        camera: false,
+        cameraLabel: 'FaceTime HD',
+        mic: true,
+        micLabel: '',
+        systemAudio: true,
+        autoShare: false,
+        publicLink: false,
+        driveClientId: 'id.apps.googleusercontent.com',
+        driveClientSecret: ''
+      },
       colors: { enabled: false, format: 'hex' }
     })
   })
