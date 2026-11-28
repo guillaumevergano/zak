@@ -140,7 +140,7 @@ export function Sidebar(): JSX.Element {
           data-testid="new-folder"
           title={t('Nouveau dossier')}
           onClick={newFolder}
-          className={`mt-1 mb-3 flex h-9 shrink-0 items-center gap-2.5 rounded-lg text-[14px] text-frame-text hover:bg-frame-2 ${
+          className={`mt-1 mb-3 flex h-9 shrink-0 items-center gap-2.5 rounded-lg text-[13.5px] text-frame-text/75 hover:bg-frame-2 hover:text-frame-text ${
             iconsOnly ? 'justify-center' : 'px-2'
           }`}
         >
@@ -225,7 +225,7 @@ function FolderSection(props: {
         onClick={toggle}
         onContextMenu={menu}
         title={collapsed ? folder.name : undefined}
-        className={`flex h-9 items-center gap-2.5 rounded-lg text-[14.5px] text-frame-text outline-none hover:bg-frame-2 ${
+        className={`flex h-9 items-center gap-2.5 rounded-lg text-[13.5px] text-frame-text/75 outline-none hover:bg-frame-2 hover:text-frame-text ${
           collapsed ? 'justify-center' : 'px-1.5'
         }`}
       >
@@ -235,9 +235,12 @@ function FolderSection(props: {
           </span>
         )}
         {/* Icons only: a folder without an emoji still shows something. */}
-        {(folder.emoji || collapsed) && <span className="emoji text-[17px] leading-none">{folder.emoji || '📁'}</span>}
-        {!collapsed && <span className="min-w-0 flex-1 truncate text-left">{folder.name}</span>}
-        {!collapsed && <span className="text-[13px] text-frame-dim tabular-nums">{props.favorites.length}</span>}
+        {/* A box of its own: the emoji's glyph sits on the label's middle, not on its baseline. */}
+        {(folder.emoji || collapsed) && (
+          <span className="emoji grid size-5 shrink-0 place-items-center text-[16px] leading-none">{folder.emoji || '📁'}</span>
+        )}
+        {!collapsed && <span className="min-w-0 flex-1 truncate text-left leading-5">{folder.name}</span>}
+        {!collapsed && <span className="text-[12.5px] leading-5 text-frame-dim tabular-nums">{props.favorites.length}</span>}
       </button>
       {!folder.collapsed &&
         (collapsed ? (
