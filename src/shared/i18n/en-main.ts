@@ -194,4 +194,15 @@ export const EN_MAIN: Record<string, string> = {
   'Impossible de voir l’écran.': 'Can’t see the screen.',
   'Ouvrez un site pour analyser sa charte graphique.': 'Open a website to analyze its brand identity.',
   'Impossible d’analyser cette page.': 'Can’t analyze this page.',
+  // Screen recordings: library, Google Drive sharing, computer sound (§6.8)
+  'Aucun identifiant client Google n’est configuré.': 'No Google client ID is set up.',
+  'La connexion à Google Drive a expiré.': 'Signing in to Google Drive timed out.',
+  'Réponse inattendue : recommencez depuis Zak.': 'Unexpected answer: start again from Zak.',
+  'Connexion annulée.': 'Sign-in cancelled.',
+  'Zak est connecté à votre Google Drive. Vous pouvez fermer cet onglet.': 'Zak is connected to your Google Drive. You can close this tab.',
+  'La connexion a échoué.': 'Sign-in failed.',
+  'Google Drive n’a pas accepté l’envoi.': 'Google Drive didn’t accept the upload.',
+  'Envoi interrompu': 'Upload interrupted',
+  'Google Drive est déconnecté : reconnectez-le sur la page des enregistrements.': 'Google Drive is disconnected: connect it again on the recordings page.',
+  'Connectez d’abord Google Drive.': 'Connect Google Drive first.',
 }
