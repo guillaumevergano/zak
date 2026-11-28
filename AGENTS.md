@@ -58,7 +58,12 @@ All three checks must pass before you finish.
   no button, no page script). Translation (right-click on a selection) sends text only on that click, keeps names as
   they are (`<span translate="no">`) and offers English for a text already in Zak's language;
   screenshots (⌘⇧2, page right-click) and screen recordings (⌘⇧E, Loom-like: camera bubble,
-  mic, `src/main/tools/RecordTool.ts`) stay local: clipboard / downloads folder. Being on and having
-  an icon are separate: any extension or tool that is on can have its icon in the sidebar or not
-  (`extensionBar.hidden`, tools as `zak:<tool>`), and works either way.
+  mic, `src/main/tools/RecordTool.ts`) stay local: clipboard / downloads folder. « Couleurs »
+  (`src/main/tools/ColorTool.ts`, `src/shared/colors.ts`, page `zak://colors`): an eyedropper
+  anywhere on the screen (⌘⇧K; Electron has no EyeDropper API, so a picture of each screen is shown
+  full screen with a magnifier) and the open site's brand kit (colors, fonts, text styles, buttons,
+  logo, read from computed styles), kept in SQLite with history, favorites, folders and comments.
+  Being on and having an icon are separate: any extension or tool that is on can have its icon in
+  the sidebar or not (`extensionBar.hidden`, tools as `zak:<tool>`; « Couleurs » has two,
+  `zak:colors` and `zak:brand`), and works either way.
 - DRM streaming can't be tested in development or in your own builds (it needs the signed release).

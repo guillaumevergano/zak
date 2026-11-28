@@ -163,6 +163,14 @@
             "mic": { "type": "boolean", "default": true, "description": "Microphone on." },
             "micLabel": { "type": "string", "default": "", "description": "Microphone chosen, by its name; empty = the system's." }
           }
+        },
+        "colors": {
+          "type": "object",
+          "description": "Colors: an eyedropper anywhere on the screen (Cmd/Ctrl+Shift+K, its sidebar icon), and the brand kit of the open site (palette icon, File menu, right-click). History, favorites and brand kits (in folders, with a comment) on zak://colors.",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "format": { "type": "string", "enum": ["hex", "rgb", "hsl"], "default": "hex", "description": "How a picked color is copied." }
+          }
         }
       }
     },
